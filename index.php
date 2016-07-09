@@ -52,6 +52,7 @@
                 <i class="fa fa-minus-circle" aria-hidden="true" style="display: none"></i>
             </div>
         </div>
+        <small>This action may take some time</small>
     </form>
 </div>
 <div class="container">

@@ -8,14 +8,18 @@ $(document).ready(function () {
         success: function (data) {
             $.each(data, function (index, value) {
                 $('.connection-values').append('<tr>' +
-                    '<td class="bpm-id">' + value.id   + '</td>' +
+                    '<td class="bpm-id">' + value.id + '</td>' +
                     '<td class="bpm-host">' + value.host + '</td>' +
                     '<td class="bpm-user">' + value.user + '</td>' +
                     '<td class="bpm-port">' + value.port + '</td>' +
                     '<td><a href="#" class="bpm-load btn btn-info">Load</a></td>' +
-                    '<td><a href="modules/ConnCrud.php?id='+value.id+'" class="bpm-delete btn btn-danger">Delete</a></td>' +
+                    '<td><a href="modules/ConnCrud.php?id=' + value.id + '" class="bpm-delete btn btn-danger">Delete</a></td>' +
                     '</tr>');
             });
+        },
+        error: function (jqXHR, exception) {
+            console.log(jqXHR);
+            console.log(exception);
         }
     });
 
@@ -83,9 +87,14 @@ $(document).ready(function () {
     });
 
     //Connection Load Action
-    $('.bpm-load' ).click(function (e) {
-        e.preventDefault();
-        var id = $(this, '.connection-values.bpm-id');
-        alert(id);
+    $('.connection-values').on('click', '.bpm-load', function (event) {
+        event.preventDefault();
+        var host = $(this).parent().parent().find('.bpm-host').text();
+        var port = $(this).parent().parent().find('.bpm-port').text();
+        var user = $(this).parent().parent().find('.bpm-user').text();
+        $('#sqlServer').val(host);
+        $('#sqlPort').val(port);
+        $('#username').val(user);
+        $('#loadDb').modal('toggle');
     });
 });
