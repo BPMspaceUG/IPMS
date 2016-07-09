@@ -44,14 +44,19 @@ $(document).ready(function () {
         e.preventDefault();
         // Use Ajax to submit form data
         $.ajax({
-            url: "modules/connectionFiles.php",
+            url: "modules/ConnCrud.php",
             type: 'POST',
             data: $('form').serialize(),
             success: function (result) {
-                alert("Connection has been saved")
+                if (result == 1)
+                    alert("Connection has been saved");
+                if(result == 0)
+                    alert("This Connection already exists");
+                else if(result == 404)
+                    alert("Please fill all the connection parameters");
             },
             fail: function () {
-                alert("Connection NOT has been saved")
+                alert("There was a Problem connecting to the server, Kindly contact administrator or your developer");
             }
         });
     });
