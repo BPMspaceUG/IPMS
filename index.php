@@ -19,9 +19,9 @@
                 <button id="new" type="reset" class="btn btn-success" name="new">New</button>
             </div>
 
-            <div class="col-sm-1">
-                <a href="#deleteDb" data-toggle="modal" class="btn btn-danger" name="delete">Delete</a>
-            </div>
+            <!--            <div class="col-sm-1">-->
+            <!--                <a href="#deleteDb" data-toggle="modal" class="btn btn-danger" id="delete" name="delete">Delete</a>-->
+            <!--            </div>-->
 
             <div class="col-sm-1">
                 <button id="connect" type="button" class="btn btn-info" name="connect" value="true">Connect</button>
@@ -40,7 +40,7 @@
             </div>
 
             <div class="col-sm-1">
-                <a href="#loadDb" name="load" data-toggle="modal" class="btn btn-default "
+                <a href="#loadDb" name="load" data-toggle="modal" id="loadF" class="btn btn-default "
                    name="load">Load</a>
             </div>
 
@@ -81,7 +81,7 @@
     </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- Delete Modal
 <div class="modal fade" id="deleteDb">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -122,7 +122,7 @@
         </div>
     </div>
 </div>
-
+-->
 <!-- Load Modal -->
 <div class="modal fade" id="loadDb">
     <div class="modal-dialog">
@@ -140,18 +140,10 @@
                         <th>Host</th>
                         <th>Username</th>
                         <th>Port</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr>
-                    <tr ng-repeat="item in connections">
-                        <td>{{$index+1}}</td>
-                        <td>{{item.host}}</td>
-                        <td>{{item.user}}</td>
-                        <td>{{item.port}}</td>
-                        <td><a href="#" ng-click="load(item)" class="bpm-load btn btn-info">Load</a></td>
-                    </tr>
+                    <tbody class="connection-values">
                     </tbody>
                 </table>
 

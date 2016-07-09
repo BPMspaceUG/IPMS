@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $query = "DELETE FROM " . DB_TBL . " WHERE id = " . $_GET['id'];
         mysqli_query($con, $query);
         $con->close();
+        header('Location: ../');
     } else {
 //        header('Content-Type: application/json');
 
@@ -89,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ));
         }
 
-        $response = array("result" => $response);
+//        $response = array("result" => $response);
 
         echo json_encode($response);
     }
