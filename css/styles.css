@@ -38,18 +38,27 @@
 }
 
 .bpm-checkboxes {
-      display: inline-block;
-      width: 33.3%;
+      /*display: block;*/
+      width: 100%;
       margin-bottom: 10px;
       padding: 0 30px;
+      display: none;
+}
+.bpm-active{
+      display: block;
 }
 
 .bpm-db-table {
       display: inline-block;
       vertical-align: top;
       text-transform: none;
-      font-weight: 600;
+      /*font-weight: 600;*/
 }
 small{
       float: right;
+}
+.bpm-options{
+      display: inline-block;
+      width: 33.3%;
+      margin-bottom: 5px;
 }

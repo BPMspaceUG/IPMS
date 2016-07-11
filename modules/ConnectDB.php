@@ -25,11 +25,11 @@ if (isset($_REQUEST)) {
     } else {
         $json = getData($con);
 
-        $jsonFinal = array("result" => $json);
+//        $jsonFinal = array("result" => $json);
+//        $jsonFinal = null;
 //        json_encode($jsonFinal);
         header('Content-Type: application/json');
-        echo json_encode($jsonFinal);
-
+        echo json_encode($json);
         $con->close();
     }
 
@@ -47,7 +47,7 @@ function getData($con)
     while ($row = $result->fetch_assoc()) {
         $dbName = $row['Database'];
         array_push($json, array(
-                "name" => $dbName,
+                "database" => $dbName,
                 "tables" => getTablesJson($con, $dbName)
             )
         );
@@ -68,7 +68,7 @@ function getTablesJson($con, $db)
     while ($row = $result->fetch_assoc()) {
 
         array_push($json, array(
-                "name" => $row[$nameParam])
+                "table" => $row[$nameParam])
         );
     }
 

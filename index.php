@@ -55,75 +55,29 @@
         <small>This action may take some time</small>
     </form>
 </div>
+
+<!--Databases-->
 <div class="container">
     <div class="row">
         <label for="sqlDatabases" class="col-sm-2" style="padding-left: 2.4%;">Databases</label>
-        <select class=" form-control "
-                id="sqlDatabases"
-                ng-model="list" ng-options="item.name for item in result">
+        <select class="form-control" id="sqlDatabases">
             <option value="">Select a database from dropdown</option>
         </select>
-        <div class="container">
-            <div class="row">
-                <div ng-repeat="item in list.tables" class="bpm-checkboxes">
-                    <input type="checkbox" id="{{item.name}}" class="disabled" disabled checked>
-                    <p class="bpm-db-table">{{item.name}}</p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12" id="code">
-                    <label>Show file content</label>
-                    <input type="file" on-read-file="showContent($fileContent)"/>
+        <div class="row" id="sqlTables">
+            <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
+        </div>
+        <!--            Files and Database -->
+        <div class="row">
+            <div class="col-md-12" id="code">
+                <label>Show file content</label>
+                <input type="file"/>
                     <textarea disabled style="width: 100%; min-height: 500px; resize: none; padding:
-                    50px 0 0; margin:0 0 50px;">{{content}}</textarea>
-                </div>
+                    50px 0 0; margin:0 0 50px;"></textarea>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Modal
-<div class="modal fade" id="deleteDb">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h3 class="modal-title">Stored Connections</h3>
-            </div>
-            <div class="modal-body">
-                <h5 class="text-center">List of Stored connections in Database</h5>
-                <table class="table table-striped" id="tblGrid">
-                    <thead id="tblHead">
-                    <tr>
-                        <th>Id</th>
-                        <th>Host</th>
-                        <th>Username</th>
-                        <th>Port</th>
-                        <th>Action</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                    <tr ng-repeat="item in connections">
-                        <td>{{$index+1}}</td>
-                        <td>{{item.host}}</td>
-                        <td>{{item.user}}</td>
-                        <td>{{item.port}}</td>
-                        <td><a href="#" ng-click="remove(item)"><i class="fa fa-trash-o"
-                                                                   aria-hidden="true"></i></a></td>
-                    </tr>
-                    </tbody>
-                </table>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default " data-dismiss="modal">Close</button>
-            </div>
-
-        </div>
-    </div>
-</div>
--->
 <!-- Load Modal -->
 <div class="modal fade" id="loadDb">
     <div class="modal-dialog">

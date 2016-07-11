@@ -42,7 +42,19 @@ $(document).ready(function () {
                         display: 'none'
                     });
 
-                    console.log(result);
+                    //Appending Database and Tables
+                    $.each(result, function (key, val) {
+                        var tables = val.tables;
+                        $('#sqlDatabases').append('<form action="modules/GenerateFile.php" method="get"><option value="' + val.database + '">' + val.database + '</option>');
+                        $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul><input' +
+                            ' type="submit" value="Generate File"></form>');
+                        $.each(tables, function (key, value) {
+                            $('#' + val.database).append('<li class="bpm-options"><input type="radio" name="' + val.database + '" class="' +
+                                ' value="' + value.table + '">' +
+                                '<p class="bpm-db-table">' + value.table + '</p></li>');
+                        });
+                    });
+
 
                 } else {
                     $('.fa-minus-circle').css({
@@ -96,5 +108,13 @@ $(document).ready(function () {
         $('#sqlPort').val(port);
         $('#username').val(user);
         $('#loadDb').modal('toggle');
+    });
+
+    $('#sqlDatabases').change(function () {
+        var item = $(this);
+        // alert(item.val());
+        $('.bpm-active').removeClass('bpm-active');
+        $('#'+item.val()).addClass('bpm-active');
+        // alert(this.text());
     });
 });
