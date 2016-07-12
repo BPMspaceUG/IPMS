@@ -45,9 +45,8 @@ $(document).ready(function () {
                     //Appending Database and Tables
                     $.each(result, function (key, val) {
                         var tables = val.tables;
-                        $('#sqlDatabases').append('<form action="modules/GenerateFile.php" method="get"><option value="' + val.database + '">' + val.database + '</option>');
-                        $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul><input' +
-                            ' type="submit" value="Generate File"></form>');
+                        $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
+                        $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul>');
                         $.each(tables, function (key, value) {
                             $('#' + val.database).append('<li class="bpm-options"><input type="radio" name="' + val.database + '" class="' +
                                 ' value="' + value.table + '">' +
