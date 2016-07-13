@@ -65,14 +65,20 @@
         </select>
         <div class="row" id="sqlTables">
             <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
+            <div class="col-sm-1">
+                <button name="create" class="btn btn-danger" id="create">CREATE</button>
+            </div>
         </div>
-        <!--            Files and Database -->
+
+        <!--            File String -->
         <div class="row">
             <div class="col-md-12" id="code">
-                <label>Show file content</label>
-                <input type="file"/>
-                    <textarea disabled style="width: 100%; min-height: 500px; resize: none; padding:
-                    50px 0 0; margin:0 0 50px;"></textarea>
+                <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
+                    All</button>
+                <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
+                    50px 0 0; margin:0 0 50px;" class="bpm-textarea" id="bpm-code">
+                    Currently Empty
+                </textarea>
             </div>
         </div>
     </div>

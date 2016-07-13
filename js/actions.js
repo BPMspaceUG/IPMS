@@ -109,11 +109,13 @@ $(document).ready(function () {
         $('#loadDb').modal('toggle');
     });
 
+    //Revealing tables for selected Database
     $('#sqlDatabases').change(function () {
         var item = $(this);
-        // alert(item.val());
         $('.bpm-active').removeClass('bpm-active');
         $('#'+item.val()).addClass('bpm-active');
-        // alert(this.text());
     });
+    
+    //Getting Table_Name code for selected table
+    
 });

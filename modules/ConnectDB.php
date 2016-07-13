@@ -20,8 +20,8 @@ if (isset($_REQUEST)) {
     }
 
     if ($con->connect_error) {
-//        echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
-//        die ("\nCould not connect to db. Further Script processing terminated ");
+        echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
+        die ("\nCould not connect to db. Further Script processing terminated ");
     } else {
         $json = getData($con);
 
@@ -40,7 +40,6 @@ if (isset($_REQUEST)) {
 function getData($con)
 {
     $json = array();
-
     $query = "SHOW DATABASES";
     $result = mysqli_query($con, $query);
 

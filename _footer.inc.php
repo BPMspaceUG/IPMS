@@ -5,6 +5,10 @@
 <!-- Loading js Scripts    -->
 <script type="text/javascript" src="libraries/js/jquery.min.js"></script>
 <script type="text/javascript" src="libraries/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="libraries/js/clipboard.min.js"></script>
+<script>    // init clipboard
+    new Clipboard('.bpm-copy');
+</script>
 <script type="text/javascript" src="js/actions.js"></script>
 
 <!--<script type="text/JavaScript" src="../phpSecureLogin/js/sha512.js"></script>-->
