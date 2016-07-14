@@ -7,12 +7,12 @@
             <label for="sqlServer" class="col-sm-2 form-control-label">MySQL Server</label>
             <div class="col-sm-2">
                 <input type="text" class="form-control" autocomplete="off" name="host" id="sqlServer"
-                       placeholder="127.0.0.1" value="">
+                       placeholder="127.0.0.1" value="127.0.0.1">
             </div>
             <label for="sqlPort" class="col-sm-2 form-control-label">MySQL Port</label>
             <div class="col-sm-2">
                 <input type="number" autocomplete="off" class="form-control" name="port" id="sqlPort"
-                       placeholder="3306" value="">
+                       placeholder="3306" value="3306">
             </div>
 
             <div class="col-sm-1">
@@ -30,7 +30,7 @@
         <div class="form-group row">
             <label for="username" class="col-sm-2 form-control-label">username</label>
             <div class="col-sm-2">
-                <input type="text" autocomplete="off" value="" class="form-control" id="username" name="user"
+                <input type="text" autocomplete="off" value="root" class="form-control" id="username" name="user"
                        placeholder="root">
             </div>
             <label for="password" class="col-sm-2 form-control-label">password</label>
@@ -61,13 +61,14 @@
     <div class="row">
         <label for="sqlDatabases" class="col-sm-2" style="padding-left: 2.4%;">Databases</label>
         <select class="form-control" id="sqlDatabases">
-            <option value="">Select a database from dropdown</option>
+            <option value="">Please choose database</option>
         </select>
         <div class="row" id="sqlTables">
             <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
         </div>
-        <div class="col-sm-1">
+        <div class="col-sm-3">
             <button name="create" class="btn btn-danger" id="create">CREATE</button>
+            <button name="view" id="view" class="btn btn-info">View Data-set</button>
         </div>
 
         <!--            File String -->

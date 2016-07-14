@@ -18,6 +18,7 @@ function replaceName($fName){
     fwrite($file,$code);
     fclose($file);
 
+    $_SESSION['TableName'] = $fName;
 //    echo "<pre>";
     echo $code;
 //    echo "</pre>";

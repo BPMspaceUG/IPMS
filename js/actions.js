@@ -133,4 +133,12 @@ $(document).ready(function () {
             }
         });
     });
+    //View Table
+    $('#view').click(function (event) {
+        event.preventDefault();
+        var table = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
+        var database = $('#sqlDatabases option:selected').text();
+        window.open('modules/TableCRUD.php?Database='+database+'&TableName='+table, '_blank');
+    });
+
 });
