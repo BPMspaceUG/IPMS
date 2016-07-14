@@ -65,9 +65,9 @@
         </select>
         <div class="row" id="sqlTables">
             <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
-            <div class="col-sm-1">
-                <button name="create" class="btn btn-danger" id="create">CREATE</button>
-            </div>
+        </div>
+        <div class="col-sm-1">
+            <button name="create" class="btn btn-danger" id="create">CREATE</button>
         </div>
 
         <!--            File String -->

@@ -48,7 +48,7 @@ $(document).ready(function () {
                         $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
                         $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul>');
                         $.each(tables, function (key, value) {
-                            $('#' + val.database).append('<li class="bpm-options"><input type="radio" name="' + val.database + '" class="' +
+                            $('#' + val.database).append('<li class="bpm-options"><input type="radio" name="' + val.database + '" class=""' +
                                 ' value="' + value.table + '">' +
                                 '<p class="bpm-db-table">' + value.table + '</p></li>');
                         });
@@ -113,9 +113,23 @@ $(document).ready(function () {
     $('#sqlDatabases').change(function () {
         var item = $(this);
         $('.bpm-active').removeClass('bpm-active');
-        $('#'+item.val()).addClass('bpm-active');
+        $('#' + item.val()).addClass('bpm-active');
     });
-    
+
     //Getting Table_Name code for selected table
-    
+    $('#create').click(function (event) {
+        event.preventDefault();
+        var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
+        // alert(name);
+        $.ajax({
+            url: 'modules/GenerateFile.php',
+            type: 'GET',
+            data: {'fName':name},
+            success: function (result) {
+                $('#bpm-code').empty();
+                $('#bpm-code').text(result);
+
+            }
+        });
+    });
 });

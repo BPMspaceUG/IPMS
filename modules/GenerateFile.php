@@ -13,8 +13,13 @@ function codeToString(){
 function replaceName($fName){
     $code = codeToString();
     $code = str_replace("TABLE_NAME", $fName, $code);
-    echo "<pre>";
+
+    $file = fopen('../generated files/'.$fName.'_RequestHandler.inc.php','w');
+    fwrite($file,$code);
+    fclose($file);
+
+//    echo "<pre>";
     echo $code;
-    echo "</pre>";
+//    echo "</pre>";
 
 }
