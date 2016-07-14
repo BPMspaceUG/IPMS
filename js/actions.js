@@ -128,6 +128,7 @@ $(document).ready(function () {
             success: function (result) {
                 $('#bpm-code').empty();
                 $('#bpm-code').text(result);
+                alert("New Files have been Successfully Generated at server");
 
             }
         });

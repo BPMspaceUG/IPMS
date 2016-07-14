@@ -37,18 +37,18 @@ class RequestHandler
 				return json_encode($return);
 				break;
    
-			case 'create_TABLE_NAME_2':
+			case 'create_TABLE_NAME':
 				return $this->add_TABLE_NAME($params["ALL_NECCESATRY_ATTRIBUTES"]);
 				break;
 				
-			case 'delete_TABLE_NAME_2':
-				return $this->del_TABLE_NAME($params["TABLE_NAME_2_Primary_KEY"]);
+			case 'delete_TABLE_NAME':
+				return $this->del_TABLE_NAME($params["TABLE_NAME_Primary_KEY"]);
 				break;
       
 			case 'update_TABLE_NAME':
 				$id = $params["TABLE_NAME_Primary_KEY"];
-				$res = $this->updateATTRIBUTE_1($id, $params["ATTRIBUTE_1"]);
-				$res += $this->updateATTRIBUTE_2($id, $params["ATTRIBUTE_2"]);
+				$res = $this->updateATTRIBUTE($id, $params["ATTRIBUTE"]);
+				$res += $this->updateATTRIBUTE($id, $params["ATTRIBUTE"]);
 				$res += $this->updateATTRIBUTE_3($id, $params["ATTRIBUTE_3"]);
 //				if ($res != Number_of Attributes) return ''; else return $res;
 				break;
@@ -68,27 +68,27 @@ class RequestHandler
 	private function get_TABLE_NAME_List() {
         $query = "SELECT 
 		primary_key,
-		attribute_1,
-		attribute_2,
+		attribute,
+		attribute,
 		attribute_3,
 	FROM
-		TABLE_NAME_2;";
+		TABLE_NAME;";
 		
 		$res = $this->db->query($query);
         $return['TABLE_NAME_List'] = getResultArray($res);
         return $return;
     }	
 
-	private function update_TABLE_NAME_attribute1($PRIMARY_KEY, $ATTRIBUTE_1) {
-    $query = "UPDATE TABLE_NAME_2 SET ATTRIBUTE_1 = ? WHERE Primary_key = ?;";
+	private function update_TABLE_NAME_attribute($PRIMARY_KEY, $ATTRIBUTE) {
+    $query = "UPDATE TABLE_NAME SET ATTRIBUTE = ? WHERE Primary_key = ?;";
     $stmt = $this->db->prepare($query); // prepare statement
     $stmt->bind_param("si", $name, $id); // bind params
     $result = $stmt->execute(); // execute statement
     return (!is_null($result) ? 1 : 0);
 	}
 	
-	private function update_TABLE_NAME_attribute2($PRIMARY_KEY, $ATTRIBUTE_2) {
-    $query = "UPDATE TABLE_NAME_2 SET ATTRIBUTE_2 = ? WHERE Primary_key = ?;";
+	private function update_TABLE_NAME_attribute2($PRIMARY_KEY, $ATTRIBUTE) {
+    $query = "UPDATE TABLE_NAME SET ATTRIBUTE = ? WHERE Primary_key = ?;";
     $stmt = $this->db->prepare($query); // prepare statement
     $stmt->bind_param("si", $name, $id); // bind params
     $result = $stmt->execute(); // execute statement
