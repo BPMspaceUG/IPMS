@@ -3,8 +3,8 @@
 /*uncomment this below */
 //    // session_destroy();
 //    if (empty ($_GET ["error_messages"])) {
-//        include_once '../phpSecureLogin/includes/db_connect.inc.php';
-//        include_once '../phpSecureLogin/includes/functions.inc.php';
+//        include_once '../../phpSecureLogin/includes/db_connect.inc.php';
+//        include_once '../../phpSecureLogin/includes/functions.inc.php';
 //
 //        // sec_session_start();
 //
