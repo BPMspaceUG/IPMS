@@ -66,8 +66,9 @@ if (!empty ($_GET ["error_messages"])) {
 }
 
 
-if((isset($_GET['Database']) && $_GET['Database'] != "Please choose database")
-    &&(isset($_GET['TableName']) && $_GET['TableName'] != 'undefined')){
+if ((isset($_GET['Database']) && $_GET['Database'] != "Please choose database")
+    && (isset($_GET['TableName']) && $_GET['TableName'] != 'undefined')
+) {
 
     $db = $_GET['Database'];
     $table = $_GET['TableName'];
@@ -78,27 +79,29 @@ if((isset($_GET['Database']) && $_GET['Database'] != "Please choose database")
     table($result);
     echo '</div>';
 
-}else{ ?>
+} else { ?>
     <h1>Please Select a Table and then comeback to view Data</h1>
     <script type="text/javascript">setTimeout("window.close();", 3000);</script>
-<?php
+    <?php
 }
 
 /*Function Definitions*/
-function table( $result ) {
-    $result->fetch_array( MYSQLI_ASSOC );
+function table($result)
+{
+    $result->fetch_array(MYSQLI_ASSOC);
     echo '<table class="table table-striped">';
-    tableHead( $result );
-    tableBody( $result );
+    tableHead($result);
+    tableBody($result);
     echo '</table>';
 }
 
-function tableHead( $result ) {
+function tableHead($result)
+{
     echo '<thead>';
-    foreach ( $result as $x ) {
+    foreach ($result as $x) {
         echo '<tr>';
-        foreach ( $x as $k => $y ) {
-            echo '<th>' . ucfirst( $k ) . '</th>';
+        foreach ($x as $k => $y) {
+            echo '<th>' . ucfirst($k) . '</th>';
         }
         echo '</tr>';
         break;
@@ -106,17 +109,19 @@ function tableHead( $result ) {
     echo '</thead>';
 }
 
-function tableBody( $result ) {
+function tableBody($result)
+{
     echo '<tbody>';
-    foreach ( $result as $x ) {
+    foreach ($result as $x) {
         echo '<tr>';
-        foreach ( $x as $y ) {
+        foreach ($x as $y) {
             echo '<td>' . $y . '</td>';
         }
         echo '</tr>';
     }
     echo '</tbody>';
 }
+
 ?>
 <div class="container well">
     BPMspace IPMS using <a href="http://getbootstrap.com/" target="_blank">Bootstrap</a>.
