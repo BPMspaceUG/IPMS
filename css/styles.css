@@ -69,12 +69,12 @@ small{
       margin: 30px 0 0;
 
 }
-#code:hover .bpm-copy{
+#code:hover .bpm-copy-1,.bpm-copy-2{
       top: 0px;
       /*display: block;*/
       transition: 0.3s;
 }
-.bpm-copy{
+.bpm-copy-1, .bpm-copy-2{
       position: absolute;
       /*display: none;*/
       top: -33px;

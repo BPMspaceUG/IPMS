@@ -7,7 +7,8 @@
 <script type="text/javascript" src="libraries/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libraries/js/clipboard.min.js"></script>
 <script>    // init clipboard
-    new Clipboard('.bpm-copy');
+    new Clipboard('.bpm-copy-1');
+    new Clipboard('.bpm-copy-2');
 </script>
 <script type="text/javascript" src="js/actions.js"></script>
 

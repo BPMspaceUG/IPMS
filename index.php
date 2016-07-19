@@ -66,18 +66,25 @@
         <div class="row" id="sqlTables">
             <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
         </div>
-        <div class="col-sm-3">
-            <button name="create" class="btn btn-danger" id="create">CREATE</button>
+        <div class="col-sm-6">
+            <button name="create" class="btn btn-danger" id="create-1">CREATE Request Handler File</button>
+            <button name="create" class="btn btn-danger" id="create-2">CREATE Table Modal File</button>
             <button name="view" id="view" class="btn btn-info">View Data-set</button>
         </div>
 
         <!--            File String -->
         <div class="row">
             <div class="col-md-12" id="code">
-                <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
+                <button class="btn btn-default bpm-copy-1" name="copy" data-clipboard-target="#bpm-code-1" >Copy
                     All</button>
                 <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
-                    50px 0 0; margin:0 0 50px;" class="bpm-textarea" id="bpm-code">
+                    50px 0 0; margin:0 0 50px;" class="bpm-textarea-1" id="bpm-code-1">
+                    Currently Empty
+                </textarea>
+                <button class="btn btn-default bpm-copy-2" name="copy" data-clipboard-target="#bpm-code-2" >Copy
+                    All</button>
+                <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
+                    50px 0 0; margin:0 0 50px;" class="bpm-textarea-2" id="bpm-code-2">
                     Currently Empty
                 </textarea>
             </div>
