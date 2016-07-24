@@ -20,7 +20,6 @@
 
 
     <?php
-    /*uncomment this below */
     //    // session_destroy();
     //    if (empty ($_GET ["error_messages"])) {
     //        include_once '../phpSecureLogin/includes/db_connect.inc.php';
@@ -36,9 +35,7 @@
     //    } else {
     //        $logged = 'out';
     //    }
-    //
-
-    ?>
+    //    ?>
 </head>
 <body>
 <div class="container" style="background-color:#003296 ">

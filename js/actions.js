@@ -117,44 +117,20 @@ $(document).ready(function () {
     });
 
     //Getting Table_Name code for selected table
-    $('#create-1').click(function (event) {
+    $('#create').click(function (event) {
         event.preventDefault();
         var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
         // alert(name);
         $.ajax({
-            url: 'modules/GenerateRequestHandler.php',
+            url: 'modules/GenerateFile.php',
             type: 'GET',
             data: {'fName':name},
             success: function (result) {
-                $('#bpm-code-1').empty();
-                $('#bpm-code-1').text(result);
-                alert("New Files have been Successfully Generated at server");
-
-            }
-        });
-    });//Getting Table_Name code for selected table
-    $('#create-2').click(function (event) {
-        event.preventDefault();
-        var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
-        // alert(name);
-        $.ajax({
-            url: 'modules/GenerateModal.php',
-            type: 'GET',
-            data: {'fName':name},
-            success: function (result) {
-                $('#bpm-code-2').empty();
-                $('#bpm-code-2').text(result);
+                $('#bpm-code').empty();
+                $('#bpm-code').text(result);
                 alert("New Files have been Successfully Generated at server");
 
             }
         });
     });
-    //View Table
-    $('#view').click(function (event) {
-        event.preventDefault();
-        var table = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
-        var database = $('#sqlDatabases option:selected').text();
-        window.open('modules/TableCRUD.php?Database='+database+'&TableName='+table, '_blank');
-    });
-
 });

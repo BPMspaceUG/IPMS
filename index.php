@@ -7,7 +7,7 @@
             <label for="sqlServer" class="col-sm-2 form-control-label">MySQL Server</label>
             <div class="col-sm-2">
                 <input type="text" class="form-control" autocomplete="off" name="host" id="sqlServer"
-                       placeholder="127.0.0.1" value="127.0.0.1">
+                       placeholder="localhost" value="localhost">
             </div>
             <label for="sqlPort" class="col-sm-2 form-control-label">MySQL Port</label>
             <div class="col-sm-2">
@@ -30,8 +30,8 @@
         <div class="form-group row">
             <label for="username" class="col-sm-2 form-control-label">username</label>
             <div class="col-sm-2">
-                <input type="text" autocomplete="off" value="root" class="form-control" id="username" name="user"
-                       placeholder="root">
+                <input type="text" autocomplete="off"  class="form-control" id="username" name="user"
+                       placeholder="root" value="root">
             </div>
             <label for="password" class="col-sm-2 form-control-label">password</label>
             <div class="col-sm-2">
@@ -61,30 +61,22 @@
     <div class="row">
         <label for="sqlDatabases" class="col-sm-2" style="padding-left: 2.4%;">Databases</label>
         <select class="form-control" id="sqlDatabases">
-            <option value="">Please choose database</option>
+            <option value="">Select a database from dropdown</option>
         </select>
         <div class="row" id="sqlTables">
             <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
         </div>
-        <div class="col-sm-6">
-            <button name="create" class="btn btn-danger" id="create-1">CREATE Request Handler File</button>
-            <button name="create" class="btn btn-danger" id="create-2">CREATE Table Modal File</button>
-            <button name="view" id="view" class="btn btn-info">View Data-set</button>
+        <div class="col-sm-1">
+            <button name="create" class="btn btn-danger" id="create">CREATE</button>
         </div>
 
         <!--            File String -->
         <div class="row">
             <div class="col-md-12" id="code">
-                <button class="btn btn-default bpm-copy-1" name="copy" data-clipboard-target="#bpm-code-1" >Copy
+                <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
                     All</button>
                 <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
-                    50px 0 0; margin:0 0 50px;" class="bpm-textarea-1" id="bpm-code-1">
-                    Currently Empty
-                </textarea>
-                <button class="btn btn-default bpm-copy-2" name="copy" data-clipboard-target="#bpm-code-2" >Copy
-                    All</button>
-                <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
-                    50px 0 0; margin:0 0 50px;" class="bpm-textarea-2" id="bpm-code-2">
+                    50px 0 0; margin:0 0 50px;" class="bpm-textarea" id="bpm-code">
                     Currently Empty
                 </textarea>
             </div>

@@ -1,32 +1,9 @@
 
-<?php
-/*uncomment this below */
-//    // session_destroy();
-//    if (empty ($_GET ["error_messages"])) {
-//        include_once '../../phpSecureLogin/includes/db_connect.inc.php';
-//        include_once '../../phpSecureLogin/includes/functions.inc.php';
-//
-//        // sec_session_start();
-//
-//        if (login_check($mysqli) == true) {
-//            $logged = 'in';
-//        } else {
-//            $logged = 'out';
-//        }
-//    } else {
-//        $logged = 'out';
-//    }
-//
-/* Comment the 3 lines below */
-define("HOST", "localhost"); //change these
-define("USER", "root"); // to required DB
-define("PASSWORD", ""); //connection
+<?php 
 
+include_once('../../DB_config/login_credentials_DB_bpmspace_ipms.inc.php');
 
-define("DATABASE", "bpmspace_ipms_v1");
-define("DB_TBL", "connections");
-
-prepareLocalDbAndTables();
+//prepareLocalDbAndTables();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -35,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $_POST['user'];
         $port = $_POST['port'];
 
-        $con = new mysqli(HOST, USER, PASSWORD, DATABASE);
+        $con = new mysqli(DB_HOST, DB_USER, DB_PSWD, DB_NAME);
         if ($con->connect_error) {
             echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
             die ("\nCould not connect to db. Further Script processing terminated ");
@@ -77,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if (isset($_GET['id'])) {
-        $con = new mysqli(HOST, USER, PASSWORD, DATABASE);
+        $con = new mysqli(DB_HOST, DB_USER, DB_PSWD, DB_NAME);
         if ($con->connect_error) {
             echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
             die ("\nCould not connect to db. Further Script processing terminated ");
@@ -90,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
 //        header('Content-Type: application/json');
 
-        $con = new mysqli(HOST, USER, PASSWORD, DATABASE);
+        $con = new mysqli(DB_HOST, DB_USER, DB_PSWD, DB_NAME);
         if ($con->connect_error) {
             echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
             die ("\nCould not connect to db. Further Script processing terminated ");
@@ -122,13 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function prepareLocalDbAndTables()
 {
 
-    $con = new mysqli(HOST, USER, PASSWORD, DATABASE);
+    $con = new mysqli(DB_HOST, DB_USER, DB_PSWD);
     if ($con->connect_error) {
         echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
         die ("\nCould not connect to db. Further Script processing terminated ");
     }
 
-    $createDbQuery = "CREATE DATABASE IF NOT EXISTS " . DATABASE;
+    $createDbQuery = "CREATE DATABASE IF NOT EXISTS " . DB_NAME;
     $createTableQuery =
         "CREATE TABLE IF NOT EXISTS " . DB_TBL
         . "(id int not null auto_increment primary key, dbhost varchar(45), dbuser varchar(140), dbport int)";
@@ -136,10 +113,11 @@ function prepareLocalDbAndTables()
     // create db
     mysqli_query($con, $createDbQuery);
 
-    mysqli_select_db($con, DATABASE);
+    mysqli_select_db($con, DB_NAME);
 
     // create table
     mysqli_query($con, $createTableQuery);
 
     $con->close();
 }
+?>
