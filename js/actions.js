@@ -119,17 +119,20 @@ $(document).ready(function () {
     //Getting Table_Name code for selected table
     $('#create').click(function (event) {
         event.preventDefault();
-        var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
-        // alert(name);
+        var name    = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
+		var db_name = $('#sqlDatabases option:selected').text();
+		var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
+		console.log(post_data);
         $.ajax({
             url: 'modules/GenerateFile.php',
-            type: 'GET',
-            data: {'fName':name},
+            type: 'POST',
+            data: post_data,
             success: function (result) {
-                $('#bpm-code').empty();
-                $('#bpm-code').text(result);
-                alert("New Files have been Successfully Generated at server");
-
+                console.log(result);
+				$('#bpm-code').empty();
+				$('#bpm-code').html('<pre></pre>');
+                $('#bpm-code pre').text(result);
+                //alert("New Files have been Successfully Generated at server");
             }
         });
     });

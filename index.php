@@ -75,10 +75,10 @@
             <div class="col-md-12" id="code">
                 <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
                     All</button>
-                <textarea readonly style="width: 100%; min-height: 500px; resize: none; padding:
+                <div readonly style="width: 100%; min-height: 500px; resize: none; padding:
                     50px 0 0; margin:0 0 50px;" class="bpm-textarea" id="bpm-code">
                     Currently Empty
-                </textarea>
+                </div>
             </div>
         </div>
     </div>
