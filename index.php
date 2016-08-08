@@ -1,4 +1,6 @@
-<?php include_once '_header.inc.php'; ?>
+<?php include_once '_header.inc.php';
+//	print_r($_SERVER);
+ ?>
 <body>
 <div class="container" style="padding-top: 30px">
     <form class="bpm-server-connect" action="modules/ConnectDB.php">

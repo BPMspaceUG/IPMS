@@ -3,6 +3,7 @@
  * Fetching all parameters
  */
 $params = $_REQUEST;
+//print_r($_SERVER);
 
 /*
  * Creating a new Connection from given parameters
