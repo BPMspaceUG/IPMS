@@ -60,6 +60,33 @@
 
 	$output_header .= "<!--  header ends here -->\n\n";
 	
+	$output_DB_connect = "<!--  DB_connect starts here  -->\n\n";
+	
+	$output_DB_connect .= "<!-- include_once '../DB_config/login_credentials_DB_bpmspace_"."$db_name".".inc.php';-->\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	$output_DB_connect .= "\n";
+	
+	$output_DB_connect .= "<!--  DB_connect here -->\n\n";
+	
 	$output_RequestHandler = "<!--  Request Handler starts here  -->\n\n";
 	
 	$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '$table_name' AND TABLE_SCHEMA = '$db_name'";
@@ -205,12 +232,12 @@
 	$output_content .= "<div class=\"container\">\n";
 	$output_content .= "\t\t<div class=\"row\">\n";
 	
-	$output_content .="\t\t<div class=\"col-md-12 tab-content\" ng-controller=\"navCtrl\" id=\"bpm-content\">\n";
+	$output_content .="\t\t<div class=\"col-md-12 tab-content\" id=\"bpm-content\">\n";
 		
 	$i = 0;
 	foreach($array_1 as $value){
 				$output_content .= "\t\t\t\t<div class=\"tab-pane";
-				if ($i == 0) {$output_content .= " active";}
+				if ($i == 3) {$output_content .= " active";}
 				$output_content .= "\" id=\"".$value['TABLE_NAME']."\">\n";
 				$output_content .= "\t\t\t\t<h2>".$value['TABLE_NAME']."</h2>\n";
 				$output_content .= "\t\t\t\t".$value['TABLE_NAME']."</div>\n";
@@ -267,7 +294,8 @@
 	$output_footer .= "<!--  footer ends here -->\n\n";
 		
 	echo $output_header;
-	//echo $output_RequestHandler;
+	echo $output_DB_connect;
+	echo $output_RequestHandler;
 	echo $output_menu;
 	echo $output_content;
 	echo $output_footer;
