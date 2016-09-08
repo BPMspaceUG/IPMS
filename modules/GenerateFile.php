@@ -1,39 +1,165 @@
 <?php
+	// put parameters into variables
 	$db_server = $_REQUEST['host'].':'.$_REQUEST['port'];
 	$db_user = $_REQUEST['user'];
 	$db_pass = $_REQUEST['pwd'];
-	
-	$table_name = $_REQUEST['table_name'];
 	$db_name = $_REQUEST['db_name'];
 	
+	$DEBUG = FALSE;
+	if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on' )) {
+		$DEBUG = TRUE;
+		ini_set('display_errors', 1);
+		error_reporting(E_ALL);
+		};
+	
+	//open DB connection or die
 	$con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
 	if($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');}
 	
-	$query = "SELECT distinct TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name'";
+	// Get all table names in the selecetd DB from INFORMATION_SCHEMA
 	
+	$query = "SELECT distinct TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name'";
 	if(!$result = $con->query($query)){
     die('There was an error running the query [' . $con->error . ']');}
+	$all_table_names = $result->fetch_all(MYSQLI_ASSOC);
 	
-	$array_1 = $result->fetch_all(MYSQLI_ASSOC);
+	if ($DEBUG) var_dump($all_table_names);
+		
+	// create BPMspace LIAM Header
+	$output_LiamHeader = "<!-- LIAM header starts here -->\n";
+	$output_LiamHeader .= "\t<?php\n";
+	$output_LiamHeader .= "\t// comment if you do NOT want to use BPMspace LIAM for identity and access management\n";
+	$output_LiamHeader .= "\t\tinclude_once '../phpSecureLogin/includes/db_connect.inc.php';\n";
+	$output_LiamHeader .= "\t\tinclude_once '../phpSecureLogin/includes/functions.inc.php';\n";
+	$output_LiamHeader .= "\n\tsec_session_start();\n\n";
+  	$output_LiamHeader .= "\tif(login_check(\$mysqli) != true) {\n";
+    $output_LiamHeader .= "\t\theader(\"Location: ../index.php?error_messages='You are not logged in!'\");\n";
+    $output_LiamHeader .= "\t\texit();\n";
+	$output_LiamHeader .= "\t}\n";
+	$output_LiamHeader .= "\telse {\n";
+    $output_LiamHeader .= "\t\t\$logged = 'in';\n";
+	$output_LiamHeader .= "\t}\n";
+	$output_LiamHeader .= "\t?>\n";
+	$output_LiamHeader .= "<!-- LIAM header ends here -->\n\n";
 	
-
+	//create DEBUG function
+	
+	$output_DebugHeader = "<!-- DEBUG function starts here -->\n";
+	$output_DebugHeader .= "\t<?php\n";
+	$output_DebugHeader .= "\t\$DEBUG = FALSE;\n";
+	$output_DebugHeader .= "\tif  (!empty(\$_GET) && !empty(\$_GET[\"debug\"]) && (\$_GET[\"debug\"] == 'on' )) {\n";
+	$output_DebugHeader .= "\t\t\$DEBUG = TRUE;\n";
+	$output_DebugHeader .= "\t\tini_set('display_errors', 1);\n";
+	$output_DebugHeader .= "\t\terror_reporting(E_ALL);\n";
+	$output_DebugHeader .= "\t}\n";
+	$output_DebugHeader .= "\t?>\n";
+	$output_DebugHeader .= "<!-- DEBUG function ends here -->\n\n";
+		
+	//create Request Handler class for each table
+	
+	$output_RequestHandler = "<!-- START return just data from the DB here -->\n";
+	$output_RequestHandler .="<!--  Request Handler starts here  -->\n";
+	$output_RequestHandler .="<!--  Process Parameters starts here  -->\n";
+	$output_RequestHandler .= "\t<?php\n";
+	$output_RequestHandler .= "\t\$command=\"\";\n";
+	$output_RequestHandler .= "\t\$parameter=\"\";\n";
+	$output_RequestHandler .= "\tif (!empty(\$_GET) &&  \$_GET[\"data\"] == 'on' ) {\n";
+	$output_RequestHandler .= "\t\tif (!empty(\$_GET[\"cmd\"])) {\n";
+	$output_RequestHandler .= "\t\t\t\$command=\$_GET[\"cmd\"];\n";
+	$output_RequestHandler .= "\t\t\t\$parameter = \"\";\n";
+	$output_RequestHandler .= "\t\t\tif (!empty(\$_GET[\"param\"])){\$parameter=\$_GET[\"param\"];}\n";
+	$output_RequestHandler .= "\t\t}\n";
+	$output_RequestHandler .= "\telse {exit;}\n";
+	$output_RequestHandler .= "\t}\n";
+	$output_RequestHandler .= "\t?>\n";
+	$output_RequestHandler .="<!--  Process Parameters ends here  -->\n";
+	
+	$output_RequestHandler .="<!--  RequestHandler Class Definition starts here  -->\n";
+	
+	$output_RequestHandler .= "<?php\n";
+	$output_RequestHandler .= "\tclass RequestHandler {\n";
+	$output_RequestHandler .= "\t\tprivate \$db;\n";
+	$output_RequestHandler .= "\t\tpublic function __construct() {\n";
+	$output_RequestHandler .= "\t\t\$config['db']['host'] = \"$db_server\";\n";
+	$output_RequestHandler .= "\t\t\$config['db']['user'] = \"$db_user\";\n";
+	$output_RequestHandler .= "\t\t\$config['db']['password'] = \"$db_pass\";\n";
+	$output_RequestHandler .= "\t\t\$config['db']['database'] = \"$db_name\";\n";
+	$output_RequestHandler .= "\t\t/* include_once '../DB_config/login_credentials_DB_bpmspace_sample.inc.php';*/\n\n";
+	$output_RequestHandler .= "\t\t\$db = new mysqli(\$config['db']['host'], \$config['db']['user'], \$config['db']['password'], \$config['db']['database']);\n";
+	$output_RequestHandler .= "\t\t/* check connection */\n";
+	$output_RequestHandler .= "\t\tif(\$db->connect_errno){\n";
+	$output_RequestHandler .= "\t\t\tprintf(\"Connect failed: %s\", mysqli_connect_error());\n";
+	$output_RequestHandler .= "\t\t\texit();\n";
+	$output_RequestHandler .= "\t\t\t}\n";
+	$output_RequestHandler .= "\t\t\$db->query(\"SET NAMES utf8\");\n";
+	$output_RequestHandler .= "\t\t\$this->db = \$db;\n";
+	$output_RequestHandler .= "\t}\n\n";
+	$output_RequestHandler .= "\tprivate function getResultArray(\$result) {\n";
+	$output_RequestHandler .= "\t\t\$results_array = array();\n";
+	$output_RequestHandler .= "\t\tif (!\$result) return false;\n";
+	$output_RequestHandler .= "\t\twhile (\$row = \$result->fetch_assoc()) {\n";
+	$output_RequestHandler .= "\t\t\t\$results_array[] = \$row;\n";
+	$output_RequestHandler .= "\t\t}\n";
+	$output_RequestHandler .= "\t\treturn json_encode(\$results_array);\n";
+	$output_RequestHandler .= "\t}\n\n";
+	
+	foreach ($all_table_names as $table) { //for eaceh tabel of the sected DB generate CRUD functions
+	
+		$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$table["TABLE_NAME"]."' AND TABLE_SCHEMA = '$db_name'";
+		if(!$result = $con->query($query)){
+		die('There was an error running the query [' . $con->error . ']');}
+		$columns_info = $result->fetch_all(MYSQLI_ASSOC);
+				
+		$output_RequestHandler .= "\t// Table \"" .$table["TABLE_NAME"]. "\" in database " . $db_name . " has ". $result->num_rows . " coloumns. \n";
+		
+		$output_RequestHandler .= "\t// \tCOLUMN_NAME[ORDINAL_POSITION]:\tvalue\tCOLUMN_TYPE\tCOLUMN_KEY\n";
+		foreach($columns_info as $value){
+			$output_RequestHandler .= "\t// \tCOLUMN_NAME[" . $value['ORDINAL_POSITION'] . "]:\t\t" . $value['COLUMN_NAME']. "\t\t" .$value['COLUMN_TYPE']. "\t\t" .$value['COLUMN_KEY']."\n";
+		}
+		$output_RequestHandler .= "\n";
+		
+		$prim_key ="";
+		//foreach ($prim_key
+		
+		if ($columns_info[0]['COLUMN_KEY'] != "PRI"){
+		$output_RequestHandler .= "\t//WARNING - FIRST Column not PRIMARY KEY \n";
+		}
+		
+		$output_RequestHandler .= "\t\tpublic function get_$table[TABLE_NAME]_list(\$limit = \"100\"){\n";
+		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] LIMIT \".\$limit.\";\");\n";
+		$output_RequestHandler .= "\t\t\treturn \$this->getResultArray(\$query);\n";								
+		$output_RequestHandler .= "\t\t}\n";
+		  		  
+		$output_RequestHandler .= "\t\tpublic function get_$table[TABLE_NAME]_element(\$id = \"\"){\n";
+		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] where [COLUMN_NAME] = \".\$id.\";\");\n";
+		$output_RequestHandler .= "\t\t\treturn \$this->getResultArray(\$query);\n";
+		$output_RequestHandler .= "\t\t}\n\n";
+		
+	} //End loop for each tabel
+		$output_RequestHandler .="\t}\n";
+		
+		$output_RequestHandler .="\t\$RH = new RequestHandler();\n";
+		$output_RequestHandler .="\tif ( \$command != \"\") {\n";
+		$output_RequestHandler .="\t\tif ( \$parameter != \"\") {\n";
+		$output_RequestHandler .="\t\t\t\$result = \$RH->\$command(\$parameter);\n";
+		$output_RequestHandler .="\t\t}\n";
+		$output_RequestHandler .="\t\telse {\n";
+		$output_RequestHandler .="\t\t\t\$result = \$RH->\$command();\n\t\t}\n";
+		$output_RequestHandler .="\techo \$result;\n";
+		$output_RequestHandler .="\texit;\n";
+		$output_RequestHandler .="\t}";
+		$output_RequestHandler .="\n?>\n";
+		$output_RequestHandler .="<!--  Class Definition ends here  -->\n";
+	
+		$output_RequestHandler .= "<!-- Request Handler ends here  -->\n\n";
+		
+		$output_RequestHandler .= "<!-- END return just data from the DB here -->\n";
+		
+	// end create Request Handler Class
+	
 	$output_header = "<!DOCTYPE html>\n";
-	$output_header .= "<!-- header starts here -->\n\n";
-	$output_header .= "<?php\n";
-	$output_header .= "\t// comment if you do NOT want to use LIAM for identity and access management\n";
-	$output_header .= "\t\tinclude_once '../phpSecureLogin/includes/db_connect.inc.php';\n";
-	$output_header .= "\t\tinclude_once '../phpSecureLogin/includes/functions.inc.php';\n";
-	$output_header .= "\n\tsec_session_start();\n\n";
-  	$output_header .= "\tif(login_check(\$mysqli) != true) {\n";
-    $output_header .= "\t\theader(\"Location: ../index.php?error_messages='You are not logged in!'\");\n";
-    $output_header .= "\t\texit();\n";
-	$output_header .= "\t}\n";
-	$output_header .= "\telse {\n";
-    $output_header .= "\t\t\$logged = 'in';\n";
-	$output_header .= "\t}\n";
-	$output_header .= "\t// */ end liam header \n";
-	$output_header .= "?>\n";
+
 	
 	
 	$output_header .= "<html xmlns=\"http://www.w3.org/1999/xhtml\" ng-app=\""."$db_name"."App\">\n";
@@ -60,123 +186,7 @@
 
 	$output_header .= "<!--  header ends here -->\n\n";
 	
-	$output_DB_connect = "<!--  DB_connect starts here  -->\n\n";
-	
-	$output_DB_connect .= "<!-- include_once '../DB_config/login_credentials_DB_bpmspace_"."$db_name".".inc.php';-->\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	$output_DB_connect .= "\n";
-	
-	$output_DB_connect .= "<!--  DB_connect here -->\n\n";
-	
-	$output_RequestHandler = "<!--  Request Handler starts here  -->\n\n";
-	
-	$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '$table_name' AND TABLE_SCHEMA = '$db_name'";
-	
-	if(!$result = $con->query($query)){
-    die('There was an error running the query [' . $con->error . ']');}
-	
-	$array_2 = $result->fetch_all(MYSQLI_ASSOC);
-	
-	
-	$output_RequestHandler .= "<!-- Table \"" . $table_name . "\" in database " . $db_name . " has ". $result->num_rows . " coloumns. -->\n";
-	
-	$output_RequestHandler .= "<!-- \tCOLUMN_NAME[ORDINAL_POSITION]:\tvalue\tCOLUMN_TYPE\tCOLUMN_KEY-->\n";
-	foreach($array_2 as $value){
-		$output_RequestHandler .= "<!-- \tCOLUMN_NAME[" . $value['ORDINAL_POSITION'] . "]:\t\t" . $value['COLUMN_NAME']. "\t\t" .$value['COLUMN_TYPE']. "\t\t" .$value['COLUMN_KEY']."-->\n";
-	}
-	$output_RequestHandler .= "\n\r\n\r";
-	//print_r ($array_2);
-	
-	if ($array_2[0]['COLUMN_KEY'] != "PRI"){
-	$output_RequestHandler .= "<!--WARNING - FIRST Column not PRIMARY KEY -->\n";
-	}
-	
-	
-	$output_RequestHandler .= "<?php\n";
-	$output_RequestHandler .= "function getResultArray(\$result) {\n";
-	$output_RequestHandler .= "\t\$results_array = array();\n";
-	$output_RequestHandler .= "\tif (!\$result) return false;\n";
-	$output_RequestHandler .= "\twhile (\$row = \$result->fetch_assoc()) {\n";
-	$output_RequestHandler .= "\t\t\$results_array[] = \$row;\n";
-	$output_RequestHandler .= "\t}\n";
-	$output_RequestHandler .= "\treturn \$results_array;\n";
-	$output_RequestHandler .= "}\n";
-
-	$output_RequestHandler .= "class RequestHandler {\n";
-	$output_RequestHandler .= "private \$db;\n";
-
-	$output_RequestHandler .= "public function __construct() {\n";
-	$output_RequestHandler .= "\t// Get global variables here\n";
-	$output_RequestHandler .= "\tglobal \$DB_host;\n";
-	$output_RequestHandler .= "\tglobal \$DB_user;\n";
-	$output_RequestHandler .= "\tglobal \$DB_pass;\n";
-	$output_RequestHandler .= "\tglobal \$DB_name;\n";
-
-	$output_RequestHandler .= "\t\$db = new mysqli(\$DB_host, \$DB_user, \$DB_pass, \$DB_name);\n";
-	$output_RequestHandler .= "\t/* check connection */\n";
-	$output_RequestHandler .= "\tif(\$db->connect_errno){\n";
-	$output_RequestHandler .= "\t\tprintf(\"Connect failed: %s\", mysqli_connect_error());\n";
-	$output_RequestHandler .= "\t\texit();\n";
-	$output_RequestHandler .= "\t}\n";
-	$output_RequestHandler .= "\t\$db->query(\"SET NAMES utf8\");\n";
-	$output_RequestHandler .= "\t\$this->db = \$db;\n";
-	$output_RequestHandler .= "}\n\n";
-	
-	$output_RequestHandler .= "\tpublic function handle(\$command, \$params) {\n";
-    $output_RequestHandler .= "\tswitch(\$command) {\n";
-
-	$output_RequestHandler .= "\t\tcase " . $table_name . ":\n";
-	$output_RequestHandler .= "\t\t\t\$return = \$this->get_" . $table_name . "_List();\n";
-	$output_RequestHandler .= "\t\t\treturn json_encode(\$return);\n";
-	$output_RequestHandler .= "\t\t\tbreak;\n";
-   
-	$output_RequestHandler .= "\t\tcase'create_" . $table_name . "':\n";
-	$output_RequestHandler .= "\t\t\treturn \$this->add_" . $table_name . "(\$params[\"ALL_NECCESATRY_ATTRIBUTES\"]);\n";
-	$output_RequestHandler .= "\t\t\tbreak;\n";
-				
-	$output_RequestHandler .= "\t\tcase 'delete_" . $table_name . "':\n";
-	$output_RequestHandler .= "\t\t\treturn \$this->del_" . $table_name . "(\$params[\"" . $array_2[0]['COLUMN_NAME'] . "\"]);\n";
-	$output_RequestHandler .= "\t\t\tbreak;\n";
-    
-	$output_RequestHandler .= "\t\tcase 'update_" . $table_name . "':\n";
-	$output_RequestHandler .= "\t\t\t\$id = \$params[\"TABLE_NAME_Primary_KEY\"];\n";
-	$output_RequestHandler .= "\t\t\t\$res = \$this->updateATTRIBUTE(\$id, \$params[\"ATTRIBUTE\"]);\n";
-	$output_RequestHandler .= "			\$res += \$this->updateATTRIBUTE(\$id, \$params[\"ATTRIBUTE\"]);\n";
-	$output_RequestHandler .= "			\$res += \$this->updateATTRIBUTE_3(\$id, \$params[\"ATTRIBUTE_3\"]);\n";
-	$output_RequestHandler .= "\t\tif (\$res != ". $result->num_rows . ") return ''; else return \$res;\n";
-	$output_RequestHandler .= "\t\tbreak;\n";
-
-	$output_RequestHandler .= "\t\tdefault:\n";
-	$output_RequestHandler .= "\t\t\treturn \"\"; // empty string\n";
-	$output_RequestHandler .= "\t\t\texit;\n";
-	$output_RequestHandler .= "\t\t\tbreak;\n";
-    $output_RequestHandler .= "\t\t}\n";
-    $output_RequestHandler .= "\t}\n";
-    $output_RequestHandler .= "}\n";
-	
-	$output_RequestHandler .= "\n?>\n";
-	
-	$output_RequestHandler .= "<!-- Request Handler ends here  -->\n\n";
-		
+			
 	$output_menu = "<!--  body menu starts here -->\n\n";
 	
 	$output_menu .= "<body ng-controller=\""."$db_name"."Ctrl\">\n";
@@ -212,7 +222,7 @@
 	$output_menu .= "\t<div class=\"container\">\n";
 	$output_menu .= "\t\t<ul class=\"nav nav-tabs\" id=\"bpm-menu\">\n";
 	
-	foreach($array_1 as $value){
+	foreach($all_table_names as $value){
 		$output_menu .= "\t\t\t<li><a title=\"".$value['TABLE_NAME']."\" href=\"#".$value['TABLE_NAME']."\" data-toggle=\"tab\"><i class=\"fa fa-circle-o\"></i> ".$value['TABLE_NAME']."</a></li>\n";
 	}
 	
@@ -235,7 +245,7 @@
 	$output_content .="\t\t<div class=\"col-md-12 tab-content\" id=\"bpm-content\">\n";
 		
 	$i = 0;
-	foreach($array_1 as $value){
+	foreach($all_table_names as $value){
 				$output_content .= "\t\t\t\t<div class=\"tab-pane";
 				if ($i == 3) {$output_content .= " active";}
 				$output_content .= "\" id=\"".$value['TABLE_NAME']."\">\n";
@@ -292,13 +302,14 @@
 	$output_footer .= "\n\n";
 
 	$output_footer .= "<!--  footer ends here -->\n\n";
-		
-	echo $output_header;
-	echo $output_DB_connect;
+	
+	echo $output_LiamHeader;
+	echo $output_DebugHeader;
 	echo $output_RequestHandler;
-	echo $output_menu;
-	echo $output_content;
-	echo $output_footer;
+	//echo $output_header;
+	//echo $output_menu;
+	//echo $output_content;
+	//echo $output_footer;
 	
 
 ?>
