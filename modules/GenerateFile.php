@@ -27,8 +27,8 @@
 	if ($DEBUG) var_dump($all_table_names);
 		
 	// create BPMspace LIAM Header
-	$output_LiamHeader = "<!-- LIAM header starts here -->\n";
-	$output_LiamHeader .= "\t<?php\n";
+	$output_LiamHeader = "<?php\n";
+	$output_LiamHeader .= "//LIAM header starts here\n";
 	$output_LiamHeader .= "\t// comment if you do NOT want to use BPMspace LIAM for identity and access management\n";
 	$output_LiamHeader .= "\t\tinclude_once '../phpSecureLogin/includes/db_connect.inc.php';\n";
 	$output_LiamHeader .= "\t\tinclude_once '../phpSecureLogin/includes/functions.inc.php';\n";
@@ -40,44 +40,42 @@
 	$output_LiamHeader .= "\telse {\n";
     $output_LiamHeader .= "\t\t\$logged = 'in';\n";
 	$output_LiamHeader .= "\t}\n";
-	$output_LiamHeader .= "\t?>\n";
-	$output_LiamHeader .= "<!-- LIAM header ends here -->\n\n";
+	$output_LiamHeader .= "//LIAM header ends here\n";
+	$output_LiamHeader .= "?>\n\n";
 	
 	//create DEBUG function
 	
-	$output_DebugHeader = "<!-- DEBUG function starts here -->\n";
-	$output_DebugHeader .= "\t<?php\n";
+	$output_DebugHeader = "<?php\n";
+	$output_DebugHeader .= "//DEBUG function starts here\n";
 	$output_DebugHeader .= "\t\$DEBUG = FALSE;\n";
 	$output_DebugHeader .= "\tif  (!empty(\$_GET) && !empty(\$_GET[\"debug\"]) && (\$_GET[\"debug\"] == 'on' )) {\n";
 	$output_DebugHeader .= "\t\t\$DEBUG = TRUE;\n";
 	$output_DebugHeader .= "\t\tini_set('display_errors', 1);\n";
 	$output_DebugHeader .= "\t\terror_reporting(E_ALL);\n";
 	$output_DebugHeader .= "\t}\n";
-	$output_DebugHeader .= "\t?>\n";
-	$output_DebugHeader .= "<!-- DEBUG function ends here -->\n\n";
-		
+	$output_DebugHeader .= "//DEBUG function ends here\n";
+	$output_DebugHeader .= "?>\n\n";
+	
 	//create Request Handler class for each table
 	
-	$output_RequestHandler = "<!-- START return just data from the DB here -->\n";
-	$output_RequestHandler .="<!--  Request Handler starts here  -->\n";
-	$output_RequestHandler .="<!--  Process Parameters starts here  -->\n";
-	$output_RequestHandler .= "\t<?php\n";
+	$output_RequestHandler = "<?php\n";
+	$output_RequestHandler .= "// START return just data from the DB here \n";
+	$output_RequestHandler .= "// Request Handler starts here  \n";
+	$output_RequestHandler .= "// Process Parameters starts here  \n";
 	$output_RequestHandler .= "\t\$command=\"\";\n";
 	$output_RequestHandler .= "\t\$parameter=\"\";\n";
-	$output_RequestHandler .= "\tif (!empty(\$_GET) &&  \$_GET[\"data\"] == 'on' ) {\n";
-	$output_RequestHandler .= "\t\tif (!empty(\$_GET[\"cmd\"])) {\n";
+	$output_RequestHandler .= "\t\$test=FALSE;\n";
+	
+	$output_RequestHandler .= "\tif (!empty(\$_GET) && !empty(\$_GET[\"cmd\"])) {\n";
 	$output_RequestHandler .= "\t\t\t\$command=\$_GET[\"cmd\"];\n";
-	$output_RequestHandler .= "\t\t\t\$parameter = \"\";\n";
 	$output_RequestHandler .= "\t\t\tif (!empty(\$_GET[\"param\"])){\$parameter=\$_GET[\"param\"];}\n";
 	$output_RequestHandler .= "\t\t}\n";
-	$output_RequestHandler .= "\telse {exit;}\n";
-	$output_RequestHandler .= "\t}\n";
-	$output_RequestHandler .= "\t?>\n";
-	$output_RequestHandler .="<!--  Process Parameters ends here  -->\n";
-	
-	$output_RequestHandler .="<!--  RequestHandler Class Definition starts here  -->\n";
+	$output_RequestHandler .= "\tif (!empty(\$_GET[\"test\"])){\$test=TRUE;}\n";
+	$output_RequestHandler .= "//Process Parameters ends here\n";
+	$output_RequestHandler .= "?>\n";
 	
 	$output_RequestHandler .= "<?php\n";
+	$output_RequestHandler .= "//RequestHandler Class Definition starts here\n";
 	$output_RequestHandler .= "\tclass RequestHandler {\n";
 	$output_RequestHandler .= "\t\tprivate \$db;\n";
 	$output_RequestHandler .= "\t\tpublic function __construct() {\n";
@@ -117,51 +115,161 @@
 		foreach($columns_info as $value){
 			$output_RequestHandler .= "\t// \tCOLUMN_NAME[" . $value['ORDINAL_POSITION'] . "]:\t\t" . $value['COLUMN_NAME']. "\t\t" .$value['COLUMN_TYPE']. "\t\t" .$value['COLUMN_KEY']."\n";
 		}
-		$output_RequestHandler .= "\n";
+	
+		$prim_key =array();
+		$i = 0;
+		foreach ($columns_info as $value){
+				if ($value['COLUMN_KEY'] == "PRI") {
+					$output_RequestHandler .=  "\t\t //Primary Key[".$i."] ".$value['COLUMN_NAME']."\n";
+					$prim_key[$i] = $value['COLUMN_NAME'];
+					$i++;
+		}}
+		$output_RequestHandler .= "\n\n";
+				
 		
-		$prim_key ="";
-		//foreach ($prim_key
-		
-		if ($columns_info[0]['COLUMN_KEY'] != "PRI"){
-		$output_RequestHandler .= "\t//WARNING - FIRST Column not PRIMARY KEY \n";
-		}
-		
-		$output_RequestHandler .= "\t\tpublic function get_$table[TABLE_NAME]_list(\$limit = \"100\"){\n";
-		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] LIMIT \".\$limit.\";\");\n";
-		$output_RequestHandler .= "\t\t\treturn \$this->getResultArray(\$query);\n";								
+		$output_RequestHandler .= "\tpublic function get_completlist_$table[TABLE_NAME](\$parameter = array()){\n";
+		$output_RequestHandler .= "\t\t\$parameter = stripslashes(\$parameter);\n";
+		$output_RequestHandler .= "\t\t\$parameter = unserialize(\$parameter);\n";
+
+		$output_RequestHandler .= "\t\tif(array_key_exists(\"limit\",\$parameter)){\n";
+		$output_RequestHandler .= "\t\t\t\$limit = \$parameter['limit'];\n";
+		$output_RequestHandler .= "\t\t} else {\n";
+		$output_RequestHandler .= "\t\t\t\$limit = 100;\n";
 		$output_RequestHandler .= "\t\t}\n";
-		  		  
+		$output_RequestHandler .= "\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] LIMIT \".\$limit.\";\");\n";
+		$output_RequestHandler .= "\t\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
+		$output_RequestHandler .= "\t\t}\n\n";
 		$output_RequestHandler .= "\t\tpublic function get_$table[TABLE_NAME]_element(\$id = \"\"){\n";
-		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] where [COLUMN_NAME] = \".\$id.\";\");\n";
-		$output_RequestHandler .= "\t\t\treturn \$this->getResultArray(\$query);\n";
+		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] where 8705876430 = \".\$id.\";\");\n";
+		$output_RequestHandler .= "\t\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
 		$output_RequestHandler .= "\t\t}\n\n";
 		
 	} //End loop for each tabel
-		$output_RequestHandler .="\t}\n";
+		$output_RequestHandler .= "\t}\n";
 		
-		$output_RequestHandler .="\t\$RH = new RequestHandler();\n";
-		$output_RequestHandler .="\tif ( \$command != \"\") {\n";
-		$output_RequestHandler .="\t\tif ( \$parameter != \"\") {\n";
-		$output_RequestHandler .="\t\t\t\$result = \$RH->\$command(\$parameter);\n";
-		$output_RequestHandler .="\t\t}\n";
-		$output_RequestHandler .="\t\telse {\n";
-		$output_RequestHandler .="\t\t\t\$result = \$RH->\$command();\n\t\t}\n";
-		$output_RequestHandler .="\techo \$result;\n";
-		$output_RequestHandler .="\texit;\n";
-		$output_RequestHandler .="\t}";
-		$output_RequestHandler .="\n?>\n";
-		$output_RequestHandler .="<!--  Class Definition ends here  -->\n";
+		$output_RequestHandler .= "//TEST Request Handler starts here\n\n";
+		$output_RequestHandler .= "\tif (\$test) {\n";
+		$output_RequestHandler .= "\t\techo \"<!DOCTYPE html>\";\n";
+		$output_RequestHandler .= "\t\techo \"<html lang=\\\"en\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"<head>\";\n";
+		$output_RequestHandler .= "\t\techo \"<meta charset=\\\"utf-8\\\"> \";\n";
+		$output_RequestHandler .= "\t\techo \"<title>TEST Request Handler</title>\";\n";
+		$output_RequestHandler .= "\t\techo \"<link rel=\\\"stylesheet\\\" href=\\\"../css/bootstrap.min.css\\\" media=\\\"screen\\\" />\n>\";\n";
+		$output_RequestHandler .= "\t\techo \"</head>\";\n";
+		$output_RequestHandler .= "\t\techo \"<body>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"container\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"<form class=\\\"form-horizontal\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"<fieldset>\";\n";
+		$output_RequestHandler .= "\t\techo \"<legend>Request Handler Test</legend>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"Select\\\">Select</label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-4\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"Select\\\" name=\\\"Select\\\" placeholder=\\\"*\\\" class=\\\"form-control input-md\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"help-block\\\">valid sql select statement</span> \";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"where\\\">where</label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-4\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"where\\\" name=\\\"where\\\" placeholder=\\\"id=12\\\" class=\\\"form-control input-md\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"help-block\\\">valid sql where statement</span> \";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"limit\\\">limit</label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-4\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"limit\\\" name=\\\"limit\\\" placeholder=\\\"100\\\" class=\\\"form-control input-md\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"help-block\\\">valid sql limit statement</span> \";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"order_by\\\">order_by</label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-4\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"order_by\\\" name=\\\"order_by\\\" placeholder=\\\"100\\\" class=\\\"form-control input-md\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"help-block\\\">valid sql order_by statement</span> \";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"command\\\">command</label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-5\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"input-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"command\\\" name=\\\"command\\\" class=\\\"form-control\\\" placeholder=\\\"get_completlist_salaries\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"input-group-btn\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<button type=\\\"button\\\" class=\\\"btn btn-default dropdown-toggle\\\" data-toggle=\\\"dropdown\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\tselect\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"caret\\\"></span>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</button>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<ul class=\\\"dropdown-menu pull-right\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_salaries</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_employees</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_dept_manager</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</ul>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"form-group\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"Test\\\"></label>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-4\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<button id=\\\"Test\\\" name=\\\"Test\\\" class=\\\"btn btn-success pull-right\\\">TEST</button>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
+
+		$output_RequestHandler .= "\t\techo \"</fieldset>\";\n";
+		$output_RequestHandler .= "\t\techo \"</form>\";\n";
+		$output_RequestHandler .= "\t\techo \"<ul>\";\n";		
+		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"7\");\n";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_salaries&param=\$testarray'> TEST get_completlist_salaries LIMIT 7 </a></li>\";\n";
+		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"2\");\n";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_employees&param=\$testarray'> TEST get_completlist_employees LIMIT 2 </a></li>\";\n";
+		$output_RequestHandler .= "\t\t\$testarray = array();\n";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_current_dept_emp&param=\$testarray'> TEST get_completlist_current_dept_emp LIMIT default (100) </a></li>\";\n";
+		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"50\");\n";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_current_dept_emp&param=\$testarray'> TEST get_completlist_current_dept_emp LIMIT 50 </a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"<ul>\";\n";		
+		$output_RequestHandler .= "\t\techo \"</div>\";\n";
+		$output_RequestHandler .= "\t\techo \"</body>\";\n";
+		$output_RequestHandler .= "\t\techo \"</html>\";\n";
+		$output_RequestHandler .= "\t\texit;";
+		$output_RequestHandler .= "\t}\n";
+		
+		$output_RequestHandler .= "//TEST Request Handler ends here\n\n";
+		
+		
+		$output_RequestHandler .= "\t\$RH = new RequestHandler();\n";
+		$output_RequestHandler .= "\tif ( \$command != \"\") {\n";
+		$output_RequestHandler .= "\t\tif ( \$parameter != \"\") {\n";
+		$output_RequestHandler .= "\t\t\t\$result = \$RH->\$command(\$parameter);\n";
+		$output_RequestHandler .= "\t\t}\n";
+		$output_RequestHandler .= "\t\telse {\n";
+		$output_RequestHandler .= "\t\t\t\$result = \$RH->\$command();\n\t\t}\n";
+		$output_RequestHandler .= "\techo \$result;\n";
+		$output_RequestHandler .= "\texit;\n";
+		$output_RequestHandler .= "\t}";
+		$output_RequestHandler .= "//Class Definition ends here \n";
+		$output_RequestHandler .= "//Request Handler ends here  \n\n";
+		$output_RequestHandler .= "//END return just data from the DB here\n";
+		$output_RequestHandler .= "?>\n";
 	
-		$output_RequestHandler .= "<!-- Request Handler ends here  -->\n\n";
+
 		
-		$output_RequestHandler .= "<!-- END return just data from the DB here -->\n";
+		
+		
+		
 		
 	// end create Request Handler Class
 	
+	// start present website when no db data is needed
+		
 	$output_header = "<!DOCTYPE html>\n";
-
-	
-	
 	$output_header .= "<html xmlns=\"http://www.w3.org/1999/xhtml\" ng-app=\""."$db_name"."App\">\n";
 	$output_header .= "<head>\n";
 	$output_header .= "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
@@ -242,7 +350,7 @@
 	$output_content .= "<div class=\"container\">\n";
 	$output_content .= "\t\t<div class=\"row\">\n";
 	
-	$output_content .="\t\t<div class=\"col-md-12 tab-content\" id=\"bpm-content\">\n";
+	$output_content .= "\t\t<div class=\"col-md-12 tab-content\" id=\"bpm-content\">\n";
 		
 	$i = 0;
 	foreach($all_table_names as $value){
@@ -306,10 +414,10 @@
 	echo $output_LiamHeader;
 	echo $output_DebugHeader;
 	echo $output_RequestHandler;
-	//echo $output_header;
-	//echo $output_menu;
-	//echo $output_content;
-	//echo $output_footer;
+	echo $output_header;
+	echo $output_menu;
+	echo $output_content;
+	echo $output_footer;
 	
 
 ?>
