@@ -92,10 +92,13 @@
 	$output_RequestHandler .= "\tclass RequestHandler {\n";
 	$output_RequestHandler .= "\t\tprivate \$db;\n";
 	$output_RequestHandler .= "\t\tpublic function __construct() {\n";
-	// later : gerate DB user with GUID passwd so root is NOT used any more
+	// TODO : gerate DB user with GUID passwd so root is NOT used any more
+	// generate password $PASSWORT = md5(com_create_guid().com_create_guid());
+	// create User BPMSpace_DBNAME even if it exist because of new passwd - CREATE USER 'bpmspace_$db_name'@'localhost' IDENTIFIED BY '$PASSWORT';
+	// GRANT SELECT, INSERT, UPDATE ON `$db_name`.* TO 'bpmspace_$db_name'@'localhost';
 	$output_RequestHandler .= "\t\t\$config['db']['host'] = \"$db_server\";\n";
-	$output_RequestHandler .= "\t\t\$config['db']['user'] = \"$db_user\";\n";
-	$output_RequestHandler .= "\t\t\$config['db']['password'] = \"$db_pass\";\n";
+	$output_RequestHandler .= "\t\t\$config['db']['user'] = \"$db_user\";\n"; // TODO NEW USER NOT ROOT ANYMORE
+	$output_RequestHandler .= "\t\t\$config['db']['password'] = \"$db_pass\";\n"; // TODO NEW PASSWD NOT ROOTPASSWD ANYMORE
 	$output_RequestHandler .= "\t\t\$config['db']['database'] = \"$db_name\";\n";
 	$output_RequestHandler .= "\t\t/* include_once '../DB_config/login_credentials_DB_bpmspace_sample.inc.php';*/\n\n";
 	$output_RequestHandler .= "\t\t\$db = new mysqli(\$config['db']['host'], \$config['db']['user'], \$config['db']['password'], \$config['db']['database']);\n";
@@ -176,11 +179,13 @@
 		$stmt->execute();
 		*/
 		
+		// function create_$table, function update_$table, , function delet_$table (nur für TAbles nicht Views!!)
+		
 		$output_RequestHandler .= "\t\t\$query = \$this->db->query(\$sql);\n\n";
 		$output_RequestHandler .= "\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
 		$output_RequestHandler .= "\t\t}\n";		
 		
-		// Angualr JS script for each Table -> will be added in the FOOTER later 
+		// Angualr JS script for each Table -> will be added in the FOOTER TODO 
 		$output_script .= "\t\t\$scope."."$table[TABLE_NAME]"." = [];\n";
 		$output_script .= "\t\t\$scope.temp"."$table[TABLE_NAME]"."Data = {};\n\n";
 		$output_script .= "\t\t\$http.get('<?php echo \$_SERVER['PHP_SELF'] ?>', {\n";
