@@ -66,9 +66,22 @@
 	$output_RequestHandler .= "\t\$parameter=\"\";\n";
 	$output_RequestHandler .= "\t\$test=FALSE;\n";
 	
+	$output_RequestHandler .= "\tif (!empty(\$_GET[\"paramURL\"]) && !empty(\$_GET[\"paramJS\"])) {\n";
+	$output_RequestHandler .= "\t\techo \"error: dont use both parameters at the same time !!  you must use paramJS OR paramURL  \";\n";
+	$output_RequestHandler .= "\t\texit;";
+	$output_RequestHandler .= "\t}\n";
+		
 	$output_RequestHandler .= "\tif (!empty(\$_GET) && !empty(\$_GET[\"cmd\"])) {\n";
 	$output_RequestHandler .= "\t\t\t\$command=\$_GET[\"cmd\"];\n";
-	$output_RequestHandler .= "\t\t\tif (!empty(\$_GET[\"param\"])){\$parameter=\$_GET[\"param\"];}\n";
+	$output_RequestHandler .= "\t\t\tif (!empty(\$_GET[\"paramURL\"])){\n";
+	$output_RequestHandler .= "\t\t\t\t\$parameter=\$_GET[\"paramURL\"];\n";
+	$output_RequestHandler .= "\t\t\t\t\$parameter = stripslashes(\$parameter);\n";
+	$output_RequestHandler .= "\t\t\t\t\$parameter = unserialize(\$parameter);\n";
+	$output_RequestHandler .= "\t\t\t\t}\n";
+	$output_RequestHandler .= "\t\t\tif(!empty(\$_GET[\"paramJS\"])){\n";
+	$output_RequestHandler .= "\t\t\t\t\$parameter=\$_GET[\"paramJS\"];\n";
+	$output_RequestHandler .= "\t\t\t\t\$parameter=\$parameter[0];\n";
+	$output_RequestHandler .= "\t\t\t\t}\n";
 	$output_RequestHandler .= "\t\t}\n";
 	$output_RequestHandler .= "\tif (!empty(\$_GET[\"test\"])){\$test=TRUE;}\n";
 	$output_RequestHandler .= "//Process Parameters ends here\n";
@@ -79,6 +92,7 @@
 	$output_RequestHandler .= "\tclass RequestHandler {\n";
 	$output_RequestHandler .= "\t\tprivate \$db;\n";
 	$output_RequestHandler .= "\t\tpublic function __construct() {\n";
+	// later : gerate DB user with GUID passwd so root is NOT used any more
 	$output_RequestHandler .= "\t\t\$config['db']['host'] = \"$db_server\";\n";
 	$output_RequestHandler .= "\t\t\$config['db']['user'] = \"$db_user\";\n";
 	$output_RequestHandler .= "\t\t\$config['db']['password'] = \"$db_pass\";\n";
@@ -101,6 +115,8 @@
 	$output_RequestHandler .= "\t\t}\n";
 	$output_RequestHandler .= "\t\treturn json_encode(\$results_array);\n";
 	$output_RequestHandler .= "\t}\n\n";
+	// prepare part of Angular JS
+	$output_script = "";
 	
 	foreach ($all_table_names as $table) { //for eaceh tabel of the sected DB generate CRUD functions
 	
@@ -124,29 +140,64 @@
 					$prim_key[$i] = $value['COLUMN_NAME'];
 					$i++;
 		}}
+		
+		$foreign_key =array();
+		//SELECT TABLE_NAME,COLUMN_NAME,CONSTRAINT_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+		//http://stackoverflow.com/questions/201621/how-do-i-see-all-foreign-keys-to-a-table-or-column
+		
 		$output_RequestHandler .= "\n\n";
 				
 		
-		$output_RequestHandler .= "\tpublic function get_completlist_$table[TABLE_NAME](\$parameter = array()){\n";
-		$output_RequestHandler .= "\t\t\$parameter = stripslashes(\$parameter);\n";
-		$output_RequestHandler .= "\t\t\$parameter = unserialize(\$parameter);\n";
-
+		/*$output_RequestHandler .= "\tpublic function get_simple_list_$table[TABLE_NAME](\$parameter = array()){\n";
 		$output_RequestHandler .= "\t\tif(array_key_exists(\"limit\",\$parameter)){\n";
 		$output_RequestHandler .= "\t\t\t\$limit = \$parameter['limit'];\n";
 		$output_RequestHandler .= "\t\t} else {\n";
 		$output_RequestHandler .= "\t\t\t\$limit = 100;\n";
 		$output_RequestHandler .= "\t\t}\n";
 		$output_RequestHandler .= "\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] LIMIT \".\$limit.\";\");\n";
-		$output_RequestHandler .= "\t\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
+		$output_RequestHandler .= "\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
 		$output_RequestHandler .= "\t\t}\n\n";
-		$output_RequestHandler .= "\t\tpublic function get_$table[TABLE_NAME]_element(\$id = \"\"){\n";
-		$output_RequestHandler .= "\t\t\t\$query = \$this->db->query(\"SELECT * FROM $table[TABLE_NAME] where 8705876430 = \".\$id.\";\");\n";
-		$output_RequestHandler .= "\t\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
-		$output_RequestHandler .= "\t\t}\n\n";
+		*/
+		
+		$output_RequestHandler .= "\tpublic function read_$table[TABLE_NAME](\$parameter = array()){\n";
+		$output_RequestHandler .= "\t\t\$sql = \"SELECT \";\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"select\",\$parameter)?\$parameter['select']:'*';\n";
+		$output_RequestHandler .= "\t\t\$sql .= \" FROM $table[TABLE_NAME]\";\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_1\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_1']:'';\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_2\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_2']:'';\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_3\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_3']:'';\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"where\",\$parameter)?\" WHERE \".\$parameter['where']:'';\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"order_by\",\$parameter)?\" ORDER BY \".\$parameter['order_by']:'';\n";
+		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"limit\",\$parameter)?\" LIMIT \".\$parameter['limit']:'LIMIT 100';\n";
+
+		/* Optimize code use repared statements and parameterized queries -> https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet
+		$stmt = $dbConnection->prepare('SELECT * FROM employees WHERE name = ?');
+		$stmt->bind_param('s', $name);
+		$stmt->execute();
+		*/
+		
+		$output_RequestHandler .= "\t\t\$query = \$this->db->query(\$sql);\n\n";
+		$output_RequestHandler .= "\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
+		$output_RequestHandler .= "\t\t}\n";		
+		
+		// Angualr JS script for each Table -> will be added in the FOOTER later 
+		$output_script .= "\t\t\$scope."."$table[TABLE_NAME]"." = [];\n";
+		$output_script .= "\t\t\$scope.temp"."$table[TABLE_NAME]"."Data = {};\n\n";
+		$output_script .= "\t\t\$http.get('<?php echo \$_SERVER['PHP_SELF'] ?>', {\n";
+		$output_script .= "\t\t\tparams:{\n";
+		$output_script .= "\t\t\t\tcmd: 'read_$table[TABLE_NAME]',\n";
+		$output_script .= "\t\t\t\tparamJS: [{limit: 10, select: \"*\"}]\n";
+		$output_script .= "\t\t\t\t},\n";
+		$output_script .= "\t\t\tparamSerializer: '\$httpParamSerializerJQLike'\n";
+		$output_script .= "\t\t\t}).then(function(response){\n";
+		$output_script .= "\t\t\t\t\$scope."."$table[TABLE_NAME]"." = response.data;\n";
+		$output_script .= "\t\t\t});\n\n";
+
 		
 	} //End loop for each tabel
 		$output_RequestHandler .= "\t}\n";
 		
+		/*
 		$output_RequestHandler .= "//TEST Request Handler starts here\n\n";
 		$output_RequestHandler .= "\tif (\$test) {\n";
 		$output_RequestHandler .= "\t\techo \"<!DOCTYPE html>\";\n";
@@ -193,16 +244,16 @@
 		$output_RequestHandler .= "\t\techo \"\t<label class=\\\"col-md-4 control-label\\\" for=\\\"command\\\">command</label>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"col-md-5\\\">\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"input-group\\\">\";\n";
-		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"command\\\" name=\\\"command\\\" class=\\\"form-control\\\" placeholder=\\\"get_completlist_salaries\\\" type=\\\"text\\\">\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<input id=\\\"command\\\" name=\\\"command\\\" class=\\\"form-control\\\" placeholder=\\\"read_salaries\\\" type=\\\"text\\\">\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<div class=\\\"input-group-btn\\\">\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<button type=\\\"button\\\" class=\\\"btn btn-default dropdown-toggle\\\" data-toggle=\\\"dropdown\\\">\";\n";
 		$output_RequestHandler .= "\t\techo \"\tselect\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<span class=\\\"caret\\\"></span>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t</button>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t<ul class=\\\"dropdown-menu pull-right\\\">\";\n";
-		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_salaries</a></li>\";\n";
-		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_employees</a></li>\";\n";
-		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_completlist_dept_manager</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_simple_list_salaries</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_simple_list_employees</a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"\t<li><a href=\\\"#\\\">get_simple_list_dept_manager</a></li>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t</ul>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
 		$output_RequestHandler .= "\t\techo \"\t</div>\";\n";
@@ -219,30 +270,43 @@
 		$output_RequestHandler .= "\t\techo \"</form>\";\n";
 		$output_RequestHandler .= "\t\techo \"<ul>\";\n";		
 		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"7\");\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
 		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
 		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
-		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_salaries&param=\$testarray'> TEST get_completlist_salaries LIMIT 7 </a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=get_simple_list_salaries&paramURL=\$testarray'> TEST get_simple_list_salaries LIMIT 7 </a></li>\";\n";
 		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"2\");\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
 		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
 		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
-		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_employees&param=\$testarray'> TEST get_completlist_employees LIMIT 2 </a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=get_simple_list_employees&paramURL=\$testarray'> TEST get_simple_list_employees LIMIT 2 </a></li>\";\n";
 		$output_RequestHandler .= "\t\t\$testarray = array();\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
 		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
 		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
-		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_current_dept_emp&param=\$testarray'> TEST get_completlist_current_dept_emp LIMIT default (100) </a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=get_simple_list_current_dept_emp&paramURL=\$testarray'> TEST get_simple_list_current_dept_emp LIMIT default (100) </a></li>\";\n";
 		$output_RequestHandler .= "\t\t\$testarray = array(\"limit\"=>\"50\");\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
 		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
 		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
-		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='test.php?cmd=get_completlist_current_dept_emp&param=\$testarray'> TEST get_completlist_current_dept_emp LIMIT 50 </a></li>\";\n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=get_simple_list_current_dept_emp&paramURL=\$testarray'> TEST get_simple_list_current_dept_emp LIMIT 50 </a></li>\";\n";
+		$output_RequestHandler .= "\t\t\$testarray = array(\"select\"=>\"emp_no, title, from_date\",\"where\"=>\"emp_no > 10044 AND emp_no < 10144 \",\"limit\"=>\"100\");\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=read_titles&paramURL=\$testarray'> TEST read_titles emp_no birth_date last_name with emp-no > 10044 AND emp-no < 10144 and limit 10 </a></li>\";\n";
+		$output_RequestHandler .= "\t\t\$testarray = array(\"select\"=>\"emp_no, birth_date, last_name\",\"where\"=>\"emp_no < 10044\",\"order_by\"=>\"birth_date\",\"limit\"=>\"10\");\n";
+		$output_RequestHandler .= "\t\tprint_r (\$testarray);";
+		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
+		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
+		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=read_employees&paramURL=\$testarray'> TEST read_employees emp_no birth_date, last_name with emp-no < 10044 and limit 10 orderd by birth_date </a></li>\";\n";
 		$output_RequestHandler .= "\t\techo \"<ul>\";\n";		
 		$output_RequestHandler .= "\t\techo \"</div>\";\n";
 		$output_RequestHandler .= "\t\techo \"</body>\";\n";
 		$output_RequestHandler .= "\t\techo \"</html>\";\n";
 		$output_RequestHandler .= "\t\texit;";
 		$output_RequestHandler .= "\t}\n";
-		
 		$output_RequestHandler .= "//TEST Request Handler ends here\n\n";
-		
+*/	
 		
 		$output_RequestHandler .= "\t\$RH = new RequestHandler();\n";
 		$output_RequestHandler .= "\tif ( \$command != \"\") {\n";
@@ -254,6 +318,8 @@
 		$output_RequestHandler .= "\techo \$result;\n";
 		$output_RequestHandler .= "\texit;\n";
 		$output_RequestHandler .= "\t}";
+		
+		
 		$output_RequestHandler .= "//Class Definition ends here \n";
 		$output_RequestHandler .= "//Request Handler ends here  \n\n";
 		$output_RequestHandler .= "//END return just data from the DB here\n";
@@ -319,8 +385,8 @@
 
 	
 	$output_menu .= "\t\t<div class=\"col-md-12 collapse in\" id=\"bpm-logo\">\n";
-	$output_menu .= "\t\t\t<div class=\"col-md-6 \"><img class=\"img-rounded\" src=\"http://dummyimage.com/100x100/ff0000/FFF.png&text=your+logo\" alt=\"your logo\" /></div>\n";
-	$output_menu .= "\t\t\t<div class=\"col-md-6 \"><img class=\"pull-right img-rounded\" src=\"http://dummyimage.com/200x100/0000ff/FFF.png&text="."$db_name"."\" alt=\""."$db_name"."\" /></div>\n";
+	$output_menu .= "\t\t\t<div class=\"col-md-6 \"><svg height=\"100\" width=\"100\"><rect fill=\"red\" x=\"0\" y=\"0\" width=\"100\" height=\"100\" rx=\"15\" ry=\"15\"></rect><text x=\"50\" y=\"55\" fill=\"white\" text-anchor=\"middle\" alignment-baseline=\"central\">your logo</text></svg></div>\n";
+	$output_menu .= "\t\t\t<div class=\"col-md-6 \"><svg class=\"pull-right\" height=\"100\" width=\"200\"><rect fill=\"blue\" x=\"0\" y=\"0\" width=\"200\" height=\"100\" rx=\"15\" ry=\"15\"></rect><text x=\"100\" y=\"55\" fill=\"white\" text-anchor=\"middle\" alignment-baseline=\"central\">"."$db_name"."</text></svg></div>\n";
     $output_menu .= "\t\t</div>\n";
 	$output_menu .= "\t</div>\n";
 	$output_menu .= "\n";
@@ -353,15 +419,36 @@
 	$output_content .= "\t\t<div class=\"col-md-12 tab-content\" id=\"bpm-content\">\n";
 		
 	$i = 0;
-	foreach($all_table_names as $value){
+	foreach($all_table_names as $value) {
 				$output_content .= "\t\t\t\t<div class=\"tab-pane";
-				if ($i == 3) {$output_content .= " active";}
+				if ($i == 1) {$output_content .= " active";}
 				$output_content .= "\" id=\"".$value['TABLE_NAME']."\">\n";
 				$output_content .= "\t\t\t\t<h2>".$value['TABLE_NAME']."</h2>\n";
-				$output_content .= "\t\t\t\t".$value['TABLE_NAME']."</div>\n";
-				$i++;
-				}
+				$output_content .= "\t\t\t\t<table class=\"table table-striped table-condensed\" >\n";
 				
+				$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$value["TABLE_NAME"]."' AND TABLE_SCHEMA = '$db_name'";
+					if(!$result = $con->query($query)){ 
+					die('There was an error running the query [' . $con->error . ']');}
+					$columns_info = $result->fetch_all(MYSQLI_ASSOC);
+				
+				$output_content .= "\t\t\t\t\t<th></th>\n";
+				
+				foreach($columns_info as $value_2){
+					$output_content .= "\t\t\t\t\t<th>".$value_2['COLUMN_NAME']."</th>\n";
+					}
+					
+				$output_content .= "\t\t\t\t\t<tr  ng-repeat=\"row in ".$value['TABLE_NAME']."\">\n";
+				$output_content .= "\t\t\t\t\t<td><i class=\"fa fa-pencil-square-o\" aria-hidden=\"true\"></i>&nbsp;&nbsp;<i class=\"fa fa-trash\" aria-hidden=\"true\"></i></td>\n";
+				
+				foreach($columns_info as $value_2){
+					$output_content .= "\t\t\t\t\t<td>{{row.".$value_2['COLUMN_NAME']."}}</td>\n";
+					}	
+				
+				$output_content .= "\t\t\t\t</table>\n\t\t\t\t</div>\n";
+			$i++;
+	}
+			
+
 	$output_content .= "\t\t</div>\n";
 	$output_content .= "\t</div>\n";
 	$output_content .= "</div>\n";
@@ -403,8 +490,13 @@
 	$output_footer .= "<script type=\"text/javascript\" src=\"../js/xeditable.min.js\"></script>\n";
 		
 	$output_footer .= "<!-- <script type=\"text/javascript\" src=\"js/"."$db_name".".js\"></script> -->\n";
-
-
+	$output_footer .= "<script>\n";
+	$output_footer .= "\tvar app = angular.module(\""."$db_name"."App\", [])\n";
+	$output_footer .= "\tapp.controller('"."$db_name"."Ctrl', function (\$scope, \$http) {\n";
+	$output_footer .= $output_script."\n";
+	$output_footer .= "\t\t});\n";
+	$output_footer .= "\t</script>\n";
+	
 	$output_footer .= "</body>\n";
 	$output_footer .= "</html>\n";
 	$output_footer .= "\n\n";
