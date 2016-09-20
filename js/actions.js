@@ -48,9 +48,7 @@ $(document).ready(function () {
                         $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
                         $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul>');
                         $.each(tables, function (key, value) {
-                            $('#' + val.database).append('<li class="bpm-options"><input type="radio" name="' + val.database + '" class=""' +
-                                ' value="' + value.table + '">' +
-                                '<p class="bpm-db-table">' + value.table + '</p></li>');
+                            $('#' + val.database).append('<span>' + value.table + '</span>, ');
                         });
                     });
 

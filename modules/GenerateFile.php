@@ -304,7 +304,7 @@
 		$output_RequestHandler .= "\t\t\$testarray = serialize(\$testarray);\n";
 		$output_RequestHandler .= "\t\t\$testarray = urlencode(\$testarray); \n";
 		$output_RequestHandler .= "\t\techo \"<li><a target='_blank' href='\$_SERVER['PHP_SELF']?cmd=read_employees&paramURL=\$testarray'> TEST read_employees emp_no birth_date, last_name with emp-no < 10044 and limit 10 orderd by birth_date </a></li>\";\n";
-		$output_RequestHandler .= "\t\techo \"<ul>\";\n";		
+		$output_RequestHandler .= "\t\techo \"<ul>\";\n";
 		$output_RequestHandler .= "\t\techo \"</div>\";\n";
 		$output_RequestHandler .= "\t\techo \"</body>\";\n";
 		$output_RequestHandler .= "\t\techo \"</html>\";\n";
@@ -507,7 +507,24 @@
 	$output_footer .= "\n\n";
 
 	$output_footer .= "<!--  footer ends here -->\n\n";
-	
+
+  $output_all = "";
+  $output_all .= $output_LiamHeader;
+  $output_all .= $output_DebugHeader;
+  $output_all .= $output_RequestHandler;
+  $output_all .= $output_header;
+  $output_all .= $output_menu;
+  $output_all .= $output_content;
+  $output_all .= $output_footer;
+  
+  // Write code to file (only for now)
+  file_put_contents("../../IPMS_test/employees.php", $output_all);
+  
+  // Return code
+  echo $output_all;
+  
+  
+  /*
 	echo $output_LiamHeader;
 	echo $output_DebugHeader;
 	echo $output_RequestHandler;
@@ -515,6 +532,5 @@
 	echo $output_menu;
 	echo $output_content;
 	echo $output_footer;
-	
-
+	*/
 ?>
