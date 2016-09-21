@@ -61,15 +61,25 @@
 <!--Databases-->
 <div class="container">
     <div class="row">
-        <label for="sqlDatabases" class="col-sm-2" style="padding-left: 2.4%;">Databases</label>
-        <select class="form-control" id="sqlDatabases">
+        <!-- Database -->
+        <div class="row">
+          <label for="sqlDatabases" class="col-sm-2"><span class="label label-success">1</span> Databases</label>
+          <select class="form-control" id="sqlDatabases">
             <option value="">Select a database from dropdown</option>
-        </select>
-        <div class="row" id="sqlTables">
-            <label for="sqlTables" class="col-sm-2" style="padding-left: 2.4%; width: 100%">Tables</label>
+          </select>
         </div>
-        <div class="col-sm-1">
-            <button name="create" class="btn btn-danger" id="create">CREATE</button>
+        <!-- Tables -->
+        <div class="row">
+          <label for="sqlTables" class="col-sm-2"><span class="label label-success">2</span> Tables</label>
+          <div class="row" id="sqlTables"></div>
+        </div>
+        <!-- Create Button -->
+        <div class="row">&nbsp;</div>
+        <div class="row">
+          <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
+          <div>
+            <button name="create" class="btn btn-danger btn-sm" id="create">CREATE</button>
+          </div>
         </div>
 
         <!--            File String -->

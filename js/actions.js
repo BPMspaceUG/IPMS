@@ -42,13 +42,35 @@ $(document).ready(function () {
                         display: 'none'
                     });
 
+                    /*
+                    // Loop over databases
+                    for each (db in val.database) {
+                      
+                      // Loop over tables
+                      for each (tbl in db.tables) {
+                        
+                      }
+                    }
+                    */
+                    
                     //Appending Database and Tables
                     $.each(result, function (key, val) {
                         var tables = val.tables;
+                        
+                        console.log(val);
+                        
+
+                        
+                        // Databases
                         $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
-                        $('#sqlTables').append('<ul class="bpm-checkboxes" id="' + val.database + '"></ul>');
+                        
+                        $('#sqlTables').append('<div class="bpm-checkboxes" id="' + val.database + '"><table class="table"></table></div>');
                         $.each(tables, function (key, value) {
-                            $('#' + val.database).append('<span>' + value.table + '</span>, ');
+                            $('#' + val.database).append(
+                              '<tr><td style="width:200px;">' + value.table_name + '</td>'+
+                              '<td><input type="text" class="form-control" value="' + value.table_alias +'"/></td>'+
+                              '<td><input type="text" class="form-control" value="' + value.table_icon +'"/></td>'+
+                              '</tr>');
                         });
                     });
 
@@ -117,7 +139,7 @@ $(document).ready(function () {
     //Getting Table_Name code for selected table
     $('#create').click(function (event) {
         event.preventDefault();
-        var name    = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
+        var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
 		var db_name = $('#sqlDatabases option:selected').text();
 		var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
 		console.log(post_data);
