@@ -24,6 +24,27 @@
     die('There was an error running the query [' . $con->error . ']');}
 	$all_table_names = $result->fetch_all(MYSQLI_ASSOC);
 	
+  //------------------------------------
+  // Just for testing
+  $icons = array(
+    "fa fa-circle-o", "fa fa-cube", "fa fa-cloud", "fa fa-dashboard",
+    "fa fa-lock", "fa fa-graduation-cap", "fa fa-life-ring", "fa fa-plug"
+  );
+  
+  for ($i=0;$i<count($all_table_names);$i++) {
+    $rk = array_rand($icons);
+    
+    $all_table_names[$i] = array_merge(
+      $all_table_names[$i],
+      array(
+        "TABLE_ALIAS" => ucfirst($all_table_names[$i]["TABLE_NAME"]),
+        "TABLE_ICON" => $icons[$rk],
+        "TABLE_ISINMENU" => (int)round(rand(0,1)) // 0..1
+      )
+    );
+  }
+  //------------------------------------
+
 	if ($DEBUG) var_dump($all_table_names);
 		
 	// create BPMspace LIAM Header
@@ -402,7 +423,7 @@
 	$output_menu .= "\t\t<ul class=\"nav nav-tabs\" id=\"bpm-menu\">\n";
 	
 	foreach($all_table_names as $value){
-		$output_menu .= "\t\t\t<li><a title=\"".$value['TABLE_NAME']."\" href=\"#".$value['TABLE_NAME']."\" data-toggle=\"tab\"><i class=\"fa fa-circle-o\"></i> ".$value['TABLE_NAME']."</a></li>\n";
+		$output_menu .= "\t\t\t<li><a title=\"".$value['TABLE_NAME']."\" href=\"#".$value['TABLE_NAME']."\" data-toggle=\"tab\"><i class=\"".$value['TABLE_ICON']."\"></i> ".$value['TABLE_ALIAS']."</a></li>\n";
 	}
 	
 	$output_menu .= "\n";
@@ -428,7 +449,7 @@
 				$output_content .= "\t\t\t\t<div class=\"tab-pane";
 				if ($i == 1) {$output_content .= " active";}
 				$output_content .= "\" id=\"".$value['TABLE_NAME']."\">\n";
-				$output_content .= "\t\t\t\t<h2>".$value['TABLE_NAME']."</h2>\n";
+				$output_content .= "\t\t\t\t<h2>".$value['TABLE_ALIAS']."</h2>\n";
 				$output_content .= "\t\t\t\t<table class=\"table table-striped table-condensed\" >\n";
 				
 				$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$value["TABLE_NAME"]."' AND TABLE_SCHEMA = '$db_name'";

@@ -122,13 +122,13 @@ $(document).ready(function () {
 		var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
 		console.log(post_data);
         $.ajax({
-            url: 'modules/GenerateFile.php',
+            url: 'modules/GenerateFile.php?debug=on',
             type: 'POST',
             data: post_data,
             success: function (result) {
                 console.log(result);
-				$('#bpm-code').empty();
-				$('#bpm-code').html('<pre></pre>');
+                $('#bpm-code').empty();
+                $('#bpm-code').html('<pre></pre>');
                 $('#bpm-code pre').text(result);
                 //alert("New Files have been Successfully Generated at server");
             }
