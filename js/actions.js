@@ -1,3 +1,38 @@
+/************************************************************
+                      A N G U L A R     J S
+************************************************************/
+angular.module('todoApp', [])
+  .controller('TodoListController', function() {
+    var todoList = this;
+    
+    todoList.todos = [
+      {text:'learn angular', done:true},
+      {text:'build an angular app', done:false}];
+ 
+    todoList.addTodo = function() {
+      todoList.todos.push({text:todoList.todoText, done:false});
+      todoList.todoText = '';
+    };
+ 
+    todoList.remaining = function() {
+      var count = 0;
+      angular.forEach(todoList.todos, function(todo) {
+        count += todo.done ? 0 : 1;
+      });
+      return count;
+    };
+ 
+    todoList.archive = function() {
+      var oldTodos = todoList.todos;
+      todoList.todos = [];
+      angular.forEach(oldTodos, function(todo) {
+        if (!todo.done) todoList.todos.push(todo);
+      });
+    };
+  });
+
+
+
 $(document).ready(function () {
     //Loading data for display on page load
     $.ajax({
@@ -23,7 +58,7 @@ $(document).ready(function () {
         }
     });
 
-//Sending Connection
+    //Sending Connection
     $('#connect').click(function (e) {
         // Prevent form submission
         e.preventDefault();
@@ -41,25 +76,12 @@ $(document).ready(function () {
                     $('.fa-minus-circle').css({
                         display: 'none'
                     });
-
-                    /*
-                    // Loop over databases
-                    for each (db in val.database) {
-                      
-                      // Loop over tables
-                      for each (tbl in db.tables) {
-                        
-                      }
-                    }
-                    */
                     
                     //Appending Database and Tables
                     $.each(result, function (key, val) {
                         var tables = val.tables;
                         
                         console.log(val);
-                        
-
                         
                         // Databases
                         $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
@@ -140,9 +162,11 @@ $(document).ready(function () {
     $('#create').click(function (event) {
         event.preventDefault();
         var name = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
-		var db_name = $('#sqlDatabases option:selected').text();
-		var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
-		console.log(post_data);
+        var db_name = $('#sqlDatabases option:selected').text();
+        var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
+        
+        console.log(post_data);
+        
         $.ajax({
             url: 'modules/GenerateFile.php?debug=on',
             type: 'POST',

@@ -12,13 +12,16 @@
 		error_reporting(E_ALL);
 		};
 	
+  // Array data from UI
+  $data = $_POST["data"];
+  
+  // TODO: Remove this code below ..... no mysql connection reqired
 	//open DB connection or die
 	$con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
 	if($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');}
-	
+  
 	// Get all table names in the selecetd DB from INFORMATION_SCHEMA
-	
 	$query = "SELECT distinct TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name'";
 	if(!$result = $con->query($query)){
     die('There was an error running the query [' . $con->error . ']');}
@@ -26,11 +29,13 @@
 	
   //------------------------------------
   // Just for testing
+  /*
   $icons = array(
     "fa fa-circle-o", "fa fa-cube", "fa fa-cloud", "fa fa-dashboard",
     "fa fa-lock", "fa fa-graduation-cap", "fa fa-life-ring", "fa fa-plug"
   );
-  
+  */
+  /*
   for ($i=0;$i<count($all_table_names);$i++) {
     $rk = array_rand($icons);
     
@@ -43,6 +48,7 @@
       )
     );
   }
+  */
   //------------------------------------
 
 	if ($DEBUG) var_dump($all_table_names);
