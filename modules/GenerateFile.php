@@ -4,13 +4,14 @@
 	$db_user = $_REQUEST['user'];
 	$db_pass = $_REQUEST['pwd'];
 	$db_name = $_REQUEST['db_name'];
+  $data = $_POST["data"];
 	
 	$DEBUG = FALSE;
 	if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on' )) {
 		$DEBUG = TRUE;
 		ini_set('display_errors', 1);
 		error_reporting(E_ALL);
-		};
+	};
 	
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";
@@ -20,43 +21,26 @@
     if (!is_dir('../../IPMS_test')) {
       mkdir('../../IPMS_test', 0755, true);
     }
-  }  
+  }
   
-  // Array data from UI
-  $data = $_POST["data"];
-  
-  // TODO: Remove this code below ..... no mysql connection reqired
-	//open DB connection or die
-	$con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
-	if($con->connect_errno > 0){
+  //open DB connection or die
+  $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
+  if($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');}
-
-	// Get all table names in the selecetd DB from INFORMATION_SCHEMA
-	$query = "SELECT distinct TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name'";
-	if(!$result = $con->query($query)){
-    die('There was an error running the query [' . $con->error . ']');}
-	$all_table_names = $result->fetch_all(MYSQLI_ASSOC);
-	
-  //------------------------------------
-  // Just for testing
   
+  $all_table_names = array();
+  for ($i=0;$i<count($data);$i++) {
+    if ($db_name == $data[$i]["database"]) {
+      $all_table_names = $data[$i]["tables"];
+    }
+  }
+  
+  /*
   $icons = array(
     "fa fa-circle-o", "fa fa-cube", "fa fa-cloud", "fa fa-dashboard",
     "fa fa-lock", "fa fa-graduation-cap", "fa fa-life-ring", "fa fa-plug"
   );
-
-  for ($i=0;$i<count($all_table_names);$i++) {
-    $rk = array_rand($icons);
-    
-    $all_table_names[$i] = array_merge(
-      $all_table_names[$i],
-      array(
-        "TABLE_ALIAS" => ucfirst($all_table_names[$i]["TABLE_NAME"]),
-        "TABLE_ICON" => $icons[$rk],
-        "TABLE_ISINMENU" => (int)round(rand(0,1)) // 0..1
-      )
-    );
-  }
+  */
   
   //------------------------------------
 
@@ -159,12 +143,12 @@
 	
 	foreach ($all_table_names as $table) { //for eaceh tabel of the sected DB generate CRUD functions
 	
-		$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$table["TABLE_NAME"]."' AND TABLE_SCHEMA = '$db_name'";
+		$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$table["table_name"]."' AND TABLE_SCHEMA = '$db_name'";
 		if(!$result = $con->query($query)){
 		die('There was an error running the query [' . $con->error . ']');}
 		$columns_info = $result->fetch_all(MYSQLI_ASSOC);
 				
-		$output_RequestHandler .= "\t// Table \"" .$table["TABLE_NAME"]. "\" in database " . $db_name . " has ". $result->num_rows . " coloumns. \n";
+		$output_RequestHandler .= "\t// Table \"" .$table["table_name"]. "\" in database " . $db_name . " has ". $result->num_rows . " coloumns. \n";
 		
 		$output_RequestHandler .= "\t// \tCOLUMN_NAME[ORDINAL_POSITION]:\tvalue\tCOLUMN_TYPE\tCOLUMN_KEY\n";
 		foreach($columns_info as $value){
@@ -198,10 +182,10 @@
 		$output_RequestHandler .= "\t\t}\n\n";
 		*/
 		
-		$output_RequestHandler .= "\tpublic function read_$table[TABLE_NAME](\$parameter = array()){\n";
+		$output_RequestHandler .= "\tpublic function read_$table[table_name](\$parameter = array()){\n";
 		$output_RequestHandler .= "\t\t\$sql = \"SELECT \";\n";
 		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"select\",\$parameter)?\$parameter['select']:'*';\n";
-		$output_RequestHandler .= "\t\t\$sql .= \" FROM $table[TABLE_NAME]\";\n";
+		$output_RequestHandler .= "\t\t\$sql .= \" FROM $table[table_name]\";\n";
 		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_1\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_1']:'';\n";
 		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_2\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_2']:'';\n";
 		$output_RequestHandler .= "\t\t\$sql .= array_key_exists(\"inner_join_3\",\$parameter)?\" INNER JOIN \".\$parameter['inner_join_3']:'';\n";
@@ -222,16 +206,16 @@
 		$output_RequestHandler .= "\t\t}\n";		
 		
 		// Angualr JS script for each Table -> will be added in the FOOTER TODO 
-		$output_script .= "\t\t\$scope."."$table[TABLE_NAME]"." = [];\n";
-		$output_script .= "\t\t\$scope.temp"."$table[TABLE_NAME]"."Data = {};\n\n";
+		$output_script .= "\t\t\$scope."."$table[table_name]"." = [];\n";
+		$output_script .= "\t\t\$scope.temp"."$table[table_name]"."Data = {};\n\n";
 		$output_script .= "\t\t\$http.get('<?php echo \$_SERVER['PHP_SELF'] ?>', {\n";
 		$output_script .= "\t\t\tparams:{\n";
-		$output_script .= "\t\t\t\tcmd: 'read_$table[TABLE_NAME]',\n";
+		$output_script .= "\t\t\t\tcmd: 'read_$table[table_name]',\n";
 		$output_script .= "\t\t\t\tparamJS: [{limit: 10, select: \"*\"}]\n";
 		$output_script .= "\t\t\t\t},\n";
 		$output_script .= "\t\t\tparamSerializer: '\$httpParamSerializerJQLike'\n";
 		$output_script .= "\t\t\t}).then(function(response){\n";
-		$output_script .= "\t\t\t\t\$scope."."$table[TABLE_NAME]"." = response.data;\n";
+		$output_script .= "\t\t\t\t\$scope."."$table[table_name]"." = response.data;\n";
 		$output_script .= "\t\t\t});\n\n";
 
 		
@@ -438,7 +422,8 @@
 	$output_menu .= "\t\t<ul class=\"nav nav-tabs\" id=\"bpm-menu\">\n";
 	
 	foreach($all_table_names as $value){
-		$output_menu .= "\t\t\t<li><a title=\"".$value['TABLE_NAME']."\" href=\"#".$value['TABLE_NAME']."\" data-toggle=\"tab\"><i class=\"".$value['TABLE_ICON']."\"></i> ".$value['TABLE_ALIAS']."</a></li>\n";
+    if ($value['is_in_menu'])
+      $output_menu .= "\t\t\t<li><a title=\"".$value['table_name']."\" href=\"#".$value['table_name']."\" data-toggle=\"tab\"><i class=\"".$value['table_icon']."\"></i> ".$value['table_alias']."</a></li>\n";
 	}
 	
 	$output_menu .= "\n";
@@ -463,11 +448,11 @@
 	foreach($all_table_names as $value) {
 				$output_content .= "\t\t\t\t<div class=\"tab-pane";
 				if ($i == 1) {$output_content .= " active";}
-				$output_content .= "\" id=\"".$value['TABLE_NAME']."\">\n";
-				$output_content .= "\t\t\t\t<h2>".$value['TABLE_ALIAS']."</h2>\n";
+				$output_content .= "\" id=\"".$value['table_name']."\">\n";
+				$output_content .= "\t\t\t\t<h2>".$value['table_alias']."</h2>\n";
 				$output_content .= "\t\t\t\t<table class=\"table table-striped table-condensed\" >\n";
 				
-				$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$value["TABLE_NAME"]."' AND TABLE_SCHEMA = '$db_name'";
+				$query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".$value["table_name"]."' AND TABLE_SCHEMA = '$db_name'";
 					if(!$result = $con->query($query)){ 
 					die('There was an error running the query [' . $con->error . ']');}
 					$columns_info = $result->fetch_all(MYSQLI_ASSOC);
@@ -478,7 +463,7 @@
 					$output_content .= "\t\t\t\t\t<th>".$value_2['COLUMN_NAME']."</th>\n";
 					}
 					
-				$output_content .= "\t\t\t\t\t<tr  ng-repeat=\"row in ".$value['TABLE_NAME']."\">\n";
+				$output_content .= "\t\t\t\t\t<tr  ng-repeat=\"row in ".$value['table_name']."\">\n";
 				$output_content .= "\t\t\t\t\t<td><i class=\"fa fa-pencil-square-o\" aria-hidden=\"true\"></i>&nbsp;&nbsp;<i class=\"fa fa-trash\" aria-hidden=\"true\"></i></td>\n";
 				
 				foreach($columns_info as $value_2){
@@ -560,15 +545,4 @@
   
   // Return code
   echo $output_all;
-  
-  
-  /*
-	echo $output_LiamHeader;
-	echo $output_DebugHeader;
-	echo $output_RequestHandler;
-	echo $output_header;
-	echo $output_menu;
-	echo $output_content;
-	echo $output_footer;
-	*/
 ?>

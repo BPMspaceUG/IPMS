@@ -2,7 +2,7 @@
   include_once '_header.inc.php';
 ?>
   <!-- Content -->
-  <div ng-controller="TodoListController as todoList">
+  <div>
     <div class="container" style="padding-top: 30px">
       <form class="bpm-server-connect" action="modules/ConnectDB.php">
         <h3 class="title">connect</h3>
@@ -38,7 +38,7 @@
               </div>
               <label for="password" class="col-sm-2 form-control-label">password</label>
               <div class="col-sm-2">
-                <input type="password" value="" autocomplete="off" class="form-control" id="sqlPort" name="pwd"
+                <input type="password" value="" autocomplete="off" class="form-control" id="sqlPass" name="pwd"
                        placeholder="password">
               </div>
 
