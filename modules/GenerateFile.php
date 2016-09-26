@@ -12,6 +12,16 @@
 		error_reporting(E_ALL);
 		};
 	
+  // check if liam is present and create test directory for IPMS if not exist
+  $content = "";
+  $create_test_file = FALSE;
+  $content = @file_get_contents("../../.git/config");
+  if (!empty($content) && strpos($content,"https://github.com/BPMspaceUG/LIAM.git")) {
+    if (!is_dir('../../IPMS_test')) {
+      mkdir('../../IPMS_test', 0755, true);
+    }
+  }  
+  
   // Array data from UI
   $data = $_POST["data"];
   
@@ -20,7 +30,7 @@
 	$con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
 	if($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');}
-  
+
 	// Get all table names in the selecetd DB from INFORMATION_SCHEMA
 	$query = "SELECT distinct TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name'";
 	if(!$result = $con->query($query)){
@@ -29,13 +39,12 @@
 	
   //------------------------------------
   // Just for testing
-  /*
+  
   $icons = array(
     "fa fa-circle-o", "fa fa-cube", "fa fa-cloud", "fa fa-dashboard",
     "fa fa-lock", "fa fa-graduation-cap", "fa fa-life-ring", "fa fa-plug"
   );
-  */
-  /*
+
   for ($i=0;$i<count($all_table_names);$i++) {
     $rk = array_rand($icons);
     
@@ -48,7 +57,7 @@
       )
     );
   }
-  */
+  
   //------------------------------------
 
 	if ($DEBUG) var_dump($all_table_names);
@@ -544,8 +553,10 @@
   $output_all .= $output_content;
   $output_all .= $output_footer;
   
-  // Write code to file (only for now)
-  file_put_contents("../../IPMS_test/employees.php", $output_all);
+  // Write code to file
+  if (is_dir('../../IPMS_test')) {
+    file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
+  }
   
   // Return code
   echo $output_all;

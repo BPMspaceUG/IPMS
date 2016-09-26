@@ -80,6 +80,7 @@
         <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
         <div>
           <button name="create" class="btn btn-danger btn-sm" id="create">CREATE</button>
+          <a name="test" class="btn btn-success" href="../IPMS_test/" target="_blank" >Open Test Directory </a>
         </div>
       </div>
 
