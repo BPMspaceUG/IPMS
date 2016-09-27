@@ -5,14 +5,14 @@
 	$db_pass = $_REQUEST['pwd'];
 	$db_name = $_REQUEST['db_name'];
   $data = $_POST["data"];
-	
-	$DEBUG = FALSE;
-	if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on' )) {
-		$DEBUG = TRUE;
-		ini_set('display_errors', 1);
-		error_reporting(E_ALL);
-	};
-	
+  
+  $DEBUG = FALSE;
+  if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on')) {
+    $DEBUG = TRUE;
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+  };
+  
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";
   $create_test_file = FALSE;

@@ -47,7 +47,7 @@ $(document).ready(function () {
                     
                    // console.log(result);
                     asdf = result;
-                    // console.log(asdf);
+                    console.log(asdf);
                     
                     //Appending Database and Tables
                     $.each(result, function (key, val) {
@@ -57,12 +57,14 @@ $(document).ready(function () {
                         $('#sqlDatabases').append('<option value="' + val.database + '">' + val.database + '</option>');
                         
                         $('#sqlTables').append('<div class="bpm-checkboxes" id="' + val.database + '"><table class="table"></table></div>');
+                        var index = 0;
                         $.each(tables, function (key, value) {
                             $('#' + val.database).append(
                               '<tr><td style="width:200px;">' + value.table_name + '</td>'+
                               '<td><input type="text" class="form-control" value="' + value.table_alias +'"/></td>'+
-                              '<td><input type="text" class="form-control" value="' + value.table_icon +'"/></td>'+
+                              '<td><input type="text" class="form-control data_tblicon" value="' + value.table_icon +'"/></td>'+
                               '</tr>');
+                            index += 1; // for identification
                         });
                     });
 
@@ -136,6 +138,26 @@ $(document).ready(function () {
     var tbname = $('.bpm-checkboxes.bpm-active input[type="radio"]:checked').val();
     var dbname = $('#sqlDatabases option:selected').text();
     //var post_data = $('form').serialize() + '&table_name=' + name + '&db_name=' + db_name;
+        
+    console.log('------------------------------------- Create Button pressed');
+    
+    // Find database
+    var index = -1;
+    for (i=0;i<asdf.length;i++){
+      if (asdf[i].database == dbname) {
+        index = i;
+      }
+    }
+    console.log("Index=" + index);
+    
+    // rewrite data array
+    var n = 0; // TODO: Optimize...
+    $('#'+dbname+' .data_tblicon').each(function () {
+      // Write changes
+      asdf[index].tables[n].table_icon = this.value;
+      n += 1;
+    });
+    console.log(asdf[index]);
     
     var d = {
       host: $('#sqlServer')[0].value,
@@ -145,6 +167,8 @@ $(document).ready(function () {
       db_name: dbname,
       data: asdf
     }
+    
+    console.log('------------------------------------- Data Array created');
     console.log(d);
     
     $.ajax({
@@ -152,6 +176,7 @@ $(document).ready(function () {
         type: 'POST',
         data: d,
         success: function (result) {
+            console.log('------------------------------------- Script generated');
             console.log(result);
             $('#bpm-code').empty();
             $('#bpm-code').html('<pre></pre>');
