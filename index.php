@@ -2,7 +2,7 @@
   include_once '_header.inc.php';
 ?>
   <!-- Content -->
-  <div>
+  <div ng-controller="IPMSController">
     <div class="container" style="padding-top: 30px">
       <form class="bpm-server-connect" action="modules/ConnectDB.php">
         <h3 class="title">connect</h3>
