@@ -18,6 +18,7 @@
   <script type="text/javascript" src="libraries/js/jquery.min.js"></script>
   <script type="text/javascript" src="libraries/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="libraries/js/clipboard.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
   <?php
   //    // session_destroy();
   //    if (empty ($_GET ["error_messages"])) {
