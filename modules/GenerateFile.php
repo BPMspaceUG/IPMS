@@ -163,7 +163,7 @@
 					$prim_key[$i] = $value['COLUMN_NAME'];
 					$i++;
 		}}
-		
+
 		$foreign_key =array();
 		//SELECT TABLE_NAME,COLUMN_NAME,CONSTRAINT_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
 		//http://stackoverflow.com/questions/201621/how-do-i-see-all-foreign-keys-to-a-table-or-column
@@ -197,13 +197,45 @@
 		$stmt = $dbConnection->prepare('SELECT * FROM employees WHERE name = ?');
 		$stmt->bind_param('s', $name);
 		$stmt->execute();
-		*/
-		
-		// function create_$table, function update_$table, , function delet_$table (nur für TAbles nicht Views!!)
-		
+		*/    
 		$output_RequestHandler .= "\t\t\$query = \$this->db->query(\$sql);\n\n";
 		$output_RequestHandler .= "\t\treturn !empty(\$query)?\$this->getResultArray(\$query):false;\n";
-		$output_RequestHandler .= "\t\t}\n";		
+		$output_RequestHandler .= "\t\t}\n";
+    
+    // function create_$table, function update_$table, , function delet_$table (nur für TAbles nicht Views!!)
+    
+    //---------------------------------- DELETE FUNCTION FOR EACH TABLE ----------------------------------    
+    $output_RequestHandler .= "\n\t//--------------------Delete Function for Table: ".$table["table_name"]."\n";
+    $output_RequestHandler .= "\tpublic function delete_".$table["table_name"]."(\$id) {\n";
+    $output_RequestHandler .= "\t\t\$sql = \"DELETE FROM ".$table["table_name"]." WHERE ||id|| = $id;\";\n";
+    $output_RequestHandler .= "\t\t\$result = \$this->db->query(\$sql);\n";
+    $output_RequestHandler .= "\t\treturn \$result;\n";
+    $output_RequestHandler .= "\t}\n";
+    
+    //---------------------------------- CREATE FUNCTION FOR EACH TABLE ----------------------------------    
+    $columns = array();
+		foreach($columns_info as $value){
+      $columns[] = $value['COLUMN_NAME'];
+      /*
+			$value['ORDINAL_POSITION']
+      $value['COLUMN_NAME']
+      $value['COLUMN_TYPE']
+      $value['COLUMN_KEY']
+      */
+		}
+    $output_RequestHandler .= "\n\t//--------------------Create Function for Table: ".$table["table_name"]."\n";
+    $output_RequestHandler .= "/*".implode(",", $columns)."*/\n";
+    $output_RequestHandler .= "\tpublic function create_".$table["table_name"]."(\$parameter) {\n";
+    $output_RequestHandler .= "\$param = json_decode(\$parameter);\n";
+    $output_RequestHandler .= "\$werte = \"'\".implode(\"','\", \$param[0]).\"'\";\n";
+    $output_RequestHandler .= "\t\t\$sql = \"INSERT INTO ".$table["table_name"]." (".implode(",", $columns).") VALUES (\$werte);\";\n";
+    $output_RequestHandler .= "\t\t\$result = \$this->db->query(\$sql);\n";
+    $output_RequestHandler .= "\t\treturn \$result;\n";
+    $output_RequestHandler .= "\t}\n";
+    
+    
+    
+    
 		
 		// Angualr JS script for each Table -> will be added in the FOOTER TODO 
 		$output_script .= "\t\t\$scope."."$table[table_name]"." = [];\n";
@@ -482,6 +514,7 @@
 	$output_content .= "<!--  body content ends here -->\n\n";
 	
 
+  
 	$output_footer = "<!--  footer starts here -->\n\n";
 
 	$output_footer .= "<div class=\"container\">\n";
@@ -502,7 +535,6 @@
 	$output_footer .= "\t\t</div><small>\n";
 	$output_footer .= "\t</div>\n";
 	$output_footer .= "</div>\n";
-
 	
 	$output_footer .= "<!-- JS -->\n";
 	$output_footer .= "<script type=\"text/javascript\" src=\"../js/angular.min.js\"></script>\n";
