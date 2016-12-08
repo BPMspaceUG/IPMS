@@ -1,0 +1,42 @@
+  #bpm-liam-header { 
+  	margin-top: -20px; 
+  	margin-bottom: 10px; 
+  	padding-right: 50px;
+  }
+  #bpm-logo-care { 
+  	position:relativ;  
+  	z-index: 10;  
+  	margin-right: -20px;
+  }
+  #bpm-logo    { 
+  	position:relativ; 
+  	margin-bottom: 20px;
+  }
+  #bpm-menu {
+  	margin-right: 20px; 
+  	margin-left: 20px; 
+  	margin-bottom: 10px;
+  }
+  #bpm-content {
+  	margin-right: 20px; 
+  	margin-left: 20px; 
+  	margin-bottom: 10px;
+  }
+  #bpm-footer {
+  	margin-right: 10px; 
+  	margin-left: 10px; 
+  	margin-bottom: 10px;
+  }
+  .newRows{
+    background-color: #ffc775;
+  }
+  .btnnewRows{
+    background-color: #e87d0b;
+  }
+  .btnUpdate{
+    display: none;
+    background-color: #30b213;
+  }
+  .fresh {
+    background-color: #a6fc64;
+  }
