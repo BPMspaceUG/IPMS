@@ -205,7 +205,8 @@ $(document).ready(function () {
     console.log(d);
     
     $.ajax({
-        url: 'modules/GenerateFile.php',
+        // url: 'modules/GenerateFile.php',
+        url: 'generator_parts/fusion.php',
         type: 'POST',
         data: d,
         success: function (result) {
