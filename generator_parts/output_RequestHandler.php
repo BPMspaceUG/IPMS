@@ -75,7 +75,7 @@ if (!empty($_GET["test"])){$test=TRUE;}
     $tmp = array(
         array(1, "test", 13),
         array(2, "testX", 42),
-        array(3, "testY", 0815)
+        array(3, "testY", 815)
       );
     return json_encode($tmp);
   }
