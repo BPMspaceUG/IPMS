@@ -30,71 +30,89 @@ if (!empty($_GET["test"])){$test=TRUE;}
   class RequestHandler {
 
     private $db;
+    
     public function __construct() {
+      //identifyer for replace in fusion.php
+      $config['db'] =  array('host' => "replaceServer",'user' => "replaceUser",'password' => "replacePassword",'database' => "replaceDBName" );
 
-    //identifyer for replace in fusion.php
-    $config['db'] =  array('host' => "replaceServer",'user' => "replaceUser",'password' => "replacePassword",'database' => "replaceDBName" );
+      //for testing $_GET["p"] = password
+      if ($config['db']['host'] == "replaceServer") { $config['db']['host'] = 'localhost'; }
+      if ($config['db']['user'] == "replaceUser") { $config['db']['user'] = 'root'; }
+      if (($config['db']['password'] == "replacePassword") && isset($_GET["p"])) { $config['db']['password'] = $_GET["p"]; }
+      if ($config['db']['database'] == "replaceDBName") { $config['db']['database'] = 'sample'; }
 
-    //for testing $_GET["p"] = password
-    if ($config['db']['host'] == "replaceServer") { $config['db']['host'] = 'localhost'; }
-    if ($config['db']['user'] == "replaceUser") { $config['db']['user'] = 'root'; }
-    if (($config['db']['password'] == "replacePassword") && isset($_GET["p"])) { $config['db']['password'] = $_GET["p"]; }
-    if ($config['db']['database'] == "replaceDBName") { $config['db']['database'] = 'sample'; }
-
-    $db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['database']);
-    /* check connection */
-    if($db->connect_errno){
-      printf("Connect failed: %s", mysqli_connect_error());
-      exit();
-      }
-    $db->query("SET NAMES utf8");
-    $this->db = $db;
-  }
-
-  private function getResultArray($result) {
-    $results_array = array();
-    if (!$result) return false;
-    while ($row = $result->fetch_assoc()) {
-      $results_array[] = $row;
+      $db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['database']);
+      /* check connection */
+      if($db->connect_errno){
+        printf("Connect failed: %s", mysqli_connect_error());
+        exit();
+        }
+      $db->query("SET NAMES utf8");
+      $this->db = $db;
     }
-    return json_encode($results_array);
+
+    private function getResultArray($result) {
+      $results_array = array();
+      if (!$result) return false;
+      while ($row = $result->fetch_assoc()) {
+        $results_array[] = $row;
+      }
+      return json_encode($results_array);
+    }
+    
+    //================================== CREATE
+    public function create($param) {
+      /*
+      $query = "INSERT INTO " . $param["tablename"] ." (colums) VALUES (values);";
+      $res = $this->db->query($query);
+      */
+      return -1;
+    }
+    //================================== READ
+    public function read($param) {
+      /*
+      $query = "SELECT * FROM " . $param["tablename"] .";";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+      */
+      $tmp = array(
+          array(1, "test", 13),
+          array(2, "testX", 42),
+          array(3, "testY", 815)
+        );
+      return json_encode($tmp);
+    }
+    //================================== UPDATE
+    public function update($param) {
+      /*
+      $query = "UPDATE " . $param["tablename"] ." SET column = value;";
+      $res = $this->db->query($query);
+      */
+      return -1;
+    }
+    //================================== DELETE
+    public function delete($param) {
+      /*
+      $query = "DELETE FROM " . $param["tablename"] ." WHERE id = value;";
+      $res = $this->db->query($query);
+      */
+      return -1;
+    }
   }
 
-//the line below gets replaced with code...
-//replaceCRUD
-
-// create, update, delete: 
-  // Nicht mehr in dieser Datei sondern auf separate asdf.php dateien aufteilen. Andernfalls 
-  // => evtl. diese Datei in output_DBContent.php umbenennen
-// read: auslesen der Datensätze und generierung des "tables"-Array für Angular
-
-  //================================== READ
-  public function read($param) {
-    // Parameters = $tablename, $limit = 1000
-    //$res = $this->db->query("SELECT * FROM $tablename LIMIT $limit;");
-    $tmp = array(
-        array(1, "test", 13),
-        array(2, "testX", 42),
-        array(3, "testY", 815)
-      );
-    return json_encode($tmp);
+  //Class Definition ends here ";
+  //Request Handler ends here  ";
+  //END return just data from the DB here";
+  
+  $RH = new RequestHandler();
+  if ( $command != "") {
+    if ( $parameter != "") {
+      $result = $RH->$command($parameter);
+    }
+    else {
+      $result = $RH->$command();    
+    }
+    echo $result;
+    exit;
   }
-
-
-}
-
-$RH = new RequestHandler();
-if ( $command != "") {
-  if ( $parameter != "") {
-    $result = $RH->$command($parameter);
-  }
-  else {
-    $result = $RH->$command();    
-  }
-  echo $result;
-  exit;
-}
-//Class Definition ends here ";
-//Request Handler ends here  ";
-//END return just data from the DB here";
 ?>
