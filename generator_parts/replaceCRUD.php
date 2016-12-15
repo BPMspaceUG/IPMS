@@ -33,19 +33,3 @@ foreach ($all_table_names as $table) { //for each table of the sected DB generat
     $query = $this->db->query($sql);
     return !empty($query)?$this->getResultArray($query):false;
   }
-
-  // prepare part of Angular JS
-  $output_script = ""
-  // Angualr JS script for each Table -> will be added in the FOOTER TODO 
-  ."    $scope."."$table[table_name]"." = [];"
-  ."    $scope.temp"."$table[table_name]"."Data = {};"
-  ."    $http.get('<?php echo $_SERVER['PHP_SELF'] ?>', {"
-  ."      params:{"
-  ."        cmd: 'read_$table[table_name]',"
-  ."        paramJS: [{limit: 10, select: "*"}]"
-  ."        },"
-  ."      paramSerializer: '$httpParamSerializerJQLike'"
-  ."      }).then(function(response){"
-  ."        $scope."."$table[table_name]"." = response.data;"
-  ."      });";
-} //End loop for each table

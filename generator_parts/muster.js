@@ -66,11 +66,13 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.dept_manager = [];
   $scope.tempdept_managerData = {};
 
+  /*
   $('#json-renderer').jsonViewer($scope.tables,{collapsed: true});
   $( document ).ready(function() {
     $( '#nav-'+$scope.tables[0].htmlID ).click()
   });
-
+  */
+  
   // $('#json-renderer').jsonviewerer({a:1,b:{c:['d',1]}});
 
 /*On click button 'create' send the new rows to the server*/

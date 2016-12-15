@@ -106,6 +106,11 @@ $handle = fopen("./output_footer.php", "r");
 $output_footer = stream_get_contents($handle);
 $log.= '<h4>$output_footer</h4>'.$output_footer;
 
+// Im Footer JS ersetzen
+$handle = fopen("./muster.js", "r");
+$musterJS = stream_get_contents($handle);
+$output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
+
 fclose($handle);
 
 // var_dump($log );

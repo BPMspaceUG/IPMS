@@ -28,7 +28,6 @@
               <script type="text/javascript" src="../js/tinymceng.js"></script>
               <script type="text/javascript" src="../js/bootstrap.min.js"></script>
               <script type="text/javascript" src="../js/xeditable.min.js"></script>
-              <script type="text/javascript" src="../js/jsonviewer.min.js"></script>
 
               <!-- the line below gets replaced with the generated table -->
               <!-- replaceDBContent -->
@@ -37,7 +36,7 @@
               <!-- script>tables=[{tablename:'Vordrängler',columnames:['S 1', 'S2', '3', ],rows:[['Zelle A', 'Zelle B', 'Zelle C']]}]</script -->
 
               <!-- Angular handling-script -->
-              <script type="text/javascript" src="../IPMS/js/muster.js"></script>
+              <script type="text/javascript">replaceMusterJS</script>
               <!-- <script type="text/javascript" src="js/sample.js"></script> -->
               
   </body>
