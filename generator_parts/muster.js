@@ -52,11 +52,9 @@ app.controller('sampleCtrl', function ($scope, $http) {
             log('response: ')
             log(response)
             $tables.push({
-                {
                   tablename:tbl,
                   columnames:tbl.columnames,
                   rows:response.data
-                }
             })
           });
       }
