@@ -29,7 +29,8 @@ var tables = tables || [
     ]
   }
 ]
-
+console.log('tables:')
+console.log(tables)
 
 
 var app = angular.module("sampleApp", ["xeditable"])
@@ -39,7 +40,7 @@ app.run(function(editableOptions) {
 app.controller('sampleCtrl', function ($scope, $http) {
 
   $scope.historyLog = true
-
+  $scope.tables=[]
   tables.forEach(
       function(tbl) {
           $http.get(window.location.pathname, {
@@ -51,8 +52,8 @@ app.controller('sampleCtrl', function ($scope, $http) {
           }).then(function(response){
             log('response: ')
             log(response)
-            $tables.push({
-                  tablename:tbl.table_name,
+            $scope.tables.push({
+                  tablename:tbl.table_name+'',
                   columnames:tbl.columnames,
                   rows:response.data
             })
@@ -62,7 +63,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
   $scope.tables = tables.map(function(table){
     //define a html-systax valid id-string
-    table.htmlID = table.tablename.replace(/\s+/,'')
+    table.htmlID = table.table_name.replace(/\s+/,'')
     //define additional Rows
     table.newRows = [[],[1,2,3]];
     $(tables[0].rows).each(function(){
