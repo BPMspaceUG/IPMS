@@ -40,6 +40,28 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
   $scope.historyLog = true
 
+  tables.forEach(
+      function(tbl) {
+          $http.get(window.location.pathname, {
+            params:{
+              cmd: 'read',
+              paramJS: [{tablename: tbl.tablename, limit: 150, select: "*"}]
+            },
+            paramSerializer: '$httpParamSerializerJQLike'
+          }).then(function(response){
+            log('response: ')
+            log(response)
+            $tables.push({
+                {
+                  tablename:tbl,
+                  columnames:tbl.columnames,
+                  rows:response.data
+                }
+            })
+          });
+      }
+    )
+
   $scope.tables = tables.map(function(table){
     //define a html-systax valid id-string
     table.htmlID = table.tablename.replace(/\s+/,'')
@@ -52,6 +74,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
   })
 
   $scope.tempdepartmentsData = {};
+
 
   $http.get(window.location.pathname, {
     params:{
