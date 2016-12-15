@@ -68,6 +68,12 @@ if (!empty($_GET["test"])){$test=TRUE;}
   // => evtl. diese Datei in output_DBContent.php umbenennen
 // read: auslesen der Datensätze und generierung des "tables"-Array für Angular
 
+  //================================== READ
+  public function read($param) {
+    // Parameters = $tablename, $limit = 1000
+    //$res = $this->db->query("SELECT * FROM $tablename LIMIT $limit;");
+    return json_encode($param);
+  }
 
 
 }

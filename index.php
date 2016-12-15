@@ -79,7 +79,9 @@
       <div class="row">
         <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
         <div>
+          <!-- Create Button -->
           <button name="create" class="btn btn-danger" id="create"><i class="fa fa-play"></i> CREATE</button>
+          <!-- Open Test Dir Button -->
           <a name="test" class="btn btn-success" href="../IPMS_test/" target="_blank">
             <i class="fa fa-folder-open"></i> Open Test Directory
           </a>
