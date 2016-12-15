@@ -1,6 +1,6 @@
 
 // Mustertabelle
-var tables = [
+var tables = tables || [
   {
     tablename:'Tabellenname',
     columnames:['Spalte 1', 'Spalte 2', 'Spalte 3', ],

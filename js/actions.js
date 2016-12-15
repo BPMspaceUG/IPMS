@@ -31,9 +31,9 @@ angular.module('appIPMS', [])
     };
   });
 
+  var asdf;
 $(document).ready(function () {
   
-  var asdf;
   
   //Loading data for display on page load
   $.ajax({
