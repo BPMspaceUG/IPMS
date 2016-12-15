@@ -72,7 +72,12 @@ if (!empty($_GET["test"])){$test=TRUE;}
   public function read($param) {
     // Parameters = $tablename, $limit = 1000
     //$res = $this->db->query("SELECT * FROM $tablename LIMIT $limit;");
-    return json_encode($param);
+    $tmp = array(
+        array(1, "test", 13),
+        array(2, "testX", 42),
+        array(3, "testY", 0815)
+      );
+    return json_encode($tmp);
   }
 
 
