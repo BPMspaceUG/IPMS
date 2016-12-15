@@ -52,7 +52,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
             log('response: ')
             log(response)
             $tables.push({
-                  tablename:tbl,
+                  tablename:tbl.table_name,
                   columnames:tbl.columnames,
                   rows:response.data
             })
@@ -74,15 +74,15 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.tempdepartmentsData = {};
 
 
-  $http.get(window.location.pathname, {
-    params:{
-      cmd: 'read_departments',
-      paramJS: [{limit: 10, select: "*"}]
-    },
-    paramSerializer: '$httpParamSerializerJQLike'
-  }).then(function(response){
-    $scope.departments = response.data;
-  });
+  // $http.get(window.location.pathname, {
+  //   params:{
+  //     cmd: 'read',
+  //     paramJS: [{limit: 10, select: "*"}]
+  //   },
+  //   paramSerializer: '$httpParamSerializerJQLike'
+  // }).then(function(response){
+  //   $scope.departments = response.data;
+  // });
 
   $scope.dept_manager = [];
   $scope.tempdept_managerData = {};

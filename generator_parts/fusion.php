@@ -131,7 +131,7 @@ $output_all = '<?php'
   ;
 // echo $output_all;
 // var_dump( $output_RequestHandler);
-var_dump( $data );
+var_dump( json_encode( $all_table_names ) );
 
   // Write code to file: .php as live-file, .txt as debug
   if (is_dir('../../IPMS_test')) {
