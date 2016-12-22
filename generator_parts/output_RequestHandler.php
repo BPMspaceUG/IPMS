@@ -69,16 +69,18 @@ if (!empty($_GET["test"])){$test=TRUE;}
       return -1;
     }
     //================================== READ
-    public function read($param) {
+    public function read($param) {  
+      
+      $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";
       /*
-      $query = "SELECT * FROM " . $param["tablename"] .";";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
       */
       $tmp = array(
-          array(1, "test", 13),
-          array(2, "testX", 42),
-          array(3, "testY", 815)
+          array(1, "Tablename=".$param["tablename"], 13),
+          array(2, "Limit",  $param["limit"]),
+          array(3, "ColumnsSelect=", $param["select"]),
+          array(3, "Query", $query)
         );
       return json_encode($tmp);
     }

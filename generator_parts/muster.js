@@ -53,7 +53,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
             log('response: ')
             log(response)
             $scope.tables.push({
-                  tablename:tbl.table_name+'',
+                  tablename:tbl.tablename+'',
                   columnames:tbl.columnames,
                   rows:response.data
             })
@@ -63,7 +63,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
   $scope.tables = tables.map(function(table){
     //define a html-systax valid id-string
-    table.htmlID = table.table_name.replace(/\s+/,'')
+    table.htmlID = table.tablename.replace(/\s+/,'')
     //define additional Rows
     table.newRows = [[],[1,2,3]];
     $(tables[0].rows).each(function(){
