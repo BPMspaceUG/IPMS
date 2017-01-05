@@ -6,9 +6,9 @@
         <div ng-repeat="log in changeHistory | limitTo:-3">{{log.changeHistorycounter}} Tabelle: {{log.table}} Zeile: {{(log.rowID +1)}} Spalte: {{(log.colID +1)}}
         <textarea rows="1" cols="40">{{log.cell}}</textarea>
         </div>
-        <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.htmlID}}">
+        <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
           
-          <h2>{{table.tablename}}</h2>
+          <h2>{{table.table_alias}}</h2>
           <table class="table" >
             <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th>
             <th ng-repeat="name in table.columnames">{{name}}</th>

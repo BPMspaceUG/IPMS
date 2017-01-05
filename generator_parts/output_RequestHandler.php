@@ -51,7 +51,7 @@ if (!empty($_GET["test"])){$test=TRUE;}
       $this->db = $db;
     }
 
-    private function getResultArray($result) {
+    private function parseToJSON($result) {
       $results_array = array();
       if (!$result) return false;
       while ($row = $result->fetch_assoc()) {
@@ -69,20 +69,20 @@ if (!empty($_GET["test"])){$test=TRUE;}
       return -1;
     }
     //================================== READ
-    public function read($param) {  
-      
+    public function read($param) {      
       $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";
-      /*
+      
       $res = $this->db->query($query);
-      return $this->getResultArray($res);
-      */
+      return $this->parseToJSON($res);
+      /*
       $tmp = array(
           array(1, "Tablename", $param["tablename"]),
           array(2, "Limit",  $param["limit"]),
           array(3, "ColumnsSelect=", $param["select"]),
           array(4, "Query", $query)
         );
-      return json_encode($tmp);
+      */
+      //return json_encode($tmp);
     }
     //================================== UPDATE
     public function update($param) {

@@ -16,38 +16,58 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
   tables.forEach(
       function(tbl) {
+          // Request from server
           $http.get(window.location.pathname, {
             params:{
               cmd: 'read',
               paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
             },
             paramSerializer: '$httpParamSerializerJQLike'
-          }).then(function(response){
-            log('response: ')
-            log(response)
+          }).then(function(response){ 
+
+            console.log("ResponseData: ", response.data);
             /*
-            $scope.tables.push({
-                  tablename:tbl.table_name+'',
-                  columnames:tbl.columnames,
-                  rows:response.data
-            })
+            var rows = []
+            response.data.forEach(
+              function (X) {
+                rows.push( Object.keys(response.data).map(function(key){ return response.data[key] }) )
+              }
+            )
             */
-            $scope.tables = tables
+            
+            //define additional Rows
+            var newRows = [[]]
+            if (response.data.length > 0) {
+              Object.keys(response.data[0]).forEach( function(){newRows[newRows.length-1].push('')} )
+            }
+            
+            $scope.tables.push({
+              table_name: tbl.table_name,
+              table_alias: tbl.table_alias,
+              columnames: response.columnames,
+              rows: response.data,
+              newRows : newRows
+            })
+
+            
+            console.log('Table: ', $scope.tables.slice(-1))
+            
+            // TODO: Platzhalter für Scope Texfelder generierung
+            
+            
           });
       }
     )
 
+    /*
   $scope.tables = tables.map(function(table){
     //define a html-systax valid id-string
     table.htmlID = table.table_name.replace(/\s+/,'')
-    //define additional Rows
-    table.newRows = [[],[1,2,3]];
-    $(tables[0].rows).each(function(){
-      table.newRows[0].push('')
-    })
+
     return table
   })
-
+*/
+  
   $scope.tempdepartmentsData = {};
 
 
