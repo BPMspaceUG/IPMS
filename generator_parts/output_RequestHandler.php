@@ -77,10 +77,10 @@ if (!empty($_GET["test"])){$test=TRUE;}
       return $this->getResultArray($res);
       */
       $tmp = array(
-          array(1, "Tablename=".$param["tablename"], 13),
+          array(1, "Tablename", $param["tablename"]),
           array(2, "Limit",  $param["limit"]),
           array(3, "ColumnsSelect=", $param["select"]),
-          array(3, "Query", $query)
+          array(4, "Query", $query)
         );
       return json_encode($tmp);
     }
@@ -90,7 +90,10 @@ if (!empty($_GET["test"])){$test=TRUE;}
       $query = "UPDATE " . $param["tablename"] ." SET column = value;";
       $res = $this->db->query($query);
       */
-      return -1;
+      $tmp = array(
+          array(1, "Success=true")
+        );
+      return json_encode($tmp);
     }
     //================================== DELETE
     public function delete($param) {

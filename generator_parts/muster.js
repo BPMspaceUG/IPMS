@@ -1,69 +1,45 @@
 
 // Mustertabelle
-var tables = tables || [
-  {
-    tablename:'Tabellenname',
-    columnames:['Spalte 1', 'Spalte 2', 'Spalte 3', ],
-    rows:[
-      ['Zelle A', 'Zelle B', 'Zelle C'],
-      ['Zelle D', 'Zelle E', 'Zelle F'],
-      ['Zelle G', 'Zelle H', 'Lange Zelle \nmit Zeilenumbruch']
-    ]
-  },
-  {
-    tablename:'Tabelle 2',
-    columnames:['Lange Spalte ....................................', 'Spalte 2', 'Spalte 3', ],
-    rows:[
-      ['Zelle J', 'Zelle K', 'Zelle L'],
-      ['Zelle M', 'Zelle N', 'Zelle O'],
-      ['Zelle P', 'nächste Zelle leer','']
-    ]
-  },
-  {
-    tablename:'Tabelle 3',
-    columnames:['Zahlenspalte', 'SQL-Injection', 'Sonderzeichen', '4. Spalte', ],
-    rows:[
-      [1, 'Select', '$', '8g76(/&G897gH=)(Zf9h98zf)(FZfz)FZU(9sfz8s9fz889f7zE(ZF(/FZz8=()FZ=8fz9(FZS)F(Z98f)(F9f8zF(fifgeuFHBE/'],
-      [2, ';Select', '&', '8g76(/&G897gH=)(Zf9h98zf)(FZfz)FZU(9sfz8s9fz889f7zE(ZF(/FZz8=()FZ=8fz9(FZS)F(Z98f)(F9f8zF(fifgeuFHBE/'],
-      [3, 'Or','§%/|#+*~', '8g76(/&G897gH=)(Zf9h98zf)(FZfz)FZU(9sfz8s9fz889f7zE(ZF(/FZz8=()FZ=8fz9(FZS)F(Z98f)(F9f8zF(fifgeuFHBE/']
-    ]
-  }
-]
+var tables = tables
+
 console.log('tables:')
 console.log(tables)
-
 
 var app = angular.module("sampleApp", ["xeditable"])
 app.run(function(editableOptions) {
   editableOptions.theme = 'bs2'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
-app.controller('sampleCtrl', function ($scope, $http) {
 
-  $scope.historyLog = true
-  $scope.tables=[]
+app.controller('sampleCtrl', function ($scope, $http) {
+  $scope.historyLog = true  
+  $scope.tables = []
+
   tables.forEach(
       function(tbl) {
           $http.get(window.location.pathname, {
             params:{
               cmd: 'read',
-              paramJS: [{tablename: tbl.tablename, limit: 150, select: "*"}]
+              paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
             },
             paramSerializer: '$httpParamSerializerJQLike'
           }).then(function(response){
             log('response: ')
             log(response)
+            /*
             $scope.tables.push({
-                  tablename:tbl.tablename+'',
+                  tablename:tbl.table_name+'',
                   columnames:tbl.columnames,
                   rows:response.data
             })
+            */
+            $scope.tables = tables
           });
       }
     )
 
   $scope.tables = tables.map(function(table){
     //define a html-systax valid id-string
-    table.htmlID = table.tablename.replace(/\s+/,'')
+    table.htmlID = table.table_name.replace(/\s+/,'')
     //define additional Rows
     table.newRows = [[],[1,2,3]];
     $(tables[0].rows).each(function(){

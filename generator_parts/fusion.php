@@ -3,13 +3,15 @@
 $handle = fopen("./testasdf.txt", "r");
 $testasdf = stream_get_contents($handle);
 
+  //var_dump($_REQUEST);
+  
  // put parameters into variables
   if (isset($_REQUEST['host'])&&isset($_REQUEST['port'])&&isset($_REQUEST['user'])&&isset($_REQUEST['pwd'])&&isset($_REQUEST['db_name'])) {
     $db_server = $_REQUEST['host'].':'.$_REQUEST['port'];
     $db_user = $_REQUEST['user'];
     $db_pass = $_REQUEST['pwd'];
     $db_name = $_REQUEST['db_name'];
- // $data = $_POST["data"];
+    $data = $_REQUEST["data"];
   }else{
     //Default
     $db_server = 'localhost:3306';
@@ -54,8 +56,8 @@ $testasdf = stream_get_contents($handle);
   }
   
   $all_table_names = array();
-  // var_dump($data[0]['data'][11]->tables);	
-  $all_table_names = $data[0]['data'][11]->tables;
+  //var_dump($data);// [0]['data'][11]->tables);	 
+  $all_table_names = $data[11]["tables"];
 
 // if ($DEBUG) var_dump($all_table_names);
 
