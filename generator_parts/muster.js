@@ -94,6 +94,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
   // $('#json-renderer').jsonviewerer({a:1,b:{c:['d',1]}});
 
 /*On click button 'create' send the new rows to the server*/
+// überführen in send
 $scope.createRow = function (table){
  var body ={
       cmd : 'create_'+'employees',
@@ -108,21 +109,62 @@ $scope.createRow = function (table){
 
 }
 
+/*
+Allround send for changes atDB
+*/
+
+$scope.send = function (cud, param){
+
+ var body ={cmd : 'cud', paramJS : {}}
+
+  function post(){
+    $http.post(window.location.pathname, {
+        params:{
+          cmd: cud,
+          paramJS: body.paramJS
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      })
+    .then(function(response){ 
+      console.log("ResponseData: ", response.data);
+    })
+  }
+
+  log(cud+':')
+  if (cud == 'create') {
+    body.paramJS = {row:param.row, table:param.table}
+    post()
+  }else if (cud == 'update') {
+    body.paramJS = {id:param.id, colum:param.colum, value:param.value, table:param.table}
+    post()
+  }else if (cud == 'delete') {
+    body.paramJS = {id:param.id, table:param.table}
+    post()
+  }else{
+    log('fail')
+  }
+
+
+}
+
+
+
 /*If there is a value in one of the cells in the last row
 then add an empty row*/
-$scope.addNewRow = function (table){
-  var added = false, row = table.newRows[table.newRows.length -1]
-  for (var i = 0; i < row.length; i++) {
-    if (!added && (row[i]+'').length > 0) {
-      var newLine = []
-      added = true
-      for (var colums = 0; colums < row.length; colums++) {
-        newLine.push('')
-      };
-      table.newRows.push(newLine)
-    }; 
-  };
-}
+// cleanflag -> hat nicht mehr funktioniert, zweck fraglich
+// $scope.addNewRow = function (table){
+//   var added = false, row = table.newRows[table.newRows.length -1]
+//   for (var i = 0; i < row.length; i++) {
+//     if (!added && (row[i]+'').length > 0) {
+//       var newLine = []
+//       added = true
+//       for (var colums = 0; colums < row.length; colums++) {
+//         newLine.push('')
+//       };
+//       table.newRows.push(newLine)
+//     }; 
+//   };
+// }
 
 /*If cell content changed, protokoll the change*/
 $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
@@ -136,9 +178,9 @@ $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
     log($scope.changeHistory[$scope.changeHistory.length-1])
     $( "#row"+tblID+rowID ).addClass( "fresh" );
     $( "#btnRow"+tblID+rowID ).show();
-    log('\ntblID')
-    log(tblID)
-    log(rowID)
+    // log('\ntblID')
+    // log(tblID)
+    // log(rowID)
   }else{
   	 $scope.changeHistory.slice(0, -1)
   }

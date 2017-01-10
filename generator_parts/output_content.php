@@ -1,16 +1,18 @@
-<!--  body content starts here -->
+ <!-- body content starts here  -->
   <div class="container">
     <div class="row">
       <div class="col-md-12 tab-content" id="bpm-content">
+
         Log History <input type="checkbox" ng-model="historyLog">
-        <div ng-repeat="log in changeHistory | limitTo:-3">{{log.changeHistorycounter}} Tabelle: {{log.table}} Zeile: {{(log.rowID +1)}} Spalte: {{(log.colID +1)}}
-        <textarea rows="1" cols="40">{{log.cell}}</textarea>
+        <div ng-if="historyLog" ng-repeat="log in changeHistory | limitTo:-3">
+          {{log.changeHistorycounter}} Tabelle: {{log.table}} row: {{(log.rowID +1)}} col: {{(log.colID +1)}}
+          <textarea rows="1" cols="{{log.cell.length}}">{{log.cell}}</textarea>
         </div>
         <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
           
           <h2>{{table.table_alias}}</h2>
           <table class="table" >
-            <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th>
+            <!-- <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th> -->
             <th ng-repeat="name in table.columnames">{{name}}</th>
 
             <tr ng-repeat="row in table.rows" 
@@ -50,7 +52,7 @@
             <tr class="newRows" ng-repeat="row in table.newRows track by $index" ng-if="$index > 0">
               <td></td>
              <td  ng-repeat="col in row track by $index">
-              <textarea ng-model="table.newRows[$parent.$index][$index]" ng-focus="addNewRow(table)"></textarea>
+              <textarea ng-model="table.newRows[$parent.$index][$index]" <!-- ng-focus="addNewRow(table)" -->></textarea>
              </td>
             </tr>
           </table>
@@ -63,4 +65,4 @@
 		      </div>
 		  </div>
 		</div>
-<!--  body content ends here -->
+<!--  body content ends here
