@@ -25,7 +25,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
             paramSerializer: '$httpParamSerializerJQLike'
           }).then(function(response){ 
 
-            console.log("ResponseData: ", response.data);
+            // console.log("ResponseData: ", response.data);
             /*
             var rows = []
             response.data.forEach(
@@ -50,8 +50,9 @@ app.controller('sampleCtrl', function ($scope, $http) {
             })
 
             
-            console.log('Table: ', $scope.tables.slice(-1))
-            
+            // console.log('Table: ', $scope.tables.slice(-1))
+            // open first table in navbar
+            $('#nav-'+$scope.tables[0].table_name).click();
             // TODO: Platzhalter für Scope Texfelder generierung
             
             
@@ -104,7 +105,8 @@ $scope.createRow = function (table){
 
  log('POST an '+url)
  log(table.newRows)
-  $http.post(url, body).then(log,log);
+  $http.post(url, body)
+  // .then(log,log);
   log(body)
 
 }
@@ -117,6 +119,22 @@ $scope.send = function (cud, param){
 
  var body ={cmd : 'cud', paramJS : {}}
 
+  log(cud+':')
+  log(param)
+  if (cud == 'create') {
+    body.paramJS = {row:param.row, table:param.table}
+    post(cud)
+  }else if (cud == 'update') {
+    // Todo: integriere hier $scope.update bzw. log->change bzw. origin
+    body.paramJS = {row:param.row/*as shown on page*/, colum:param.colum/*0-x*/, table:param.table}
+    post(cud)
+  }else if (cud == 'delete') {
+    body.paramJS = {id:param.colum, table:param.table}
+    post(cud)
+  }else{
+    log('fail')
+  }
+
   function post(){
     $http.post(window.location.pathname, {
         params:{
@@ -126,24 +144,16 @@ $scope.send = function (cud, param){
         paramSerializer: '$httpParamSerializerJQLike'
       })
     .then(function(response){ 
-      console.log("ResponseData: ", response.data);
+      // console.log("ResponseData: ", response.data);
+      $scope.lastResponse = response.data
+      if (cud == 'delete' && response.data != 'fail') {
+        // delete from page
+        $scope.tables
+        .find(function(tbl){return tbl.table_name == param.table.table_name})
+        .rows.splice(/*row-index*/param.colum, 1)
+      }
     })
   }
-
-  log(cud+':')
-  if (cud == 'create') {
-    body.paramJS = {row:param.row, table:param.table}
-    post()
-  }else if (cud == 'update') {
-    body.paramJS = {id:param.id, colum:param.colum, value:param.value, table:param.table}
-    post()
-  }else if (cud == 'delete') {
-    body.paramJS = {id:param.id, table:param.table}
-    post()
-  }else{
-    log('fail')
-  }
-
 
 }
 
@@ -182,7 +192,7 @@ $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
     // log(tblID)
     // log(rowID)
   }else{
-  	 $scope.changeHistory.slice(0, -1)
+     $scope.changeHistory.slice(0, -1)
   }
 
 }
@@ -202,10 +212,12 @@ $scope.rememberOrigin = function (table, row, cell, rowID, colID){
  })
 }
 
-/*Todo debug*/
+
+
+
 $scope.update = function (){
   //Liste der Änderungen ist hist, result updateOrder
-  var hist = $scope.changeHistory, updateOrder = []
+  var hist =changeHistory= $scope.changeHistory, updateOrder = []
   // gehe alle Änderungen durch
   for (var i = 0; i < hist.length; i++) {
     // Nimm Ursprungszeile als Basis
@@ -236,7 +248,11 @@ $scope.update = function (){
   log(updateOrder)
 }
 
+
+
 });
+
+
 
 
 function log(a){console.log(a)}

@@ -8,6 +8,7 @@
           {{log.changeHistorycounter}} Tabelle: {{log.table}} row: {{(log.rowID +1)}} col: {{(log.colID +1)}}
           <textarea rows="1" cols="{{log.cell.length}}">{{log.cell}}</textarea>
         </div>
+        <textarea rows="1" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
         <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
           
           <h2>{{table.table_alias}}</h2>
@@ -20,12 +21,23 @@
                 data-toggle='modal' 
                 data-target="modal-container-1"
                 id="row{{'' + $parent.$index + $index}}">
-              <td>
-                <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+              <td class="controllcoulm">
+
+                <i id="del{{$index}}"
+                class="fa fa-times-circle" 
+                aria-hidden="true"
+                ng-click="send('delete', {row:row, colum:$index, table:table})"></i>
+
+<!--                 <button id="btnRowAlt{{'' + $parent.$index + $index}}" 
+                class="btnUpdateAlt" 
+                ng-click="update()"
+                >updateAlt</button> -->
+
                 <button id="btnRow{{'' + $parent.$index + $index}}" 
                 class="btnUpdate" 
-                ng-click="update()"
+                ng-click="send('update', {row:row, colum:$index, table:table})"
                 >update</button>
+
               </td>
              <td ng-repeat="cell in row track by $index">
               <!-- xeditable controllfield -->
@@ -42,7 +54,11 @@
             <tr class="newRows">
              <td>
               <i class="fa fa-plus" aria-hidden="true"></i>
-              <button class="btnnewRows" ng-click="createRow(table)">create</button>
+               <button 
+               class="btnnewRows" 
+               ng-click="send('create', {row:table.newRows[0], table:table})">
+               create
+               </button>
              </td>
              <td ng-repeat="col in table.newRows[0] track by $index">
               <textarea ng-model="table.newRows[0][$index]"></textarea>
