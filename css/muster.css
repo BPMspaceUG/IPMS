@@ -40,3 +40,10 @@
   .fresh {
     background-color: #a6fc64;
   }
+.controllcoulm {
+    background-color: #abacad;
+    width: 13px;
+    overflow: hidden;
+    display: inline-block;
+    white-space: nowrap;
+  }
