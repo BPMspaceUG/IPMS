@@ -17,46 +17,57 @@ app.controller('sampleCtrl', function ($scope, $http) {
   tables.forEach(
       function(tbl) {
           // Request from server
-          $http.get(window.location.pathname, {
-            params:{
+          $http({
+            url:window.location.pathname
+            method:'post'
+            data:{
               cmd: 'read',
               paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
-            },
-            paramSerializer: '$httpParamSerializerJQLike'
-          }).then(function(response){ 
-
-            console.log("ResponseData: ", response.data);
-            /*
-            var rows = []
-            response.data.forEach(
-              function (X) {
-                rows.push( Object.keys(response.data).map(function(key){ return response.data[key] }) )
-              }
-            )
-            */
-            
-            //define additional Rows
-            var newRows = [[]]
-            if (response.data.length > 0) {
-              Object.keys(response.data[0]).forEach( function(){newRows[newRows.length-1].push('')} )
             }
+          }).success(function(response){
+            console.log("ResponseData: ", response.data);
+          })
+          
+          // $http.get(window.location.pathname, {
+          //   params:{
+          //     cmd: 'read',
+          //     paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
+          //   },
+          //   paramSerializer: '$httpParamSerializerJQLike'
+          // }).then(function(response){ 
+
+          //   console.log("ResponseData: ", response.data);
+          //   /*
+          //   var rows = []
+          //   response.data.forEach(
+          //     function (X) {
+          //       rows.push( Object.keys(response.data).map(function(key){ return response.data[key] }) )
+          //     }
+          //   )
+          //   */
             
-            $scope.tables.push({
-              table_name: tbl.table_name,
-              table_alias: tbl.table_alias,
-              columnames: response.columnames,
-              rows: response.data,
-              newRows : newRows
-            })
+          //   //define additional Rows
+          //   var newRows = [[]]
+          //   if (response.data.length > 0) {
+          //     Object.keys(response.data[0]).forEach( function(){newRows[newRows.length-1].push('')} )
+          //   }
+            
+          //   $scope.tables.push({
+          //     table_name: tbl.table_name,
+          //     table_alias: tbl.table_alias,
+          //     columnames: response.columnames,
+          //     rows: response.data,
+          //     newRows : newRows
+          //   })
 
             
-            // console.log('Table: ', $scope.tables.slice(-1))
-            // open first table in navbar
-            $('#nav-'+$scope.tables[0].table_name).click();
-            // TODO: Platzhalter für Scope Texfelder generierung
+          //   // console.log('Table: ', $scope.tables.slice(-1))
+          //   // open first table in navbar
+          //   $('#nav-'+$scope.tables[0].table_name).click();
+          //   // TODO: Platzhalter für Scope Texfelder generierung
             
             
-          });
+          // });
       }
     )
 
