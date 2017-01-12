@@ -1,9 +1,17 @@
 <?php
+  // Parameter
   $test = isset($_GET["test"]) ? TRUE : FALSE;
   $params = json_decode(file_get_contents('php://input'), true);
-
   $command = $params["cmd"];
-
+  
+  // Debugging
+  /*
+  if (!is_null($params) && $command != "read") {
+    var_dump($params);
+    exit();
+  }  
+  */
+  
   //RequestHandler Class Definition starts here
   class RequestHandler {
 
@@ -47,7 +55,7 @@
       return -1;
     }
     //================================== READ
-    public function read($param) {      
+    public function read($param) {
       $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";
       
       $res = $this->db->query($query);
@@ -89,7 +97,7 @@
   
   $RH = new RequestHandler();
   if ($command != "") {
-    if ($parameter != "") {
+    if ($params != "") {
       $result = $RH->$command($params["paramJS"]);
     } else {
       $result = $RH->$command();

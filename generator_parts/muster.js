@@ -16,16 +16,38 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
   tables.forEach(
       function(tbl) {
+        
           // Request from server
           $http({
             url:window.location.pathname,
             method:'post',
             data:{
               cmd: 'read',
-              paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
+              paramJS: {tablename: tbl.table_name, limit: 150, select: "*"}
             }
           }).success(function(response){
-            console.log("ResponseData: ", response.data);
+            console.log("Response: ", response);
+            
+            //define additional Rows
+            var newRows = [[]]
+            if (response.length > 0) {
+              Object.keys(response[0]).forEach( function(){newRows[newRows.length-1].push('')} )
+            }
+            
+            $scope.tables.push({
+              table_name: tbl.table_name,
+              table_alias: tbl.table_alias,
+              columnames: response.columnames,
+              rows: response,
+              newRows : newRows
+            })
+            
+            // console.log('Table: ', $scope.tables.slice(-1))
+            // open first table in navbar
+            $('#nav-'+$scope.tables[0].table_name).click();
+            // TODO: Platzhalter für Scope Texfelder generierung
+            
+            
           })
 
           // $http.get(window.location.pathname, {
@@ -99,18 +121,21 @@ $scope.send = function (cud, param){
     log('fail')
   }
 
-  function post(){
-    $http.post(window.location.pathname, {
-        params:{
-          cmd: cud,
-          paramJS: body.paramJS
-        },
-        paramSerializer: '$httpParamSerializerJQLike'
-      })
-    .then(function(response){ 
-      // console.log("ResponseData: ", response.data);
-      $scope.lastResponse = response.data
-      if (cud == 'delete' && response.data != 'fail') {
+  function post(){    
+    $http({
+      url:window.location.pathname,
+      method:'post',
+      data:{
+        cmd: cud,
+        paramJS: body.paramJS
+      }
+    }).success(function(response){
+      
+      // Debugging
+      console.log("ResponseData: ", response);
+      $scope.lastResponse = response
+      
+      if (cud == 'delete' && response != 'fail') {
         // delete from page
         $scope.tables
         .find(function(tbl){return tbl.table_name == param.table.table_name})
