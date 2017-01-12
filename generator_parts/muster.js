@@ -18,8 +18,8 @@ app.controller('sampleCtrl', function ($scope, $http) {
       function(tbl) {
           // Request from server
           $http({
-            url:window.location.pathname
-            method:'post'
+            url:window.location.pathname,
+            method:'post',
             data:{
               cmd: 'read',
               paramJS: [{tablename: tbl.table_name, limit: 150, select: "*"}]
@@ -27,7 +27,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
           }).success(function(response){
             console.log("ResponseData: ", response.data);
           })
-          
+
           // $http.get(window.location.pathname, {
           //   params:{
           //     cmd: 'read',
