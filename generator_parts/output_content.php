@@ -16,7 +16,7 @@
             <!-- <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th> -->
             <th ng-repeat="name in table.columnames">{{name}}</th>
 
-            <tr ng-repeat="row in table.rows" 
+            <tr ng-repeat="row in table.rows track by $index" 
                 ng-model="table"
                 data-toggle='modal' 
                 data-target="modal-container-1"
