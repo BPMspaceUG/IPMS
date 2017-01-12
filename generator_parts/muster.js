@@ -25,7 +25,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
             paramSerializer: '$httpParamSerializerJQLike'
           }).then(function(response){ 
 
-            // console.log("ResponseData: ", response.data);
+            console.log("ResponseData: ", response.data);
             /*
             var rows = []
             response.data.forEach(
@@ -60,61 +60,14 @@ app.controller('sampleCtrl', function ($scope, $http) {
       }
     )
 
-    /*
-  $scope.tables = tables.map(function(table){
-    //define a html-systax valid id-string
-    table.htmlID = table.table_name.replace(/\s+/,'')
-
-    return table
-  })
-*/
-  
-  $scope.tempdepartmentsData = {};
-
-
-  // $http.get(window.location.pathname, {
-  //   params:{
-  //     cmd: 'read',
-  //     paramJS: [{limit: 10, select: "*"}]
-  //   },
-  //   paramSerializer: '$httpParamSerializerJQLike'
-  // }).then(function(response){
-  //   $scope.departments = response.data;
-  // });
-
-  $scope.dept_manager = [];
-  $scope.tempdept_managerData = {};
-
-  /*
+/*
   $('#json-renderer').jsonViewer($scope.tables,{collapsed: true});
-  $( document ).ready(function() {
-    $( '#nav-'+$scope.tables[0].htmlID ).click()
-  });
-  */
-  
-  // $('#json-renderer').jsonviewerer({a:1,b:{c:['d',1]}});
+*/
 
-/*On click button 'create' send the new rows to the server*/
-// überführen in send
-$scope.createRow = function (table){
- var body ={
-      cmd : 'create_'+'employees',
-      paramJS : table.newRows
-    },
-    url = '/~daniel/IPMS/create.php'
-
- log('POST an '+url)
- log(table.newRows)
-  $http.post(url, body)
-  // .then(log,log);
-  log(body)
-
-}
 
 /*
-Allround send for changes atDB
+Allround send for changes to DB
 */
-
 $scope.send = function (cud, param){
 
  var body ={cmd : 'cud', paramJS : {}}
@@ -122,14 +75,14 @@ $scope.send = function (cud, param){
   log(cud+':')
   log(param)
   if (cud == 'create') {
-    body.paramJS = {row:param.row, table:param.table}
+    body.paramJS = {row:param.row, table:param.table.table_name}
     post(cud)
   }else if (cud == 'update') {
     // Todo: integriere hier $scope.update bzw. log->change bzw. origin
-    body.paramJS = {row:param.row/*as shown on page*/, colum:param.colum/*0-x*/, table:param.table}
+    body.paramJS = {row:param.row/*as shown on page*/, colum:param.colum/*0-x*/, table:param.table.table_name}
     post(cud)
   }else if (cud == 'delete') {
-    body.paramJS = {id:param.colum, table:param.table}
+    body.paramJS = {id:param.colum, table:param.table.table_name}
     post(cud)
   }else{
     log('fail')
@@ -178,19 +131,18 @@ then add an empty row*/
 
 /*If cell content changed, protokoll the change*/
 $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
-  // log('input: ');  log(table);   (row);  log(cell);
+
   // var y = row[0], x = cell, //cleanflag
   origin = $scope.changeHistory[$scope.changeHistory.length-1]
-  // log(origin.cell);
+
   if (cell != origin.cell) {
     // log('Texfield changed from "'+origin.cell+'" to "'+cell+'"')
-     $scope.changeHistory[$scope.changeHistory.length-1] = {origin : origin, change : cell}
+     $scope.changeHistory[$scope.changeHistory.length-1] = {origin : origin, change : cell, tableID : tblID, rowID : rowID}
     log($scope.changeHistory[$scope.changeHistory.length-1])
+
     $( "#row"+tblID+rowID ).addClass( "fresh" );
     $( "#btnRow"+tblID+rowID ).show();
-    // log('\ntblID')
-    // log(tblID)
-    // log(rowID)
+
   }else{
      $scope.changeHistory.slice(0, -1)
   }
@@ -215,52 +167,40 @@ $scope.rememberOrigin = function (table, row, cell, rowID, colID){
 
 
 
-$scope.update = function (){
-  //Liste der Änderungen ist hist, result updateOrder
-  var hist =changeHistory= $scope.changeHistory, updateOrder = []
-  // gehe alle Änderungen durch
-  for (var i = 0; i < hist.length; i++) {
-    // Nimm Ursprungszeile als Basis
-    var tmprow = hist[i].origin.row
-    // log('hist: ')
-    // log(hist)
-    // log('hist['+i+']: '+JSON.stringify(hist[i]))
+// $scope.update = function (){
+//   //Liste der Änderungen ist hist, result updateOrder
+//   var hist =changeHistory= $scope.changeHistory, updateOrder = []
+//   // gehe alle Änderungen durch
+//   for (var i = 0; i < hist.length; i++) {
+//     // Nimm Ursprungszeile als Basis
+//     var tmprow = hist[i].origin.row
+//     // log('hist: ')
+//     // log(hist)
+//     // log('hist['+i+']: '+JSON.stringify(hist[i]))
 
-    // filter alle Änderungen zur aktuellen Basis
-    var changesOfThisRow = hist.filter(function(change){
-    log('change: '+JSON.stringify(change.origin.row))
-    log('hist: '+JSON.stringify(hist[i].origin.row))
-    if (hist[i].origin.row && change.origin.row) {};
-      return hist[i].origin.row[0] == change.origin.row[0]
-    })
-    // ändere die Zellen in der Ursprungszeile die sich geändert haben
-    for (var j = 0; j < changesOfThisRow.length; j++) {
-      for (var k = 0; k < tmprow.length; k++) {
-        if(tmprow[k] == changesOfThisRow[j].origin.cell){
-          tmprow[k] = changesOfThisRow[j].change
-        }
-      };
-    };  
-    // return {Ursprungszeile, Ergebniszeile}
-    updateOrder.push({from : hist[i].origin.row, to : tmprow})  
-  };
-  log('updateOrder:')
-  log(updateOrder)
-}
-
-
+//     // filter alle Änderungen zur aktuellen Basis
+//     var changesOfThisRow = hist.filter(function(change){
+//     log('change: '+JSON.stringify(change.origin.row))
+//     log('hist: '+JSON.stringify(hist[i].origin.row))
+//     if (hist[i].origin.row && change.origin.row) {};
+//       return hist[i].origin.row[0] == change.origin.row[0]
+//     })
+//     // ändere die Zellen in der Ursprungszeile die sich geändert haben
+//     for (var j = 0; j < changesOfThisRow.length; j++) {
+//       for (var k = 0; k < tmprow.length; k++) {
+//         if(tmprow[k] == changesOfThisRow[j].origin.cell){
+//           tmprow[k] = changesOfThisRow[j].change
+//         }
+//       };
+//     };  
+//     // return {Ursprungszeile, Ergebniszeile}
+//     updateOrder.push({from : hist[i].origin.row, to : tmprow})  
+//   };
+//   log('updateOrder:')
+//   log(updateOrder)
+// }
 
 });
 
 
-
-
 function log(a){console.log(a)}
-
-// cleanflag
-// $scope.replaceNotAlphanumeric = function (str){
-//   var str=str+''
-//   str=str.replace(/\W/g,'')
-//   if (str.length < 1) {str = ''};
-//   return str
-// }

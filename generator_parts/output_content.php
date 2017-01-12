@@ -24,7 +24,7 @@
               <td class="controllcoulm">
 
                 <i id="del{{$index}}"
-                class="fa fa-times-circle" 
+                class="fa fa-times-circle"  
                 aria-hidden="true"
                 ng-click="send('delete', {row:row, colum:$index, table:table})"></i>
 
