@@ -1,32 +1,10 @@
 <?php
-//create Request Handler class for each table
-// START return just data from the DB here 
-// Request Handler starts here  
-// Process Parameters starts here  
-$command="";
-$parameter="";
-$test=FALSE;
-if (!empty($_GET["paramURL"]) && !empty($_GET["paramJS"])) {
-  echo "error: dont use both parameters at the same time !!  you must use paramJS OR paramURL  ";
-  exit;
-}
-if (!empty($_GET) && !empty($_GET["cmd"])) {
-  $command=$_GET["cmd"];
-  if (!empty($_GET["paramURL"])){
-    $parameter=$_GET["paramURL"];
-    $parameter = stripslashes($parameter);
-    $parameter = unserialize($parameter);
-    }
-  if(!empty($_GET["paramJS"])){
-    $parameter=$_GET["paramJS"];
-    $parameter=$parameter[0];
-    }
-}
-if (!empty($_GET["test"])){$test=TRUE;}
-//Process Parameters ends here
+  $test = isset($_GET["test"]) ? TRUE : FALSE;
+  $params = json_decode(file_get_contents('php://input'), true);
 
+  $command = $params["cmd"];
 
-//RequestHandler Class Definition starts here
+  //RequestHandler Class Definition starts here
   class RequestHandler {
 
     private $db;
@@ -110,14 +88,14 @@ if (!empty($_GET["test"])){$test=TRUE;}
   //END return just data from the DB here";
   
   $RH = new RequestHandler();
-  if ( $command != "") {
-    if ( $parameter != "") {
-      $result = $RH->$command($parameter);
+  if ($command != "") {
+    if ($parameter != "") {
+      $result = $RH->$command($params["paramJS"]);
+    } else {
+      $result = $RH->$command();
     }
-    else {
-      $result = $RH->$command();    
-    }
+    // Ausgabe
     echo $result;
-    exit;
+    exit();
   }
 ?>
