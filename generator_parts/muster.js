@@ -37,6 +37,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
             $scope.tables.push({
               table_name: tbl.table_name,
               table_alias: tbl.table_alias,
+              table_icon: tbl.table_icon,
               columnames: response.columnames,
               rows: response,
               newRows : newRows

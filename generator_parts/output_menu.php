@@ -29,7 +29,7 @@
       <ul class="nav nav-tabs" id="bpm-menu">
         <li ng-repeat="table in tables">
           <a id="nav-{{table.table_name}}" title="{{table.table_alias}}" href="#{{table.table_name}}" data-toggle="tab">
-          <i class="fa fa-circle-o"></i>&nbsp;{{table.table_alias}}</a>
+          <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
         </li>
       </ul>
     </div>
