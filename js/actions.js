@@ -1,37 +1,9 @@
 /************************************************************
                       A N G U L A R     J S
 ************************************************************/
-angular.module('appIPMS', [])
-  .controller('IPMSController', function($scope) {
-    var todoList = this;
-    
-    todoList.todos = [
-      {text:'learn angular', done:true},
-      {text:'build an angular app', done:false}];
- 
-    todoList.addTodo = function() {
-      todoList.todos.push({text:todoList.todoText, done:false});
-      todoList.todoText = '';
-    };
- 
-    todoList.remaining = function() {
-      var count = 0;
-      angular.forEach(todoList.todos, function(todo) {
-        count += todo.done ? 0 : 1;
-      });
-      return count;
-    };
- 
-    todoList.archive = function() {
-      var oldTodos = todoList.todos;
-      todoList.todos = [];
-      angular.forEach(oldTodos, function(todo) {
-        if (!todo.done) todoList.todos.push(todo);
-      });
-    };
-  });
 
-  var asdf;
+
+var accumulated;
 $(document).ready(function () {
   
   
@@ -69,18 +41,15 @@ $(document).ready(function () {
             type: 'POST',
             dataType: 'json',
             data: $('form').serialize(),
+
             success: function (result) {
                 if (result != null) {
-                    $('.fa-check').css({
-                        display: 'inline-block'
-                    });
-                    $('.fa-minus-circle').css({
-                        display: 'none'
-                    });
+                    $('.fa-check').css({ display: 'inline-block'});
+                    $('.fa-minus-circle').css({ display: 'none'});
                     
-                   // console.log(result);
-                    asdf = result;
-                    console.log(asdf);
+                    accumulated = result;
+                    log('result from POST to url('+ $('form').attr('action')+'): ');
+                    log(result);
                     
                     //Appending Database and Tables
                     $.each(result, function (key, val) {
@@ -94,7 +63,7 @@ $(document).ready(function () {
                         $.each(tables, function (key, value) {
                             $('#' + val.database).append(
                               '<tr><td style="width:200px;">' + value.table_name + '</td>'+
-                              '<td><input type="text" class="form-control" value="' + value.table_alias +'"/></td>'+
+                              '<td><input type="text" class="form-control data_tblalias" value="' + value.table_alias +'"/></td>'+
                               '<td><input type="text" class="form-control data_tblicon" value="' + value.table_icon +'"/></td>'+
                               '</tr>');
                             index += 1; // for identification
@@ -111,16 +80,16 @@ $(document).ready(function () {
                     });
                 }
             },
+
             error: function (jqXHR, exception) {
-                $('.fa-minus-circle').css({
-                    display: 'inline-block'
-                });
-                $('.fa-check').css({
-                    display: 'none'
-                });
+                $('.fa-minus-circle').css({ display: 'inline-block' });
+                $('.fa-check').css({ display: 'none' });
             }
         });
     });
+function handleConnectResult(result){
+
+}
     
   // Saving new connections in database
   $('#save').click(function (e) {
@@ -176,39 +145,47 @@ $(document).ready(function () {
     
     // Find database
     var index = -1;
-    for (i=0;i<asdf.length;i++){
-      if (asdf[i].database == dbname) {
+    for (i=0;i<accumulated.length;i++){
+      if (accumulated[i].database == dbname) {
         index = i;
       }
     }
     console.log("Index=" + index);
     
-    // rewrite data array
-    var n = 0; // TODO: Optimize...
+
+
+    //Extend DB-Array with custom selections
+    var n = 0;
     $('#'+dbname+' .data_tblicon').each(function () {
-      // Write changes
-      asdf[index].tables[n].table_icon = this.value;
+      accumulated[index].tables[n].table_icon =  this.value;
+      // log('accumulated['+index+'].tables['+n+'].table_icon = '+this.value)
+      n += 1;
+    });    
+    n = 0;
+    $('#'+dbname+' .data_tblalias').each(function () {
+      accumulated[index].tables[n].table_alias =  this.value;
+      // log('accumulated['+index+'].tables['+n+'].table_icon = '+this.value)
       n += 1;
     });
-    console.log(asdf[index]);
+    console.log('accumulated['+index+']');
     
-    var d = {
+    var data = {
       host: $('#sqlServer')[0].value,
       port: $('#sqlPort')[0].value,
       user: $('#username')[0].value,
       pwd: $('#sqlPass')[0].value,
       db_name: dbname,
-      data: asdf
+      data: accumulated
     }
     
     console.log('------------------------------------- Data Array created');
-    console.log(d);
+    console.log(data);
     
     $.ajax({
         // url: 'modules/GenerateFile.php',
         url: 'generator_parts/fusion.php',
         type: 'POST',
-        data: d,
+        data: data,
         success: function (result) {
             console.log('------------------------------------- Script generated');
             console.log(result);
@@ -220,3 +197,5 @@ $(document).ready(function () {
     });
   });
 });
+
+function log(x){console.log(x)}
