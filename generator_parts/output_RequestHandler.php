@@ -39,27 +39,20 @@
     }    
     //================================== CREATE
     public function create($param) {
-      /*
-      $query = "INSERT INTO " . $param["tablename"] ." (colums) VALUES (values);";
-      $res = $this->db->query($query);
-      */
-      return -1;
+      // Inputs
+      $tablename = $param["table"];
+      $rowdata = $param["row"];
+      // Operation
+      $query = "INSERT INTO ".$tablename." VALUES ('".implode("','", $rowdata)."');";
+      $res = $this->db->query($query);      
+      // Output
+      return ($res != false);
     }
     //================================== READ
     public function read($param) {
-      $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";
-      
+      $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";      
       $res = $this->db->query($query);
       return $this->parseToJSON($res);
-      /*
-      $tmp = array(
-          array(1, "Tablename", $param["tablename"]),
-          array(2, "Limit",  $param["limit"]),
-          array(3, "ColumnsSelect=", $param["select"]),
-          array(4, "Query", $query)
-        );
-      */
-      //return json_encode($tmp);
     }
     //================================== UPDATE
     public function update($param) {
@@ -74,6 +67,7 @@
     }
     //================================== DELETE
     public function delete($param) {
+      var_dump($param);
       /*
       $query = "DELETE FROM " . $param["tablename"] ." WHERE id = value;";
       $res = $this->db->query($query);

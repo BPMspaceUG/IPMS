@@ -1,6 +1,6 @@
 <?php
   $params = $_REQUEST;
-
+  
   // Correctly fetch params
   $host = isset($params['host']) ? $params['host'] : null;
   $port = isset($params['port']) ? $params['port'] : null;
@@ -56,20 +56,43 @@
   // Extracting tables
   function getTables($con, $db) {
     $query = "SHOW TABLES IN $db";
-    $res = array();
     $nameParam = "Tables_in_$db";
+    $res = array();
     $result = mysqli_query($con, $query);
     
+    $tables = array();
     while ($row = $result->fetch_assoc()) {
+      $tables[] = $row[$nameParam];
+    }
+    
+    // jede table durchgehen
+    foreach ($tables as $table) {
+
+      // Alle columns auslesen vong dieser 1 table
+      $query = "SHOW KEYS FROM $db.".$table;
+      $res2 = mysqli_query($con, $query);
+      
+      $columns = array();
+      $primary_col = "";
+
+      if ($res2)
+      while ($row2 = $res2->fetch_assoc()) {
+        $columns[] = $row2["Column_name"];
+        
+        if ($row2["Key_name"] == "PRIMARY")
+          $primary_col = $row2["Column_name"];
+      }      
+      
       $res[] = array(
-        "table_name" => $row[$nameParam],
-        "table_alias" => ucfirst($row[$nameParam]),
+        "table_name" => $table,
+        "table_alias" => ucfirst($table),
         "table_icon" => "fa fa-circle-o",
         "is_in_menu" => true,
-        "columns" => array()
+        "primary_col" => $primary_col,
+        "columns" => $columns
       );
     }
-    //var_dump($res);
+    // Output
     return $res;
   }
 ?>
