@@ -41,6 +41,3 @@
               
   </body>
 </html>
-
-
-<!--  footer ends here -->

@@ -1,7 +1,7 @@
 <?php
   //var_dump($_REQUEST);
   
- // put parameters into variables
+  // put parameters into variables
   $db_server = $_REQUEST['host'].':'.$_REQUEST['port'];
   $db_user = $_REQUEST['user'];
   $db_pass = $_REQUEST['pwd'];
@@ -13,7 +13,7 @@
     $DEBUG = TRUE;
     ini_set('display_errors', 1);
     error_reporting(E_ALL);
-  };
+  }
   
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";

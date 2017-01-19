@@ -3,20 +3,12 @@
   $test = isset($_GET["test"]) ? TRUE : FALSE;
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
-  
-  // Debugging
-  /*
-  if (!is_null($params) && $command != "read") {
-    var_dump($params);
-    exit();
-  }  
-  */
-  
+    
   //RequestHandler Class Definition starts here
   class RequestHandler {
-
+    // Variables
     private $db;
-    
+
     public function __construct() {
       //identifyer for replace in fusion.php
       $config['db'] =  array('host' => "replaceServer",'user' => "replaceUser",'password' => "replacePassword",'database' => "replaceDBName" );
@@ -36,7 +28,7 @@
       $db->query("SET NAMES utf8");
       $this->db = $db;
     }
-
+    // Format data for output
     private function parseToJSON($result) {
       $results_array = array();
       if (!$result) return false;
@@ -44,8 +36,7 @@
         $results_array[] = $row;
       }
       return json_encode($results_array);
-    }
-    
+    }    
     //================================== CREATE
     public function create($param) {
       /*
@@ -90,19 +81,22 @@
       return -1;
     }
   }
-
-  //Class Definition ends here ";
-  //Request Handler ends here  ";
-  //END return just data from the DB here";
+  // Class Definition ends here
+  // Request Handler ends here
   
   $RH = new RequestHandler();
+  
+  // check if at least a command is set
   if ($command != "") {
+    // are there parameters?
     if ($params != "") {
+      // execute with parameters
       $result = $RH->$command($params["paramJS"]);
     } else {
+      // only execute
       $result = $RH->$command();
     }
-    // Ausgabe
+    // Output
     echo $result;
     exit();
   }

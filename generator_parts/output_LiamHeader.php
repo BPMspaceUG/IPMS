@@ -1,4 +1,3 @@
-// create BPMspace LIAM Header
 <?php
   //LIAM header starts here
   // comment if you do NOT want to use BPMspace LIAM for identity and access management
