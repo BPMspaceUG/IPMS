@@ -87,7 +87,7 @@
         "table_name" => $table,
         "table_alias" => ucfirst($table),
         "table_icon" => "fa fa-circle-o",
-        "is_in_menu" => true,
+        //"is_in_menu" => true,
         "primary_col" => $primary_col,
         "columns" => $columns
       );

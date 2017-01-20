@@ -182,7 +182,6 @@ function handleConnectResult(result){
     console.log(data);
     
     $.ajax({
-        // url: 'modules/GenerateFile.php',
         url: 'generator_parts/fusion.php',
         type: 'POST',
         data: data,
