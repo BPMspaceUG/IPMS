@@ -189,6 +189,7 @@ function handleConnectResult(result){
         success: function (result) {
             console.log('------------------------------------- Script generated');
             console.log(result);
+            console.log(data);
             $('#bpm-code').empty();
             $('#bpm-code').html('<pre></pre>');
             $('#bpm-code pre').text(result);

@@ -35,6 +35,7 @@
 
   $all_table_names = array();
   // Die richtige Datenbank auswählen
+  var_dump($data);
   for ($i=0;$i<count($data);$i++) {
     if (strtoupper($data[$i]["database"]) == strtoupper($db_name)) {
       $all_table_names = $data[$i]["tables"];
