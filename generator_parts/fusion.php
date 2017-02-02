@@ -33,7 +33,7 @@
   if($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');
   }else{
-  	// echo "no mysqli error";
+    // echo "no mysqli error";
   }
 
   $all_table_names = array();
@@ -96,7 +96,7 @@
   $log.= '<h4>$output_footer</h4>'.$output_footer;
 
   // Im Footer JS ersetzen
-  $handle = fopen("./muster.js", "r");
+  $handle = fopen("./muster_0.js", "r");
 
   $musterJS = 'tables = '.json_encode($data).';';
   echo "json_encode all_table_names:";

@@ -74,7 +74,7 @@ $scope.create_fkt = function(){
   }
     
   $http({
-    url: 'generator_parts/fusion.php',
+    url: 'generator_parts/fusion_0.php',
     method: "POST",
     data: data
   })
