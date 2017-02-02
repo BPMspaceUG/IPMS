@@ -1,11 +1,14 @@
 <?php
-  $params = $_REQUEST;
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST))
+    $_POST = json_decode(file_get_contents('php://input'), true);
+  $params = $_POST;
   
-  // Correctly fetch params
+  // // Correctly fetch params
   $host = isset($params['host']) ? $params['host'] : null;
   $port = isset($params['port']) ? $params['port'] : null;
   $user = isset($params['user']) ? $params['user'] : null;
   $pwd = isset($params['pwd']) ? $params['pwd'] : null;
+  // var_dump($_POST);
 
   // Create new connection
   $con = new mysqli();
@@ -86,8 +89,7 @@
       $res[] = array(
         "table_name" => $table,
         "table_alias" => ucfirst($table),
-        "table_icon" => "fa fa-circle-o",
-        //"is_in_menu" => true,
+        "is_in_menu" => true,
         "primary_col" => $primary_col,
         "columns" => $columns
       );

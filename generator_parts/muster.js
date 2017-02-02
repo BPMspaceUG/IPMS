@@ -15,41 +15,52 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.tables = []
 
   tables.forEach(
-      function(tbl) {
+    function(tbl) {
+      
+      // no need for previous deselectet tables
+      if(!tbl.is_in_menu){return}
+
+      // Request from server
+      $http({
+        url:window.location.pathname,
+        method:'post',
+        data:{
+          cmd: 'read',
+          paramJS: {tablename: tbl.table_name, limit: 150, select: "*"}
+        }
+      }).success(function(response){
+        console.log("Response: ", response);
         
-          // Request from server
-          $http({
-            url:window.location.pathname,
-            method:'post',
-            data:{
-              cmd: 'read',
-              paramJS: {tablename: tbl.table_name, limit: 150, select: "*"}
-            }
-          }).success(function(response){
-            console.log("Response: ", response);
-            
-            //define additional Rows
-            var newRows = [[]]
-            if (response.length > 0) {
-              Object.keys(response[0]).forEach( function(){newRows[newRows.length-1].push('')} )
-            }
-            
-            $scope.tables.push({
-              table_name: tbl.table_name,
-              table_alias: tbl.table_alias,
-              table_icon: tbl.table_icon,
-              columnames: response.columnames,
-              rows: response,
-              newRows : newRows
-            })
-            
-            // console.log('Table: ', $scope.tables.slice(-1))
-            // open first table in navbar
-            $('#nav-'+$scope.tables[0].table_name).click();
-            // TODO: Platzhalter für Scope Texfelder generierung  
-          })
-      }
-    )
+        //define additional Rows
+        var newRows = [[]]
+        if (response.length > 0) {
+          Object.keys(response[0]).forEach( function(){newRows[newRows.length-1].push('')} )
+        }
+
+        //define colum headers
+        var keys = ['names']
+        if(response[0] && typeof response[0] == 'object'){
+         keys = Object.keys(response[0])
+        }
+
+        $scope.tables.push({
+          table_name: tbl.table_name,
+          table_alias: tbl.table_alias,
+          table_icon: tbl.table_icon,
+          columnames: keys,
+          primary_col: tbl.primary_col,
+          rows: response,
+          newRows : newRows
+        })
+        
+        console.log('Table: ', $scope.tables.slice(-1))
+        // open first table in navbar
+        $('#nav-'+$scope.tables[0].table_name).click();
+        // TODO: Platzhalter für Scope Texfelder generierung  
+      })
+    }
+  )
+  $scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
 
 /*
   $('#json-renderer').jsonViewer($scope.tables,{collapsed: true});
@@ -60,8 +71,10 @@ app.controller('sampleCtrl', function ($scope, $http) {
 Allround send for changes to DB
 */
 $scope.send = function (cud, param){
+  log(param.x)
 
- var body ={cmd : 'cud', paramJS : {}}
+ var body ={cmd : 'cud', paramJS : {}},
+ columName = Object.keys(param.table.rows[0])[param.colum]
 
   log('\n'+cud+':')
   if (cud == 'create') {
@@ -69,12 +82,13 @@ $scope.send = function (cud, param){
     log('table: '+param.table.table_name); log('row: '+JSON.stringify(param.row))
     post(cud)
   }else if (cud == 'update') {
-    // Todo: integriere hier $scope.update bzw. log->change bzw. origin
-    body.paramJS = {row:param.row/*as shown on page*/, colum:param.colum/*0-x*/, table:param.table.table_name}
-    log('table: '+param.table.table_name); log('row: '+JSON.stringify(param.row) ); log('colum: '+JSON.stringify(param.colum) )
+    var row = $scope.changeHistory.reverse()
+    row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })
+    body.paramJS = {row:param.row/*as shown on page*/, primary_col: param.table.primary_col/*0-x*/, table:param.table.table_name}
+    log('table: '+param.table.table_name); log('row: '+JSON.stringify(row) ); log('primary_col: '+JSON.stringify(param.table.primary_col) )
     post(cud)
   }else if (cud == 'delete') {
-    body.paramJS = {id:param.colum, table:param.table.table_name}
+    body.paramJS = {id:param.colum, row:param.row, table:param.table.table_name, primary_col: param.table.primary_col}
     log('table: '+param.table.table_name ); log('colum: '+JSON.stringify(param.colum) )
     post(cud)
   }else{
@@ -125,16 +139,36 @@ then add an empty row*/
 //   };
 // }
 
+/*Protokoll where what changed*/
+$scope.changeHistory = [], $scope.changeHistorycounter = 0
+$scope.rememberOrigin = function (table, cols, row, cell, rowID, colID){
+  $scope.changeHistorycounter ++
+  log('\n-rO: table: '+table + ', cols:' + cols + ', row:' + row + ', cell:' + cell + ', rowID:' + rowID + ', colID:' + colID)
+  log($scope.changeHistorycounter+' '+table+' Row: '+rowID+', Col: '+colID+' - '+cols[colID])
+  $scope.changeHistory.push({
+   table : table,
+   row : row,
+   cell : cell,
+   rowID : rowID,
+   colID : colID,
+   colname : cols[colID],
+   changeHistorycounter:$scope.changeHistorycounter
+ })
+}
+
 /*If cell content changed, protokoll the change*/
 $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
-
+  log('#cCC: table: ' + table + ', row: ' + row + ', cell: ' +  cell + ', tblID: ' + tblID + ', rowID: ' + rowID + ', colID: ' + colID)
   // var y = row[0], x = cell, //cleanflag
   origin = $scope.changeHistory[$scope.changeHistory.length-1]
 
   if (cell != origin.cell) {
     // log('Texfield changed from "'+origin.cell+'" to "'+cell+'"')
-     $scope.changeHistory[$scope.changeHistory.length-1] = {origin : origin, change : cell, tableID : tblID, rowID : rowID}
-    log($scope.changeHistory[$scope.changeHistory.length-1])
+    var postRow = row, keys = Object.keys(row)
+    postRow[keys[colID]] = cell
+    
+    $scope.changeHistory[$scope.changeHistory.length-1] = {origin : origin, change : cell, tableID : tblID, rowID : rowID, postRow:postRow}
+    log('\n$scope.changeHistory['+($scope.changeHistory.length-1)+']:');    log($scope.changeHistory[$scope.changeHistory.length-1])
 
     $( "#row"+tblID+rowID ).addClass( "fresh" );
     $( "#btnRow"+tblID+rowID ).show();
@@ -145,56 +179,7 @@ $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
 
 }
 
-/*Protokoll where what changed*/
-$scope.changeHistory = [], $scope.changeHistorycounter = 0
-$scope.rememberOrigin = function (table, row, cell, rowID, colID){
-  $scope.changeHistorycounter ++
-  log($scope.changeHistorycounter+'   Row: '+rowID+', Col: '+colID)
-  $scope.changeHistory.push({
-   table : table,
-   row : row,
-   cell : cell,
-   rowID : rowID,
-   colID : colID,
-   changeHistorycounter:$scope.changeHistorycounter
- })
-}
 
-
-
-
-// $scope.update = function (){
-//   //Liste der Änderungen ist hist, result updateOrder
-//   var hist =changeHistory= $scope.changeHistory, updateOrder = []
-//   // gehe alle Änderungen durch
-//   for (var i = 0; i < hist.length; i++) {
-//     // Nimm Ursprungszeile als Basis
-//     var tmprow = hist[i].origin.row
-//     // log('hist: ')
-//     // log(hist)
-//     // log('hist['+i+']: '+JSON.stringify(hist[i]))
-
-//     // filter alle Änderungen zur aktuellen Basis
-//     var changesOfThisRow = hist.filter(function(change){
-//     log('change: '+JSON.stringify(change.origin.row))
-//     log('hist: '+JSON.stringify(hist[i].origin.row))
-//     if (hist[i].origin.row && change.origin.row) {};
-//       return hist[i].origin.row[0] == change.origin.row[0]
-//     })
-//     // ändere die Zellen in der Ursprungszeile die sich geändert haben
-//     for (var j = 0; j < changesOfThisRow.length; j++) {
-//       for (var k = 0; k < tmprow.length; k++) {
-//         if(tmprow[k] == changesOfThisRow[j].origin.cell){
-//           tmprow[k] = changesOfThisRow[j].change
-//         }
-//       };
-//     };  
-//     // return {Ursprungszeile, Ergebniszeile}
-//     updateOrder.push({from : hist[i].origin.row, to : tmprow})  
-//   };
-//   log('updateOrder:')
-//   log(updateOrder)
-// }
 
 });
 

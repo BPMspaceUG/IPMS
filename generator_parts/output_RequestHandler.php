@@ -56,23 +56,33 @@
     }
     //================================== UPDATE
     public function update($param) {
-      /*
-      $query = "UPDATE " . $param["tablename"] ." SET column = value;";
-      $res = $this->db->query($query);
-      */
-      $tmp = array(
-          array(1, "Success=true")
-        );
-      return json_encode($tmp);
+      $set = "";
+
+     // "UPDATE table_name SET column1=value1,column2=value2,... WHERE some_column=some_value;";      
+      $cols = array_keys($param["row"]);
+      $len = count($param["row"]);
+      for ($i=0; $i < $len; $i++) { 
+        $set .= "`".$cols[$i]."` = `".$param["row"][$cols[$i]]."`";
+        if ($i < $len-1) {
+          $set .= ", ";
+        }
+      }
+
+      $where = "`".$param["primary_col"]."` == `".$param["row"][$param["primary_col"]]."`";
+      
+      $query = "UPDATE ".$param["table"]." SET ".$set." WHERE ".$where.";";      
+      // $res = $this->db->query($query);
+      // return $this->parseToJSON($res);
+      return $query;  
     }
     //================================== DELETE
     public function delete($param) {
-      var_dump($param);
-      /*
-      $query = "DELETE FROM " . $param["tablename"] ." WHERE id = value;";
-      $res = $this->db->query($query);
-      */
-      return -1;
+      /*  DELETE FROM table_name WHERE some_column=some_value;  */
+      $where = $param["primary_col"]." == ".$param["row"][$param["primary_col"]];
+      $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";      
+      // $res = $this->db->query($query);
+      // return $this->parseToJSON($res);
+      return $query;
     }
   }
   // Class Definition ends here

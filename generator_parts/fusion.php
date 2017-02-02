@@ -1,6 +1,9 @@
 <?php
   //var_dump($_REQUEST);
-  
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST))
+    $_REQUEST = json_decode(file_get_contents('php://input'), true);
+    // echo "vardump für _REQUEST";
+  // var_dump($_REQUEST);
   // put parameters into variables
   $db_server = $_REQUEST['host'].':'.$_REQUEST['port'];
   $db_user = $_REQUEST['user'];
@@ -35,12 +38,11 @@
 
   $all_table_names = array();
   // Die richtige Datenbank auswählen
-  var_dump($data);
   for ($i=0;$i<count($data);$i++) {
-    if (strtoupper($data[$i]["database"]) == strtoupper($db_name)) {
-      $all_table_names = $data[$i]["tables"];
-    }
+    array_push($all_table_names, $data[$i]["table_name"]);
   }
+  // echo "all_table_names: ";
+  // var_dump($all_table_names);
 
   // if ($DEBUG) var_dump($all_table_names);
 
@@ -59,7 +61,11 @@
   $output_RequestHandler = str_replace('<?php', '', $output_RequestHandler);
   $output_RequestHandler = str_replace('"replaceServer"', '"'.$db_server.'"', $output_RequestHandler);
   $output_RequestHandler = str_replace('"replaceUser"', '"'.$db_user.'"', $output_RequestHandler);
+  echo "db_user:";
+  var_dump($db_user);
   $output_RequestHandler = str_replace('"replacePassword"', '"'.$db_pass.'"', $output_RequestHandler);
+  echo "db-Name.database:";
+  var_dump($db_name);
   $output_RequestHandler = str_replace('"replaceDBName"', '"'.$db_name.'"', $output_RequestHandler);
 
   $handle = fopen("./replaceCRUD.php", "r");
@@ -92,7 +98,9 @@
   // Im Footer JS ersetzen
   $handle = fopen("./muster.js", "r");
     
-  $musterJS = 'tables = '.json_encode($all_table_names).';';
+  $musterJS = 'tables = '.json_encode($data).';';
+  echo "json_encode all_table_names:";
+  var_dump(json_encode($all_table_names));
   $musterJS .= stream_get_contents($handle);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
 
@@ -110,9 +118,7 @@
     .$output_content
     .$output_footer
     ;
-  // echo $output_all;
-  // var_dump( $output_RequestHandler);
-  var_dump( json_encode( $all_table_names ) );
+  echo $output_all;
 
   // Write code to file: .php as live-file, .txt as debug
   if (is_dir('../../IPMS_test')) {

@@ -3,40 +3,22 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
   <title>BPMspace IPMS</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <!--    <meta http-equiv="refresh" content="0; URL=index.php">-->
-  <!--	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.2/css/bootstrap.min.css"-->
-  <!--		  media="screen">-->
-  <!--	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">-->
-  <!-- CSS -->
-  <link rel="stylesheet" href="libraries/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="libraries/css/font-awesome.css" type="text/css">
+
+  <!-- Loading icon stylesheet javascript -->
   <link rel="shortcut icon" href="images/favicon.png"/>
+  <link rel="stylesheet" href="css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- Loading js Scripts    -->
-  <script type="text/javascript" src="libraries/js/jquery.min.js"></script>
-  <script type="text/javascript" src="libraries/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="libraries/js/clipboard.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
-  <?php 
-  //    // session_destroy();
-  //    if (empty ($_GET ["error_messages"])) {
-  //        include_once '../phpSecureLogin/includes/db_connect.inc.php';
-  //        include_once '../phpSecureLogin/includes/functions.inc.php';
-  //
-  //        // sec_session_start();
-  //
-  //        if (login_check($mysqli) == true) {
-  //            $logged = 'in';
-  //        } else {
-  //            $logged = 'out';
-  //        }
-  //    } else {
-  //        $logged = 'out';
-  //    }
-  ?>
+  <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+  <script type="text/javascript" src="js/angular-1.5.8.min.js"></script>
+  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="js/clipboard.min.js"></script>
 </head>
+
 <body>
   <div class="container" style="background-color:#003296 ">
     <div class="row">
@@ -56,4 +38,4 @@
       echo '</div></br>';
     }
   ?>
-  <!---------------- MODAL ------------------------------->
+  <!--MODAL-->

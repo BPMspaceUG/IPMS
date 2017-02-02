@@ -4,16 +4,16 @@
       <div class="col-md-12 tab-content" id="bpm-content">
 
         Log History <input type="checkbox" ng-model="historyLog">
-        <div ng-if="historyLog" ng-repeat="log in changeHistory | limitTo:-3">
-          {{log.changeHistorycounter}} Tabelle: {{log.table}} row: {{(log.rowID +1)}} col: {{(log.colID +1)}}
-          <textarea rows="1" cols="{{log.cell.length}}">{{log.cell}}</textarea>
+        <div ng-if="historyLog" ng-repeat="log in changeHistory | limitTo:-3">         
+          <p>{{log.changeHistorycounter}} Tbl {{log.table}}, row {{(log.rowID)}}, col {{(log.colID)}}: {{log.cell}}</p>
         </div>
-        <textarea rows="1" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
+        <textarea rows="3" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
         <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
           
           <h2>{{table.table_alias}}</h2>
           <table class="table" >
             <!-- <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th> -->
+            <th >delete/update</th>
             <th ng-repeat="name in table.columnames">{{name}}</th>
 
             <tr ng-repeat="row in table.rows track by $index" 
@@ -24,30 +24,28 @@
               <td class="controllcoulm">
 
                 <i id="del{{$index}}"
-                class="fa fa-times-circle"  
+                class="fa fa-times-circle ipms-btn-delete"  
                 aria-hidden="true"
                 ng-click="send('delete', {row:row, colum:$index, table:table})"></i>
 
-<!--                 <button id="btnRowAlt{{'' + $parent.$index + $index}}" 
-                class="btnUpdateAlt" 
-                ng-click="update()"
-                >updateAlt</button> -->
 
                 <button id="btnRow{{'' + $parent.$index + $index}}" 
-                class="btnUpdate" 
-                ng-click="send('update', {row:row, colum:$index, table:table})"
+                class=" btn-default btnUpdate " 
+                ng-click="send('update', {row:row, colum:$index, table:table, x:[$index, $parent.$index]})"
                 >update</button>
 
               </td>
              <td ng-repeat="cell in row track by $index">
               <!-- xeditable controllfield -->
-              <a href="#" editable-text="cell">{{ cell || "empty" }}</a>
+              <!-- <a href="#" editable-text="cell">{{ cell || "empty" }}</a> -->
               <!-- normal Textarea -->
               <textarea 
               rows="1" cols="{{cell.length}}" 
-              ng-focus="rememberOrigin(table.tablename, row, cell, $parent.$index, $index)"
-              ng-blur="checkCellChange(table, row, cell, $parent.$parent.$index, $parent.$index, $index)"
-              ng-model="cell">{{cell}}</textarea>
+              ng-focus="rememberOrigin(table.table_name, table.columnames, row, cell, $parent.$parent.$index, $index)"
+              ng-blur="checkCellChange(table, row, cell, $parent.$parent.$parent.$index, $parent.$parent.$index, $index)"
+              ng-model="cell"
+              ng-if="!(table.columnames[$index] == table.primary_col)">{{cell}}</textarea>
+              <p ng-if="table.columnames[$index] == table.primary_col">{{cell}}</p>
              </td>
             </tr>
 
@@ -55,7 +53,7 @@
              <td>
               <i class="fa fa-plus" aria-hidden="true"></i>
                <button 
-               class="btnnewRows" 
+               class=" btn-default btnnewRows " 
                ng-click="send('create', {row:table.newRows[0], table:table})">
                create
                </button>
@@ -77,7 +75,7 @@
 		   <div class="modal-dialog" role="document">
 		     <div class="modal-content edums-tamodal-tacontent">
 
-		       <button type="button" class="close edums-tacontent-btnclose" data-dismiss="modal" aria-hidden="true">X </button>
+		       <button type="button" class="close btn-default" data-dismiss="modal" aria-hidden="true">X </button>
 		      </div>
 		  </div>
 		</div>

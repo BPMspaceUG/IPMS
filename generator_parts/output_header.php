@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../css/fuelux.min.css" />
   <link rel="stylesheet" href="../css/xeditable.css" />
   <link rel="stylesheet" href="../css/jsonviewer.css" />
-  <link rel="stylesheet" href="../css/muster.css" />
+  <link rel="stylesheet" href="../IPMS/css/muster.css" />
 
   <!-- <link rel="stylesheet" href="css/sample.css" /> -->
 </head>
