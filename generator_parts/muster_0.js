@@ -78,7 +78,7 @@ $scope.send = function (cud, param){
 
   log('\n'+cud+':')
   if (cud == 'create') {
-    body.paramJS = {row:param.row, table:param.table.table_name, primary_col: param.table.primary_col}
+    body.paramJS = {row:param.row, table:param.table.table_name}
     log('table: '+param.table.table_name); log('row: '+JSON.stringify(param.row))
     post(cud)
   }else if (cud == 'update') {

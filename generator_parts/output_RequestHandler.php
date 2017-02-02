@@ -10,14 +10,13 @@
     private $db;
 
     public function __construct() {
-      //identifyer for replace in fusion.php
+      //identifier for replace in fusion.php
       $config['db'] =  array('host' => "replaceServer",'user' => "replaceUser",'password' => "replacePassword",'database' => "replaceDBName" );
 
       //for testing $_GET["p"] = password
       if ($config['db']['host'] == "replaceServer") { $config['db']['host'] = 'localhost'; }
       if ($config['db']['user'] == "replaceUser") { $config['db']['user'] = 'root'; }
       if (($config['db']['password'] == "replacePassword") && isset($_GET["p"])) { $config['db']['password'] = $_GET["p"]; }
-      if ($config['db']['database'] == "replaceDBName") { $config['db']['database'] = 'sample'; }
 
       $db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['database']);
       /* check connection */
