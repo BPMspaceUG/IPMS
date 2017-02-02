@@ -21,7 +21,7 @@
                 data-toggle='modal' 
                 data-target="modal-container-1"
                 id="row{{'' + $parent.$index + $index}}">
-              <td class="controllcoulm">
+              <td class="controllcoulm" style="max-width: 100px;">
 
                 <i id="del{{$index}}"
                 class="fa fa-times-circle ipms-btn-delete"  
@@ -49,7 +49,7 @@
              </td>
             </tr>
 
-            <tr class="newRows">
+            <tr class="newRows" ng-if="table.rows.length > 0" >
              <td>
               <i class="fa fa-plus" aria-hidden="true"></i>
                <button 
@@ -66,7 +66,7 @@
             <tr class="newRows" ng-repeat="row in table.newRows track by $index" ng-if="$index > 0">
               <td></td>
              <td  ng-repeat="col in row track by $index">
-              <textarea ng-model="table.newRows[$parent.$index][$index]" <!-- ng-focus="addNewRow(table)" -->></textarea>
+              <textarea ng-model="table.newRows[$parent.$index][$index]" ></textarea>
              </td>
             </tr>
           </table>
