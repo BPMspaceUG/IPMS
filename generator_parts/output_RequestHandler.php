@@ -1,6 +1,5 @@
 <?php
   // Parameter
-  $test = isset($_GET["test"]) ? TRUE : FALSE;
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
     
@@ -9,21 +8,26 @@
     // Variables
     private $db;
 
-    public function __construct() {
-      //identifier for replace in fusion.php
-      $config['db'] =  array('host' => "replaceServer",'user' => "replaceUser",'password' => "replacePassword",'database' => "replaceDBName" );
-
-      //for testing $_GET["p"] = password
-      if ($config['db']['host'] == "replaceServer") { $config['db']['host'] = 'localhost'; }
-      if ($config['db']['user'] == "replaceUser") { $config['db']['user'] = 'root'; }
-      if (($config['db']['password'] == "replacePassword") && isset($_GET["p"])) { $config['db']['password'] = $_GET["p"]; }
-
-      $db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['database']);
+    public function __construct() {      
+      //identifyer for replace in fusion.php
+      $config['db'] =  array(
+        'host' => "replaceServer",
+        'user' => "replaceUser",
+        'password' => "replacePassword",
+        'database' => "replaceDBName"
+      );
+      // create DB connection object
+      $db = new mysqli(
+        $config['db']['host'],
+        $config['db']['user'],
+        $config['db']['password'],
+        $config['db']['database']
+      );
       /* check connection */
       if($db->connect_errno){
         printf("Connect failed: %s", mysqli_connect_error());
         exit();
-        }
+      }
       $db->query("SET NAMES utf8");
       $this->db = $db;
     }
@@ -43,9 +47,11 @@
       $rowdata = $param["row"];
       // Operation
       $query = "INSERT INTO ".$tablename." VALUES ('".implode("','", $rowdata)."');";
-      $res = $this->db->query($query);      
+      $res = $this->db->query($query);
+      // Return Last Row to frontend
+      $newID = $this->db->insert_id; // inserted ID
       // Output
-      return ($res != false);
+      return $res ? $newID : "0";
     }
     //================================== READ
     public function read($param) {
@@ -56,32 +62,30 @@
     //================================== UPDATE
     public function update($param) {
       $set = "";
-
      // "UPDATE table_name SET column1=value1,column2=value2,... WHERE some_column=some_value;";      
       $cols = array_keys($param["row"]);
       $len = count($param["row"]);
-      for ($i=0; $i < $len; $i++) { 
-        $set .= "`".$cols[$i]."` = `".$param["row"][$cols[$i]]."`";
-        if ($i < $len-1) {
-          $set .= ", ";
+      for ($i=0; $i < $len; $i++) {
+        // check if column is not a primary key
+        if (strtolower($cols[$i]) != strtolower($param["primary_col"])) {
+          $set .= $cols[$i]." = '".$param["row"][$cols[$i]]."'";
+          if ($i < $len-1)
+            $set .= ", ";
         }
       }
 
-      $where = "`".$param["primary_col"]."` == `".$param["row"][$param["primary_col"]]."`";
-      
-      $query = "UPDATE ".$param["table"]." SET ".$set." WHERE ".$where.";";      
-      // $res = $this->db->query($query);
-      // return $this->parseToJSON($res);
-      return $query;  
+      $where = $param["primary_col"]." = ".$param["row"][$param["primary_col"]];      
+      $query = "UPDATE ".$param["table"]." SET ".$set." WHERE ".$where.";";
+      $res = $this->db->query($query);
+      return $res ? "1" : "0";
     }
     //================================== DELETE
     public function delete($param) {
       /*  DELETE FROM table_name WHERE some_column=some_value;  */
-      $where = $param["primary_col"]." == ".$param["row"][$param["primary_col"]];
-      $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";      
-      // $res = $this->db->query($query);
-      // return $this->parseToJSON($res);
-      return $query;
+      $where = $param["primary_col"]." = ".$param["row"][$param["primary_col"]];
+      $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";
+      $res = $this->db->query($query);
+      return $res ? "1" : "0";
     }
   }
   // Class Definition ends here
