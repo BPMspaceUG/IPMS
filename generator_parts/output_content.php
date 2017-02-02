@@ -7,7 +7,7 @@
         <div ng-if="historyLog" ng-repeat="log in changeHistory | limitTo:-3">         
           <p>{{log.changeHistorycounter}} Tbl {{log.table}}, row {{(log.rowID)}}, col {{(log.colID)}}: {{log.cell}}</p>
         </div>
-        <textarea rows="3" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
+        <textarea ng-if="debug" rows="3" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
         <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
           
           <h2>{{table.table_alias}}</h2>

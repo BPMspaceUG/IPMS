@@ -11,8 +11,9 @@ app.run(function(editableOptions) {
 });
 
 app.controller('sampleCtrl', function ($scope, $http) {
-  $scope.historyLog = true  
+  $scope.historyLog = false  
   $scope.tables = []
+  $scope.debug = window.location.search.match('debug=1')
 
   tables.forEach(
     function(tbl) {
