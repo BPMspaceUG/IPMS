@@ -72,7 +72,10 @@
     foreach ($tables as $table) {
 
       // Alle columns auslesen vong dieser 1 table
-      $query = "SHOW KEYS FROM $db.".$table;
+      $query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE ".
+        "TABLE_SCHEMA = '$db' AND ". // Database
+        "TABLE_NAME = '$table';";
+
       $res2 = mysqli_query($con, $query);
       
       $columns = array();
@@ -80,10 +83,12 @@
 
       if ($res2)
       while ($row2 = $res2->fetch_assoc()) {
-        $columns[] = $row2["Column_name"];
         
+        $columns[] = $row2; //["COLUMN_NAME"];  
+        /*
         if ($row2["Key_name"] == "PRIMARY")
-          $primary_col = $row2["Column_name"];
+          $primary_col = $row2["COLUMN_NAME"];
+        */
       }      
       
       $res[] = array(
