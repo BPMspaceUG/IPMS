@@ -61,17 +61,8 @@
   $output_RequestHandler = str_replace('<?php', '', $output_RequestHandler);
   $output_RequestHandler = str_replace('"replaceServer"', '"'.$db_server.'"', $output_RequestHandler);
   $output_RequestHandler = str_replace('"replaceUser"', '"'.$db_user.'"', $output_RequestHandler);
-  echo "db_user:";
-  var_dump($db_user);
   $output_RequestHandler = str_replace('"replacePassword"', '"'.$db_pass.'"', $output_RequestHandler);
-  echo "db-Name.database:";
-  var_dump($db_name);
   $output_RequestHandler = str_replace('"replaceDBName"', '"'.$db_name.'"', $output_RequestHandler);
-
-  // TODO: Remove this code
-  //$handle = fopen("./replaceCRUD.php", "r");
-  //$replaceCRUD = stream_get_contents($handle);
-  // $output_RequestHandler = str_replace('//replaceCRUD', $replaceCRUD, $output_RequestHandler);
 
   $escaped = addslashes( $output_RequestHandler );
   $log.= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
