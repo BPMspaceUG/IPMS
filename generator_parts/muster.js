@@ -49,7 +49,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
           table_alias: tbl.table_alias,
           table_icon: tbl.table_icon,
           columnames: keys,
-          primary_col: tbl.primary_col,
+          //primary_col: tbl.primary_col,
           rows: response,
           newRows : newRows
         })
@@ -82,17 +82,20 @@ $scope.send = function (cud, param){
     body.paramJS = {row:param.row, table:param.table.table_name, primary_col: param.table.primary_col}
     log('table: '+param.table.table_name); log('row: '+JSON.stringify(param.row))
     post(cud)
-  }else if (cud == 'update') {
+  } else if (cud == 'update') {
     var row = $scope.changeHistory.reverse()
     row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })
     body.paramJS = {row:param.row/*as shown on page*/, primary_col: param.table.primary_col/*0-x*/, table:param.table.table_name}
-    log('table: '+param.table.table_name); log('row: '+JSON.stringify(row) ); log('primary_col: '+JSON.stringify(param.table.primary_col) )
+    log('table: '+param.table.table_name);
+    log('row: '+JSON.stringify(row) );
+    log('primary_col: '+JSON.stringify(param.table.primary_col) )
+    console.log(param);
     post(cud)
-  }else if (cud == 'delete') {
+  } else if (cud == 'delete') {
     body.paramJS = {id:param.colum, row:param.row, table:param.table.table_name, primary_col: param.table.primary_col}
     log('table: '+param.table.table_name ); log('colum: '+JSON.stringify(param.colum) )
     post(cud)
-  }else{
+  } else{
     log('fail')
   }
 

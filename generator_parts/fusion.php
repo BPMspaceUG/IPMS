@@ -96,7 +96,7 @@
   $log.= '<h4>$output_footer</h4>'.$output_footer;
 
   // Im Footer JS ersetzen
-  $handle = fopen("./muster_0.js", "r");
+  $handle = fopen("./muster.js", "r");
 
   $musterJS = 'tables = '.json_encode($data).';';
   echo "json_encode all_table_names:";

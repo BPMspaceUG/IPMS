@@ -95,7 +95,7 @@
         "table_name" => $table,
         "table_alias" => ucfirst($table),
         "is_in_menu" => true,
-        "primary_col" => $primary_col,
+        //"primary_col" => $primary_col,
         "columns" => $columns
       );
     }
