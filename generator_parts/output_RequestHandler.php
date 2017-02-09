@@ -39,7 +39,16 @@
         $results_array[] = $row;
       }
       return json_encode($results_array);
-    }    
+    }
+    private function buildSQLWherePart($primarycols, $rowcols) {
+      $where = "";
+      foreach ($primarycols as $col) {
+        $where = $where . $col . "='" . $rowcols[$col] . "'";
+        $where = $where . " AND ";
+      }
+      $where = substr($where, 0, -5); // remove last ' AND ' (5 chars)
+      return $where;
+    }
     //================================== CREATE
     public function create($param) {
       // Inputs
@@ -48,10 +57,8 @@
       // Operation
       $query = "INSERT INTO ".$tablename." VALUES ('".implode("','", $rowdata)."');";
       $res = $this->db->query($query);
-      // Return Last Row to frontend
-      $newID = $this->db->insert_id; // inserted ID
       // Output
-      return $res ? $newID : "0";
+      return $res ? "1" : "0";
     }
     //================================== READ
     public function read($param) {
@@ -63,6 +70,8 @@
     public function update($param) {
       $set = "";
      // "UPDATE table_name SET column1=value1,column2=value2,... WHERE some_column=some_value;";      
+      
+      // TODO: Optimize
       $cols = array_keys($param["row"]);
       $len = count($param["row"]);
       for ($i=0; $i < $len; $i++) {
@@ -73,18 +82,20 @@
             $set .= ", ";
         }
       }
-
-      $where = $param["primary_col"]." = ".$param["row"][$param["primary_col"]];      
+      $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$set." WHERE ".$where.";";
       $res = $this->db->query($query);
+      // Output
       return $res ? "1" : "0";
     }
     //================================== DELETE
     public function delete($param) {
-      /*  DELETE FROM table_name WHERE some_column=some_value;  */
-      $where = $param["primary_col"]." = ".$param["row"][$param["primary_col"]];
+      /*  DELETE FROM table_name WHERE some_column=some_value AND x=1;  */
+      $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
+      // Build query
       $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";
       $res = $this->db->query($query);
+      // Output
       return $res ? "1" : "0";
     }
   }

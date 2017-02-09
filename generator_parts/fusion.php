@@ -68,8 +68,9 @@
   var_dump($db_name);
   $output_RequestHandler = str_replace('"replaceDBName"', '"'.$db_name.'"', $output_RequestHandler);
 
-  $handle = fopen("./replaceCRUD.php", "r");
-  $replaceCRUD = stream_get_contents($handle);
+  // TODO: Remove this code
+  //$handle = fopen("./replaceCRUD.php", "r");
+  //$replaceCRUD = stream_get_contents($handle);
   // $output_RequestHandler = str_replace('//replaceCRUD', $replaceCRUD, $output_RequestHandler);
 
   $escaped = addslashes( $output_RequestHandler );
