@@ -76,46 +76,64 @@ $scope.send = function (cud, param){
   log(param.x)
   console.log("Send-Function called, Params:", param);
 
- var body ={cmd : 'cud', paramJS : {}},
- columName = Object.keys(param.table.rows[0])[param.colum]
+  var body ={cmd : 'cud', paramJS : {}},
+  columName = Object.keys(param.table.rows[0])[param.colum];
 
-  function getPrimaryColumns(columns) {
+  // Function which identifies _all_ primary columns
+  function getPrimaryColumns(col) {
+    console.log("------- get PRI columns");
     var resultset = [];
-    console.log("SWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG", columns);
-    for (var i = 0; i < columns.length-1; i++) {
-      if (columns[i].COLUMN_KEY.indexOf("PRI") >= 0) {
+    for (var i = 0; i < col.length-1; i++) {
+      if (col[i].COLUMN_KEY.indexOf("PRI") >= 0) {
         // Column is primary column
-        resultset.push(columns[i].COLUMN_NAME);
+        resultset.push(col[i].COLUMN_NAME);
       }
     }
-    console.log("SHEEEEEEEEEEEEEEEEEEEEEEEEEEEESHHHHH", resultset);
+    console.log("----REsult:", resultset);
     return resultset;
   }
 
-  log('\n'+cud+':')
+  log('\n'+cud+':');
+  // ---------------------- Create
   if (cud == 'create') {
-    body.paramJS = {row:param.row, table:param.table.table_name, primary_col: param.table.primary_col}
-    log('table: '+param.table.table_name); log('row: '+JSON.stringify(param.row))
-    post(cud)
-  } else if (cud == 'update') {
+    body.paramJS = {
+      row: param.row,
+      table: param.table.table_name,
+      primary_col: param.table.primary_col
+    }
+    log('table: '+param.table.table_name);
+    log('row: '+JSON.stringify(param.row));
+    post(cud);
+  }
+  else if (cud == 'update') {
     var row = $scope.changeHistory.reverse()
     row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })
-    body.paramJS = {row:param.row/*as shown on page*/, primary_col: param.table.primary_col/*0-x*/, table:param.table.table_name}
+    // relevant data
+    body.paramJS = {
+      row: param.row/*as shown on page*/,
+      primary_col: getPrimaryColumns(param.table.columnsX), //param.table.primary_col/*0-x*/,
+      table: param.table.table_name
+    }
+    /*
     log('table: '+param.table.table_name);
-    log('row: '+JSON.stringify(row) );
-    log('primary_col: '+JSON.stringify(param.table.primary_col) )
-    console.log(param);
+    log('row: '+JSON.stringify(row));
+    log('primary_col: '+JSON.stringify(param.table.primary_col));
+    */
+    console.log("UPDATE:", body);
     post(cud)
-  } else if (cud == 'delete') {
-    console.log("------------Here------->", param.table);
+  }
+  else if (cud == 'delete') {
     body.paramJS = {
       id:param.colum,
       row:param.row,
       table:param.table.table_name,
-      primary_col: getPrimaryColumns(param.table.columnsX)}
+      primary_col: getPrimaryColumns(param.table.columnsX)
+    }
+    /*
     log('table: '+param.table.table_name );
     log('colum: '+JSON.stringify(param.colum) )
-    console.log(body);
+    */
+    console.log("DELETE:", body);
     post(cud)
   } else{
     log('fail')

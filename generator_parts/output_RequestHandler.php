@@ -1,5 +1,5 @@
 <?php
-  // Parameter
+  // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
     
@@ -68,22 +68,25 @@
     }
     //================================== UPDATE
     public function update($param) {
-      $set = "";
-     // "UPDATE table_name SET column1=value1,column2=value2,... WHERE some_column=some_value;";      
-      
-      // TODO: Optimize
+      $str_update = "";
       $cols = array_keys($param["row"]);
       $len = count($param["row"]);
+      $pri_cols = array_map('strtolower', $param["primary_col"]); // Convert to lowercase
+      $cols = array_map('strtolower', $cols); // Convert to lowercase
+      // loop each column
       for ($i=0; $i < $len; $i++) {
-        // check if column is not a primary key
-        if (strtolower($cols[$i]) != strtolower($param["primary_col"])) {
-          $set .= $cols[$i]." = '".$param["row"][$cols[$i]]."'";
+        // check if actual column is not a primary key
+        $act_col = strtolower($cols[$i]); // Convert to lowercase for comparison
+        // compare columns
+        if (!in_array($act_col, $pri_cols)) {
+          $str_update .= $act_col."='".$param["row"][$act_col]."'";
           if ($i < $len-1)
-            $set .= ", ";
+            $str_update .= ", ";
         }
       }
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
-      $query = "UPDATE ".$param["table"]." SET ".$set." WHERE ".$where.";";
+      $query = "UPDATE ".$param["table"]." SET ".$str_update." WHERE ".$where.";";
+      var_dump($query);
       $res = $this->db->query($query);
       // Output
       return $res ? "1" : "0";
