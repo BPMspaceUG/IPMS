@@ -3,22 +3,20 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-
   <title>BPMspace IPMS</title>
-
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <!-- Loading icon stylesheet javascript -->
-  <link rel="shortcut icon" href="images/favicon.png"/>
-  <link rel="stylesheet" href="css/bootstrap.min.css"/>
+  <link rel="shortcut icon" href="images/favicon.png">
+  <!-- CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
   <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <!-- JS -->
   <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
   <script type="text/javascript" src="js/angular-1.5.8.min.js"></script>
   <script type="text/javascript" src="js/bootstrap.min.js"></script>
   <script type="text/javascript" src="js/clipboard.min.js"></script>
 </head>
-
 <body>
   <div class="container" style="background-color:#003296 ">
     <div class="row">
