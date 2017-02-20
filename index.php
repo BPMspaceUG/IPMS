@@ -66,26 +66,19 @@
           <div class="row">
             <label for="sqlTables" class="col-sm-2"><span class="label label-success">2</span> Tables</label>
              <table class="table  table-bordered table-hover table-striped" id="loadedtables"><i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
-
               <th>TABLENAME</th><th>ALIAS</th><th>IN MENU</th><th>ICON</th>
-
               <tr ng-repeat="tbl in tables track by $index" ng-model="tbl" id="row{{$index}}">
-
                <td><p>{{tbl.table_name}}</p></td>
-
                <td><textarea rows="1" cols="{{tbl.table_alias.length}}" 
                 ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"></textarea></td>
-
                <td><input type="checkbox" ng-model="tbl.is_in_menu"></td>
                <td><textarea rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"></textarea>
                 <i class="{{tbl.table_icon}}" ></i></td>
-
               </tr>
+              <tr><td colspan="4">Hier kommen die columns hin</td></tr>
             </table>
-
-
-
           </div>
+
           <!-- Create Button -->
           <div class="row">&nbsp;</div>
           <div class="row">
