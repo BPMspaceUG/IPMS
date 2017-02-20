@@ -3,13 +3,7 @@
     <div class="row">
       <div class="col-md-12 tab-content" id="bpm-content">
 
-        Log History <input type="checkbox" ng-model="historyLog">
-        <div ng-if="historyLog" ng-repeat="log in changeHistory | limitTo:-3">         
-          <p>{{log.changeHistorycounter}} Tbl {{log.table}}, row {{(log.rowID)}}, col {{(log.colID)}}: {{log.cell}}</p>
-        </div>
-        <textarea ng-if="debug" rows="3" cols="150">{{'lastResponse: '+lastResponse}}</textarea>
-        <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
-          
+        <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">         
           <h2>{{table.table_alias}}</h2>
           <table class="table" >
             <!-- <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th> -->
@@ -23,14 +17,12 @@
                 id="row{{'' + $parent.$index + $index}}">
               <td class="controllcoulm" style="max-width: 100px;">
 
-                <i id="del{{$index}}"
-                class="fa fa-times-circle ipms-btn-delete"  
-                aria-hidden="true"
-                ng-click="send('delete', {row:row, colum:$index, table:table})"></i>
-
+                <button id="del{{$index}}" class="btn btn-default" 
+                ng-click="send('delete', {row:row, colum:$index, table:table})">
+                <i class="fa fa-times-circle ipms-btn-delete"></i> Delete</button>
 
                 <button id="btnRow{{'' + $parent.$index + $index}}" 
-                class=" btn-default btnUpdate " 
+                class="btn btn-default btnUpdate " 
                 ng-click="send('update', {row:row, colum:$index, table:table, x:[$index, $parent.$index]})"
                 >update</button>
 
