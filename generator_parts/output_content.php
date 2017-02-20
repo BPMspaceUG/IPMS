@@ -14,7 +14,7 @@
           <table class="table" >
             <!-- <th>{{table.columnames.length}} Spalten, {{table.rows.length}} Zeilen</th> -->
             <th >delete/update</th>
-            <th ng-repeat="name in table.columnames">{{name}}</th>
+            <th ng-repeat="col in table.columnsX">{{col.COLUMN_NAME}}</th>
 
             <tr ng-repeat="row in table.rows track by $index" 
                 ng-model="table"
@@ -49,7 +49,7 @@
              </td>
             </tr>
 
-            <tr class="newRows" ng-if="table.rows.length > 0" >
+            <tr class="newRows">
              <td>
               <i class="fa fa-plus" aria-hidden="true"></i>
                <button 
@@ -59,6 +59,7 @@
                </button>
              </td>
              <td ng-repeat="col in table.newRows[0] track by $index">
+              <div><small>{{ table.columnsX[$index].COLUMN_TYPE }}</small></div>
               <textarea ng-model="table.newRows[0][$index]"></textarea>
              </td>
             </tr>

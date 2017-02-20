@@ -1,9 +1,8 @@
 <?php
   //var_dump($_REQUEST);
-  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST))
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
     $_REQUEST = json_decode(file_get_contents('php://input'), true);
-    // echo "vardump für _REQUEST";
-  // var_dump($_REQUEST);
+  }
   // put parameters into variables
   $db_server = $_REQUEST['host'].':'.$_REQUEST['port'];
   $db_user = $_REQUEST['user'];
@@ -30,9 +29,9 @@
   
   //open DB connection or die
   $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
-  if($con->connect_errno > 0){
+  if ($con->connect_errno > 0){
     die('Unable to connect to database [' . $db->connect_error . ']');
-  }else{
+  } else {
     // echo "no mysqli error";
   }
 
@@ -41,10 +40,6 @@
   for ($i=0;$i<count($data);$i++) {
     array_push($all_table_names, $data[$i]["table_name"]);
   }
-  // echo "all_table_names: ";
-  // var_dump($all_table_names);
-
-  // if ($DEBUG) var_dump($all_table_names);
 
   $log = '';
    //Pseudocode alle files aus folder:  folder(this).getfilenames.foreach(file=> $file = fget(file))
@@ -58,11 +53,12 @@
   $handle = fopen($partpath, "r");
   $output_RequestHandler = fread($handle, filesize($partpath));
 
+  // replace database access information
   $output_RequestHandler = str_replace('<?php', '', $output_RequestHandler);
-  $output_RequestHandler = str_replace('"replaceServer"', '"'.$db_server.'"', $output_RequestHandler);
-  $output_RequestHandler = str_replace('"replaceUser"', '"'.$db_user.'"', $output_RequestHandler);
-  $output_RequestHandler = str_replace('"replacePassword"', '"'.$db_pass.'"', $output_RequestHandler);
-  $output_RequestHandler = str_replace('"replaceDBName"', '"'.$db_name.'"', $output_RequestHandler);
+  $output_RequestHandler = str_replace('replaceServer', $db_server, $output_RequestHandler);
+  $output_RequestHandler = str_replace('replaceUser', $db_user, $output_RequestHandler);
+  $output_RequestHandler = str_replace('replacePassword', $db_pass, $output_RequestHandler);
+  $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
 
   $escaped = addslashes( $output_RequestHandler );
   $log.= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
@@ -87,12 +83,12 @@
   $output_footer = stream_get_contents($handle);
   $log.= '<h4>$output_footer</h4>'.$output_footer;
 
-  // Im Footer JS ersetzen
+  // put Javascript in Footer
   $handle = fopen("./muster.js", "r");
-
   $musterJS = 'tables = '.json_encode($data).';';
-  echo "json_encode all_table_names:";
-  var_dump(json_encode($all_table_names));
+  //echo "json_encode all_table_names:";
+  //var_dump(json_encode($all_table_names));
+  
   $musterJS .= stream_get_contents($handle);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
 
@@ -112,9 +108,10 @@
     ;
   echo $output_all;
 
-  // Write code to file: .php as live-file, .txt as debug
+  // Write code to file
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all);
+    // debug
+    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all);
   }
 ?>

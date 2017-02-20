@@ -31,12 +31,15 @@ app.controller('sampleCtrl', function ($scope, $http) {
         }
       }).success(function(response){
         console.log("Response: ", response);
-        
+        console.log("--> Table:", tbl);
+
         //define additional Rows
         var newRows = [[]]
-        if (response.length > 0) {
-          Object.keys(response[0]).forEach( function(){newRows[newRows.length-1].push('')} )
-        }
+ 
+        // Create new rows by columns
+        Object.keys(tbl.columns).forEach(
+          function(){newRows[newRows.length-1].push('')}
+        );
 
         //define colum headers
         var keys = ['names']
@@ -76,8 +79,8 @@ $scope.send = function (cud, param){
   log(param.x)
   console.log("Send-Function called, Params:", param);
 
-  var body ={cmd : 'cud', paramJS : {}},
-  columName = Object.keys(param.table.rows[0])[param.colum];
+  var body = {cmd : 'cud', paramJS : {}};
+  // unused: columName = Object.keys(param.table.columnsX[0])[param.colum];
 
   // Function which identifies _all_ primary columns
   function getPrimaryColumns(col) {
