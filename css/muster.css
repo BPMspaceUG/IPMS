@@ -1,3 +1,4 @@
+/*
 #bpm-liam-header { 
   margin-top: -20px; 
   margin-bottom: 10px; 
@@ -12,11 +13,17 @@
   position:relativ; 
   margin-bottom: 20px;
 }
+*/
+
+/*
 #bpm-menu {
   margin-right: 20px; 
   margin-left: 20px; 
   margin-bottom: 10px;
 }
+*/
+
+/*
 #bpm-content {
   margin-right: 20px; 
   margin-left: 20px; 
@@ -27,6 +34,7 @@
   margin-left: 10px; 
   margin-bottom: 10px;
 }
+*/
 .newRows{
   background-color: #d8edff;
 }
@@ -40,7 +48,10 @@
 .fresh {
   background-color: #e9ffaf;
 }
+thead tr {
+  background-color: #eee;
+}
 .controllcoulm {
-  display: inline-block;
-  white-space: nowrap;
+  width: 100px;
+  background-color: #eee;
 }

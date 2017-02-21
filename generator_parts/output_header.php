@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../css/xeditable.css" />
   <link rel="stylesheet" href="../css/jsonviewer.css" />
   <link rel="stylesheet" href="../IPMS/css/muster.css" />
-
   <!-- <link rel="stylesheet" href="css/sample.css" /> -->
 </head>
-<!--  header ends here -->
+<body ng-controller="sampleCtrl">
+  <div class="container">
