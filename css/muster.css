@@ -1,54 +1,46 @@
-  #bpm-liam-header { 
-    margin-top: -20px; 
-    margin-bottom: 10px; 
-    padding-right: 50px;
-  }
-  #bpm-logo-care { 
-    position:relativ;  
-    z-index: 10;  
-    margin-right: -20px;
-  }
-  #bpm-logo    { 
-    position:relativ; 
-    margin-bottom: 20px;
-  }
-  #bpm-menu {
-    margin-right: 20px; 
-    margin-left: 20px; 
-    margin-bottom: 10px;
-  }
-  #bpm-content {
-    margin-right: 20px; 
-    margin-left: 20px; 
-    margin-bottom: 10px;
-  }
-  #bpm-footer {
-    margin-right: 10px; 
-    margin-left: 10px; 
-    margin-bottom: 10px;
-  }
-  .newRows{
-    background-color: #d8edff;
-  }
-  .btnnewRows{
-    background-color: #7cc4ff;
-  }
-  .btnUpdate{
-    display: none;
-    background-color: #bdff54;
-  }
-  .fresh {
-    background-color: #e9ffaf;
-  }
-.controllcoulm {
-    display: inline-block;
-    white-space: nowrap;
-  }
-.ipms-btn-delete{
-    background-color: #ffbaaf;
-    color: #ed2e10;
+#bpm-liam-header { 
+  margin-top: -20px; 
+  margin-bottom: 10px; 
+  padding-right: 50px;
 }
-.ipms-btn-delete:hover{
-    background-color: #000000;
-    color: #ff0000;
+#bpm-logo-care { 
+  position:relativ;  
+  z-index: 10;  
+  margin-right: -20px;
+}
+#bpm-logo    { 
+  position:relativ; 
+  margin-bottom: 20px;
+}
+#bpm-menu {
+  margin-right: 20px; 
+  margin-left: 20px; 
+  margin-bottom: 10px;
+}
+#bpm-content {
+  margin-right: 20px; 
+  margin-left: 20px; 
+  margin-bottom: 10px;
+}
+#bpm-footer {
+  margin-right: 10px; 
+  margin-left: 10px; 
+  margin-bottom: 10px;
+}
+.newRows{
+  background-color: #d8edff;
+}
+.btnnewRows{
+  background-color: #7cc4ff;
+}
+.btnUpdate{
+  display: none;
+  background-color: #bdff54;
+}
+.fresh {
+  background-color: #e9ffaf;
+}
+.controllcoulm {
+  display: inline-block;
+  white-space: nowrap;
 }

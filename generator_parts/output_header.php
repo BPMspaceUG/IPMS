@@ -5,6 +5,7 @@
   <title>BPMspace sample</title>
   <!-- CSS -->
   <link rel="stylesheet" href="../css/bootstrap.min.css" media="screen" />
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css" media="screen" />
   <link rel="stylesheet" href="../css/font-awesome.min.css" />
   <link rel="stylesheet" href="../css/fuelux.min.css" />
   <link rel="stylesheet" href="../css/xeditable.css" />

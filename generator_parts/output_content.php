@@ -16,16 +16,14 @@
                 data-target="modal-container-1"
                 id="row{{'' + $parent.$index + $index}}">
               <td class="controllcoulm" style="max-width: 100px;">
-
-                <button id="del{{$index}}" class="btn btn-default" 
-                ng-click="send('delete', {row:row, colum:$index, table:table})">
-                <i class="fa fa-times-circle ipms-btn-delete"></i> Delete</button>
-
-                <button id="btnRow{{'' + $parent.$index + $index}}" 
-                class="btn btn-default btnUpdate " 
-                ng-click="send('update', {row:row, colum:$index, table:table, x:[$index, $parent.$index]})"
-                >update</button>
-
+                <!-- Delete Button -->
+                <button id="del{{$index}}" class="btn btn-danger" title="Delete"
+                  ng-click="send('delete', {row:row, colum:$index, table:table})">
+                  <i class="fa fa-times"></i><!-- Delete--></button>
+                <!-- Update Button -->
+                <button id="btnRow{{'' + $parent.$index + $index}}" class="btn btn-success btnUpdate" title="Update"
+                  ng-click="send('update', {row:row, colum:$index, table:table, x:[$index, $parent.$index]})">
+                  <i class="fa fa-floppy-o"></i><!-- Update--></button>
               </td>
              <td ng-repeat="cell in row track by $index">
               <!-- xeditable controllfield -->
@@ -43,12 +41,8 @@
 
             <tr class="newRows">
              <td>
-              <i class="fa fa-plus" aria-hidden="true"></i>
-               <button 
-               class=" btn-default btnnewRows " 
-               ng-click="send('create', {row:table.newRows[0], table:table})">
-               create
-               </button>
+               <button class="btn btn-primary" ng-click="send('create', {row:table.newRows[0], table:table})">
+                <i class="fa fa-plus"></i> Create</button>
              </td>
              <td ng-repeat="col in table.newRows[0] track by $index">
               <div><small>{{ table.columnsX[$index].COLUMN_TYPE }}</small></div>
