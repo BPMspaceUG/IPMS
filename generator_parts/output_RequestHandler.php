@@ -86,8 +86,9 @@
       }
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$str_update." WHERE ".$where.";";
-      var_dump($query);
+      // var_dump($query); // for Debugging
       $res = $this->db->query($query);
+      // TODO: Check if rows where REALLY updated!
       // Output
       return $res ? "1" : "0";
     }

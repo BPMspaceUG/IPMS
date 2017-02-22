@@ -64,18 +64,43 @@
           </div> 
           <!-- Tables -->
           <div class="row">
-            <label for="sqlTables" class="col-sm-2"><span class="label label-success">2</span> Tables</label>
-             <table class="table  table-bordered table-hover table-striped" id="loadedtables"><i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
-              <th>TABLENAME</th><th>ALIAS</th><th>IN MENU</th><th>ICON</th>
-              <tr ng-repeat="tbl in tables track by $index" ng-model="tbl" id="row{{$index}}">
-               <td><p>{{tbl.table_name}}</p></td>
-               <td><textarea rows="1" cols="{{tbl.table_alias.length}}" 
-                ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"></textarea></td>
-               <td><input type="checkbox" ng-model="tbl.is_in_menu"></td>
-               <td><textarea rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"></textarea>
-                <i class="{{tbl.table_icon}}" ></i></td>
-              </tr>
-              <tr><td colspan="4">Hier kommen die columns hin</td></tr>
+            <label for="sqlTables" class="col-sm-2">
+              <span class="label label-success">2</span> Tables
+            </label>
+             <table class="table table-bordered table-striped" id="loadedtables" style="background-color: #eee;"
+              ng-repeat="tbl in tables track by $index" ng-model="tbl" id="row{{$index}}">
+              <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
+              <thead>
+                <tr>
+                  <th width="30%">TABLENAME</th>
+                  <th width="30%">ALIAS</th>
+                  <th width="20%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
+                  <th width="20%">ICON</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><p>{{tbl.table_name}}</p></td>
+                  <td>
+                    <textarea class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
+                    ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"></textarea>
+                  </td>
+                  <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
+                  <td>
+                    <i class="{{tbl.table_icon}}" ></i>
+                    <textarea class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"></textarea>                  
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="columns">
+                <tr><td colspan="4"><b>Columns</b></tr>
+                <tr ng-repeat="col in tbl.columns">
+                  <td>{{col.COLUMN_NAME}}</td>
+                  <td>{{col.COLUMN_KEY}}</td>
+                  <td>{{col.COLUMN_TYPE}}</td>
+                  <td><input type="checkbox" ng-model="col.is_in_menu"></td>
+                </tr>
+              </tbody>
             </table>
           </div>
 

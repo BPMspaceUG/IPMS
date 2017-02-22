@@ -2,8 +2,8 @@
 // Mustertabelle
 var tables = tables
 
-console.log('tables:')
-console.log(tables)
+// for debugging
+console.log('All tables (', tables.length, '):', tables);
 
 var app = angular.module("sampleApp", ["xeditable"])
 app.run(function(editableOptions) {
@@ -23,15 +23,17 @@ app.controller('sampleCtrl', function ($scope, $http) {
 
       // Request from server
       $http({
-        url:window.location.pathname,
-        method:'post',
-        data:{
+        url: window.location.pathname, // use same page for reading out data
+        method: 'post',
+        data: {
           cmd: 'read',
           paramJS: {tablename: tbl.table_name, limit: 150, select: "*"}
         }
       }).success(function(response){
-        console.log("Response: ", response);
-        console.log("--> Table:", tbl);
+
+        // debugging
+        console.log("Table '", tbl.table_name, "'", tbl);
+        console.log(" - Data:", response);
 
         //define additional Rows
         var newRows = [[]]
@@ -53,12 +55,10 @@ app.controller('sampleCtrl', function ($scope, $http) {
           table_icon: tbl.table_icon,
           columnsX: tbl.columns,
           columnames: keys,
-          //primary_col: tbl.primary_col,
           rows: response,
           newRows : newRows
         })
-        
-        console.log('Table: ', $scope.tables.slice(-1))
+
         // open first table in navbar
         $('#nav-'+$scope.tables[0].table_name).click();
         // TODO: Platzhalter für Scope Texfelder generierung  
@@ -76,7 +76,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
 Allround send for changes to DB
 */
 $scope.send = function (cud, param){
-  log(param.x)
+  console.log(param.x)
   console.log("Send-Function called, Params:", param);
 
   var body = {cmd : 'cud', paramJS : {}};
@@ -84,7 +84,6 @@ $scope.send = function (cud, param){
 
   // Function which identifies _all_ primary columns
   function getPrimaryColumns(col) {
-    console.log("------- get PRI columns");
     var resultset = [];
     for (var i = 0; i < col.length-1; i++) {
       if (col[i].COLUMN_KEY.indexOf("PRI") >= 0) {
@@ -92,20 +91,18 @@ $scope.send = function (cud, param){
         resultset.push(col[i].COLUMN_NAME);
       }
     }
-    console.log("----REsult:", resultset);
+    console.log("---- Primary Columns:", resultset);
     return resultset;
   }
 
-  log('\n'+cud+':');
-  // ---------------------- Create
+  // Assemble data for Create, Update, Delete Functions
   if (cud == 'create') {
     body.paramJS = {
       row: param.row,
       table: param.table.table_name,
       primary_col: param.table.primary_col
     }
-    log('table: '+param.table.table_name);
-    log('row: '+JSON.stringify(param.row));
+    console.log("CREATE:", body);
     post(cud);
   }
   else if (cud == 'update') {
@@ -117,11 +114,6 @@ $scope.send = function (cud, param){
       primary_col: getPrimaryColumns(param.table.columnsX), //param.table.primary_col/*0-x*/,
       table: param.table.table_name
     }
-    /*
-    log('table: '+param.table.table_name);
-    log('row: '+JSON.stringify(row));
-    log('primary_col: '+JSON.stringify(param.table.primary_col));
-    */
     console.log("UPDATE:", body);
     post(cud)
   }
@@ -132,35 +124,45 @@ $scope.send = function (cud, param){
       table:param.table.table_name,
       primary_col: getPrimaryColumns(param.table.columnsX)
     }
-    /*
-    log('table: '+param.table.table_name );
-    log('colum: '+JSON.stringify(param.colum) )
-    */
     console.log("DELETE:", body);
     post(cud)
   } else{
-    log('fail')
+    console.log('unknown command (not CRUD)')
   }
+
 
   function post(){    
     $http({
       url:window.location.pathname,
       method:'post',
-      data:{
+      data: {
         cmd: cud,
         paramJS: body.paramJS
       }
     }).success(function(response){
-      
       // Debugging
       console.log("ResponseData: ", response);
-      $scope.lastResponse = response
-      
+      $scope.lastResponse = response;
+
+      // GUI Notifications for user feedback
       if (cud == 'delete' && response != 0) {
         // delete from page
         $scope.tables
         .find(function(tbl){return tbl.table_name == param.table.table_name})
         .rows.splice(/*row-index*/param.colum, 1)
+      }
+      else if (cud == 'update' && response != 0) {
+        // worked
+
+        // TODO: There could be a better solution, here the row is stored in the client in a history
+        // but what if there are more changes and it gets corrupted? better the server sends back the
+        // table and the primary column content -> so then the data intergrity is garanteed
+
+        var tblID = param.x[1];
+        var rowID = param.x[0];
+        // remove class fresh and update button
+        $("#row"+tblID+rowID).removeClass("fresh");
+        $("#btnRow"+tblID+rowID ).hide();
       }
     })
   }
@@ -190,8 +192,8 @@ then add an empty row*/
 $scope.changeHistory = [], $scope.changeHistorycounter = 0
 $scope.rememberOrigin = function (table, cols, row, cell, rowID, colID){
   $scope.changeHistorycounter ++
-  log('\n-rO: table: '+table + ', cols:' + cols + ', row:' + row + ', cell:' + cell + ', rowID:' + rowID + ', colID:' + colID)
-  log($scope.changeHistorycounter+' '+table+' Row: '+rowID+', Col: '+colID+' - '+cols[colID])
+  console.log('\n-rO: table: '+table + ', cols:' + cols + ', row:' + row + ', cell:' + cell + ', rowID:' + rowID + ', colID:' + colID)
+  console.log($scope.changeHistorycounter+' '+table+' Row: '+rowID+', Col: '+colID+' - '+cols[colID])
   $scope.changeHistory.push({
    table : table,
    row : row,
@@ -205,7 +207,11 @@ $scope.rememberOrigin = function (table, cols, row, cell, rowID, colID){
 
 /*If cell content changed, protokoll the change*/
 $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
-  log('#cCC: table: ' + table + ', row: ' + row + ', cell: ' +  cell + ', tblID: ' + tblID + ', rowID: ' + rowID + ', colID: ' + colID)
+
+  console.log('#cCC: table: ' + table + ', row: ' + row +
+    ', cell: ' +  cell + ', tblID: ' + tblID +
+    ', rowID: ' + rowID + ', colID: ' + colID);
+
   // var y = row[0], x = cell, //cleanflag
   origin = $scope.changeHistory[$scope.changeHistory.length-1]
 
@@ -214,21 +220,22 @@ $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
     var postRow = row, keys = Object.keys(row)
     postRow[keys[colID]] = cell
     
-    $scope.changeHistory[$scope.changeHistory.length-1] = {origin : origin, change : cell, tableID : tblID, rowID : rowID, postRow:postRow}
-    log('\n$scope.changeHistory['+($scope.changeHistory.length-1)+']:');    log($scope.changeHistory[$scope.changeHistory.length-1])
+    $scope.changeHistory[$scope.changeHistory.length-1] = {
+      origin : origin,
+      change : cell,
+      tableID : tblID,
+      rowID : rowID,
+      postRow:postRow
+    }
+    console.log('\n$scope.changeHistory['+($scope.changeHistory.length-1)+']:');
+    console.log($scope.changeHistory[$scope.changeHistory.length-1])
 
     $( "#row"+tblID+rowID ).addClass( "fresh" );
     $( "#btnRow"+tblID+rowID ).show();
-
-  }else{
+  }
+  else {
      $scope.changeHistory.slice(0, -1)
   }
-
 }
 
-
-
 });
-
-
-function log(a){console.log(a)}
