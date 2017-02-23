@@ -68,37 +68,50 @@
               <span class="label label-success">2</span> Tables
             </label>
              <table class="table table-bordered table-striped" id="loadedtables" style="background-color: #eee;"
-              ng-repeat="tbl in tables track by $index" ng-model="tbl" id="row{{$index}}">
+               ng-model="tbl" id="row{{$index}}">
               <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
               <thead>
                 <tr>
+                  <th width="20px"></th>
                   <th width="30%">TABLENAME</th>
                   <th width="30%">ALIAS</th>
                   <th width="20%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
                   <th width="20%">ICON</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody ng-repeat="tbl in tables track by $index">
                 <tr>
+                  <td><i class="fa fa-plus-square"></i></td>
                   <td><p>{{tbl.table_name}}</p></td>
                   <td>
-                    <textarea class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
-                    ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"></textarea>
+                    <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
+                    ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
                   </td>
                   <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
                   <td>
-                    <i class="{{tbl.table_icon}}" ></i>
-                    <textarea class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"></textarea>                  
+                    <div class="row">
+                      <div class="col-xs-3">
+                        <!-- TODO: ausklappen von Columns -->
+                        <i class="{{tbl.table_icon}}" style="cursor: pointer;"></i>
+                      </div>
+                      <div class="col-xs-9">
+                        <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/> 
+                      </div>
+                    </div>                                     
                   </td>
                 </tr>
               </tbody>
-              <tbody class="columns">
-                <tr><td colspan="4"><b>Columns</b></tr>
+              <tbody class="columns" style="display: none;">
+                <tr><td colspan="5"><b>Columns</b></tr>
                 <tr ng-repeat="col in tbl.columns">
-                  <td>{{col.COLUMN_NAME}}</td>
-                  <td>{{col.COLUMN_KEY}}</td>
-                  <td>{{col.COLUMN_TYPE}}</td>
-                  <td><input type="checkbox" ng-model="col.is_in_menu"></td>
+                  <td width="30%">{{col.COLUMN_NAME}}</td>
+                  <td width="15%">{{col.COLUMN_KEY}}</td>
+                  <td width="15%">{{col.COLUMN_TYPE}}</td>
+                  <td width="20%">
+                    <input type="checkbox" ng-model="col.is_in_menu">Is in menu
+                    &nbsp;&nbsp;&nbsp;
+                    <input type="checkbox" ng-model="col.is_in_menu">Editable
+                  </td>
                 </tr>
               </tbody>
             </table>

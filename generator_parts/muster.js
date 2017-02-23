@@ -27,7 +27,7 @@ app.controller('sampleCtrl', function ($scope, $http) {
         method: 'post',
         data: {
           cmd: 'read',
-          paramJS: {tablename: tbl.table_name, limit: 150, select: "*"}
+          paramJS: {tablename: tbl.table_name, limit: 5 /*150*/, select: "*"}
         }
       }).success(function(response){
 
