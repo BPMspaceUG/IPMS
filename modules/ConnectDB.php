@@ -1,6 +1,9 @@
 <?php
-  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST))
+  // Check if Request Method is POST
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
+    // Convert the input stream into PHP variables from Angular
     $_POST = json_decode(file_get_contents('php://input'), true);
+  }
   $params = $_POST;
   
   // // Correctly fetch params
@@ -8,7 +11,6 @@
   $port = isset($params['port']) ? $params['port'] : null;
   $user = isset($params['user']) ? $params['user'] : null;
   $pwd = isset($params['pwd']) ? $params['pwd'] : null;
-  // var_dump($_POST);
 
   // Create new connection
   $con = new mysqli();
@@ -82,20 +84,14 @@
       $primary_col = "";
 
       if ($res2)
-      while ($row2 = $res2->fetch_assoc()) {
-        
-        $columns[] = $row2; //["COLUMN_NAME"];  
-        /*
-        if ($row2["Key_name"] == "PRIMARY")
-          $primary_col = $row2["COLUMN_NAME"];
-        */
+      while ($row2 = $res2->fetch_assoc()) {        
+        $columns[] = $row2;
       }      
       
       $res[] = array(
         "table_name" => $table,
         "table_alias" => ucfirst($table),
         "is_in_menu" => true,
-        //"primary_col" => $primary_col,
         "columns" => $columns
       );
     }

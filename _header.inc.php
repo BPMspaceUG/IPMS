@@ -9,7 +9,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="../css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
-  <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="../css/font-awesome.min.css">
   <link rel="stylesheet" href="css/styles.css">
   <!-- JS -->
   <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>

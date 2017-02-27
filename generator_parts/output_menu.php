@@ -9,7 +9,7 @@
           </a>
         </div>
         <div class="col-md-12 collapse in text-right" id="bpm-liam-header">
-          <?php include_once('../_header_LIAM.inc.php'); ?>
+          <?php include_once('../_header_LIAM.inc.php'); ?>          
         </div>
       </div>
     </div>
@@ -35,7 +35,7 @@
   <!-- NAVIGATION -->
   <nav class="navbar navbar-nav">
     <div class="container">
-      <ul class="nav nav-tabs" id="bpm-menu">
+      <ul class="nav nav-pills" id="bpm-menu">
         <li ng-repeat="table in tables">
           <a id="nav-{{table.table_name}}" title="{{table.table_alias}}" href="#{{table.table_name}}" data-toggle="tab">
           <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
