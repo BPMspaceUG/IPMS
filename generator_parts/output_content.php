@@ -8,7 +8,9 @@
             <div class="panel-heading">
               <h3 class="panel-title">
                 <div class="pull-left" style="margin-top: .4em; font-weight: bold;">{{table.table_alias}}</div>
-                <button class="btn btn-default btn-sm pull-right"><i class="fa fa-refresh"></i> Refresh</button>
+                <button class="btn btn-default btn-sm pull-right" ng-click="refreshTable(table);">
+                  <i class="fa fa-refresh"></i> Refresh
+                </button>
                 <div class="clearfix"></div>
               </h3>
             </div>
@@ -16,7 +18,7 @@
               <table class="table table-bordered">
                 <thead>
                   <tr>
-                    <th>&nbsp;</th>
+                    <th><em class="fa fa-cog"></em></th>
                     <th ng-repeat="col in table.columnsX">{{col.COLUMN_NAME}}</th>
                   </tr>
                 </thead>

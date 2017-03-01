@@ -15,9 +15,6 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.tables = []
   $scope.debug = window.location.search.match('debug=1')
 
-
-  // TODO: Refresh -> in eine Funktion packen
-
   tables.forEach(
     function(tbl) {
       
@@ -171,11 +168,11 @@ $scope.send = function (cud, param){
   }
 
 }
-
+/*
 $scope.refreshTable = function(table) {
   console.log("Refresh button clicked", table);
 }
-
+*/
 
 /*If there is a value in one of the cells in the last row
 then add an empty row*/
