@@ -14,66 +14,82 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.historyLog = false  
   $scope.tables = []
   $scope.debug = window.location.search.match('debug=1')
+  $scope.status = "";
 
 
-  // TODO: Refresh -> in eine Funktion packen
+$scope.initTables = function() {
+	$scope.status = "Initializing...";
+	tables.forEach(
+		function(tbl) {
+			// no need for previous deselectet tables
+			if(!tbl.is_in_menu){return}
+			// Request from server
+			$http({
+				url: window.location.pathname, // use same page for reading out data
+				method: 'post',
+				data: {
+				cmd: 'read',
+				paramJS: {tablename: tbl.table_name, limit: 5, select: "*"}
+			}
+			}).success(function(response){
+				// debugging
+				console.log("Table '", tbl.table_name, "'", tbl);
+				console.log(" - Data:", response);
+				//define additional Rows
+				var newRows = [[]]
+				// Create new rows by columns
+				Object.keys(tbl.columns).forEach(
+					function(){newRows[newRows.length-1].push('')}
+				);
+				//define colum headers
+				var keys = ['names']
+				if(response[0] && typeof response[0] == 'object'){
+					keys = Object.keys(response[0])
+				}
+				$scope.tables.push({
+					table_name: tbl.table_name,
+					table_alias: tbl.table_alias,
+					table_icon: tbl.table_icon,
+					columnsX: tbl.columns,
+					columnames: keys,
+					rows: response,
+					newRows : newRows
+				})
+				// open first table in navbar
+				 $('#nav-'+$scope.tables[0].table_name).click();
+				// TODO: Platzhalter für Scope Texfelder generierung  
+			})
+			// Save tablenames in scope
+			$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
+		}
+	);
+	$scope.status = "Initializing... done";
+}
 
-  tables.forEach(
-    function(tbl) {
-      
-      // no need for previous deselectet tables
-      if(!tbl.is_in_menu){return}
+// Refresh Function
+$scope.refresh = function(scope_tbl, lmt) {
+	$scope.status = "Refreshing...";
+	// Request from server
+	$http({
+		url: window.location.pathname, // use same page for reading out data
+		method: 'post',
+		data: {
+		cmd: 'read',
+		paramJS: {tablename: scope_tbl.table_name, limit: lmt, select: "*"}
+	}
+	}).success(function(response){
+		// Find table
+		$scope.tables.find(function(tbl){
+			return tbl.table_name == scope_tbl.table_name}).rows = response;
+	})
+	$scope.status = "Refreshing... done";
+}
 
-      // Request from server
-      $http({
-        url: window.location.pathname, // use same page for reading out data
-        method: 'post',
-        data: {
-          cmd: 'read',
-          paramJS: {tablename: tbl.table_name, limit: 5 /*150*/, select: "*"}
-        }
-      }).success(function(response){
-
-        // debugging
-        console.log("Table '", tbl.table_name, "'", tbl);
-        console.log(" - Data:", response);
-
-        //define additional Rows
-        var newRows = [[]]
- 
-        // Create new rows by columns
-        Object.keys(tbl.columns).forEach(
-          function(){newRows[newRows.length-1].push('')}
-        );
-
-        //define colum headers
-        var keys = ['names']
-        if(response[0] && typeof response[0] == 'object'){
-         keys = Object.keys(response[0])
-        }
-
-        $scope.tables.push({
-          table_name: tbl.table_name,
-          table_alias: tbl.table_alias,
-          table_icon: tbl.table_icon,
-          columnsX: tbl.columns,
-          columnames: keys,
-          rows: response,
-          newRows : newRows
-        })
-
-        // open first table in navbar
-        $('#nav-'+$scope.tables[0].table_name).click();
-        // TODO: Platzhalter für Scope Texfelder generierung  
-      })
-    }
-  )
-  $scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
+$scope.initTables();
 
 /*
   $('#json-renderer').jsonViewer($scope.tables,{collapsed: true});
 */
-
 
 /*
 Allround send for changes to DB
@@ -150,9 +166,10 @@ $scope.send = function (cud, param){
       // GUI Notifications for user feedback
       if (cud == 'delete' && response != 0) {
         // delete from page
-        $scope.tables
-        .find(function(tbl){return tbl.table_name == param.table.table_name})
-        .rows.splice(/*row-index*/param.colum, 1)
+      	act_tbl = $scope.tables.find(
+        	function(tbl){return tbl.table_name == param.table.table_name});
+        //act_tbl.rows.splice(/*row-index*/param.colum, 1);
+        $scope.refresh(act_tbl, 5);
       }
       else if (cud == 'update' && response != 0) {
         // worked
@@ -167,6 +184,13 @@ $scope.send = function (cud, param){
         $("#row"+tblID+rowID).removeClass("fresh");
         $("#btnRow"+tblID+rowID ).hide();
       }
+      else if (cud == 'create' && response != 0) {
+      	// Find current table
+      	act_tbl = $scope.tables.find(
+        	function(tbl){return tbl.table_name == param.table.table_name});
+      	// Refresh current table
+      	$scope.refresh(act_tbl, 5);
+      }
     })
   }
 
@@ -174,6 +198,7 @@ $scope.send = function (cud, param){
 
 $scope.refreshTable = function(table) {
   console.log("Refresh button clicked", table);
+  $scope.refresh(table, 5);
 }
 
 

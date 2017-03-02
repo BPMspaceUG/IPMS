@@ -4,7 +4,7 @@
       <div class="col-md-12 tab-content" id="bpm-content">
 
         <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
-          <div class="panel panel-default" disabled>
+          <div class="panel panel-default panel-table" disabled>
             <div class="panel-heading">
               <h3 class="panel-title">
                 <div class="pull-left" style="margin-top: .4em; font-weight: bold;">{{table.table_alias}}</div>
@@ -74,7 +74,26 @@
                 </tbody>
               </table>
             </div>
-            <div class="panel-footer"><b>Status:</b> {{status}}Loading...</div>
+            <div class="panel-footer">
+                <div class="row">
+                  <div class="col col-xs-6">
+                    <b>Status:</b> {{status}} - Page 1 of 5
+                  </div>
+                  <div class="col col-xs-6">
+                    <ul class="pagination hidden-xs pull-right">
+                      <li><a href="#">1</a></li>
+                      <li><a href="#">2</a></li>
+                      <li><a href="#">3</a></li>
+                      <li><a href="#">4</a></li>
+                      <li><a href="#">5</a></li>
+                    </ul>
+                    <ul class="pagination visible-xs pull-right">
+                        <li><a href="#">«</a></li>
+                        <li><a href="#">»</a></li>
+                    </ul>
+                  </div>
+                </div>
+            </div>
           </div>
         </div>
       </div>
