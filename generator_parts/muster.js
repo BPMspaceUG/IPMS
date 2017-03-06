@@ -15,7 +15,15 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.tables = []
   $scope.debug = window.location.search.match('debug=1')
   $scope.status = "";
+  $scope.PageIndex = 0;
+  $scope.PageLimit = 5;
 
+$scope.gotoPage = function(inc, table) {
+	$scope.PageIndex += inc;
+	if ($scope.PageIndex < 0)
+		$scope.PageIndex = 0;	
+	$scope.refresh(table);
+}
 
 $scope.initTables = function() {
 	$scope.status = "Initializing...";
@@ -29,7 +37,12 @@ $scope.initTables = function() {
 				method: 'post',
 				data: {
 				cmd: 'read',
-				paramJS: {tablename: tbl.table_name, limit: 5, select: "*"}
+				paramJS: {
+					tablename: tbl.table_name,
+					limitStart: $scope.PageIndex * $scope.PageLimit,
+					limitSize: $scope.PageLimit,
+					select: "*"
+				}
 			}
 			}).success(function(response){
 				// debugging
@@ -67,7 +80,7 @@ $scope.initTables = function() {
 }
 
 // Refresh Function
-$scope.refresh = function(scope_tbl, lmt) {
+$scope.refresh = function(scope_tbl) {
 	$scope.status = "Refreshing...";
 	// Request from server
 	$http({
@@ -75,7 +88,12 @@ $scope.refresh = function(scope_tbl, lmt) {
 		method: 'post',
 		data: {
 		cmd: 'read',
-		paramJS: {tablename: scope_tbl.table_name, limit: lmt, select: "*"}
+		paramJS: {
+			tablename: scope_tbl.table_name,
+			limitStart: $scope.PageIndex * $scope.PageLimit,
+			limitSize: $scope.PageLimit,
+			select: "*"
+		}
 	}
 	}).success(function(response){
 		// Find table
@@ -195,10 +213,10 @@ $scope.send = function (cud, param){
   }
 
 }
-
+// TODO: Obsolete
 $scope.refreshTable = function(table) {
   console.log("Refresh button clicked", table);
-  $scope.refresh(table, 5);
+  $scope.refresh(table);
 }
 
 

@@ -62,7 +62,8 @@
     }
     //================================== READ
     public function read($param) {
-      $query = "SELECT ".$param["select"]." FROM " . $param["tablename"] ." LIMIT ".$param["limit"].";";      
+      $query = "SELECT ".$param["select"]." FROM ".
+        $param["tablename"] ." LIMIT ".$param["limitStart"].",".$param["limitSize"].";";      
       $res = $this->db->query($query);
       return $this->parseToJSON($res);
     }

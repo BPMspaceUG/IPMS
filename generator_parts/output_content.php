@@ -77,19 +77,19 @@
             <div class="panel-footer">
                 <div class="row">
                   <div class="col col-xs-6">
-                    <b>Status:</b> {{status}} - Page 1 of 5
+                    <b>Status:</b> {{status}} - Page {{PageIndex + 1}} of X
                   </div>
                   <div class="col col-xs-6">
-                    <ul class="pagination hidden-xs pull-right">
+                    <!--<ul class="pagination hidden-xs pull-right">
                       <li><a href="#">1</a></li>
                       <li><a href="#">2</a></li>
                       <li><a href="#">3</a></li>
                       <li><a href="#">4</a></li>
                       <li><a href="#">5</a></li>
-                    </ul>
-                    <ul class="pagination visible-xs pull-right">
-                        <li><a href="#">«</a></li>
-                        <li><a href="#">»</a></li>
+                    </ul>-->
+                    <ul class="pagination pull-right"><!-- visible-xs -->
+                        <li><a href="" ng-click="gotoPage(-1, table)">« Page</a></li>
+                        <li><a href="" ng-click="gotoPage(1, table)">Page »</a></li>
                     </ul>
                   </div>
                 </div>
