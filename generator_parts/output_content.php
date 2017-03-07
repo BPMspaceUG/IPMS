@@ -8,7 +8,10 @@
             <div class="panel-heading">
               <h3 class="panel-title">
                 <div class="pull-left" style="margin-top: .4em; font-weight: bold;">{{table.table_alias}}</div>
-                <button class="btn btn-default btn-sm pull-right" ng-click="refreshTable(table);">
+                <!--
+                <input type="text" style="width:50px" class="form-control pull-right" ng-model="PageLimit">
+                -->
+                <button class="btn btn-default btn-sm pull-right" ng-click="refresh(table);">
                   <i class="fa fa-refresh"></i> Refresh
                 </button>
                 <div class="clearfix"></div>
@@ -77,7 +80,7 @@
             <div class="panel-footer">
                 <div class="row">
                   <div class="col col-xs-6">
-                    <b>Status:</b> {{status}} - Page {{PageIndex + 1}} of X
+                    <b>Status:</b> {{status}} - {{table.count}} Entries // Showing page {{PageIndex + 1}} of {{table.count / PageLimit | ceil}}
                   </div>
                   <div class="col col-xs-6">
                     <!--<ul class="pagination hidden-xs pull-right">

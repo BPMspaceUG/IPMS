@@ -10,18 +10,24 @@ app.run(function(editableOptions) {
   editableOptions.theme = 'bs2'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
 
+app.filter('ceil', function() {
+    return function(input) {
+        return Math.ceil(input);
+    };
+});
+
 app.controller('sampleCtrl', function ($scope, $http) {
   $scope.historyLog = false  
   $scope.tables = []
   $scope.debug = window.location.search.match('debug=1')
   $scope.status = "";
   $scope.PageIndex = 0;
-  $scope.PageLimit = 5;
+  $scope.PageLimit = 10; // default = 10
 
 $scope.gotoPage = function(inc, table) {
 	$scope.PageIndex += inc;
 	if ($scope.PageIndex < 0)
-		$scope.PageIndex = 0;	
+		$scope.PageIndex = 0;
 	$scope.refresh(table);
 }
 
@@ -32,6 +38,7 @@ $scope.initTables = function() {
 			// no need for previous deselectet tables
 			if(!tbl.is_in_menu){return}
 			// Request from server
+			// Read content
 			$http({
 				url: window.location.pathname, // use same page for reading out data
 				method: 'post',
@@ -66,17 +73,41 @@ $scope.initTables = function() {
 					columnsX: tbl.columns,
 					columnames: keys,
 					rows: response,
+					count: 0,
 					newRows : newRows
 				})
+        // Count entries
+        $scope.countEntries(tbl.table_name);
 				// open first table in navbar
 				 $('#nav-'+$scope.tables[0].table_name).click();
 				// TODO: Platzhalter für Scope Texfelder generierung  
-			})
+			});
 			// Save tablenames in scope
 			$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
 		}
-	);
+	)
 	$scope.status = "Initializing... done";
+}
+
+$scope.countEntries = function(table_name) {
+	console.log("counting entries from table", table_name);
+	$http({
+		url: window.location.pathname,
+		method: 'post',
+		data: {
+			cmd: 'read',
+			paramJS: {tablename: table_name, limitStart: 0, limitSize: 1, 
+				select: "COUNT(*) AS cnt"
+			}
+	}
+	}).success(function(response){
+		// Find table in scope
+		act_tbl = $scope.tables.find(
+			function(t){return t.table_name == table_name});
+		console.log("Count Response", response)
+		act_tbl.count = response[0].cnt;
+		console.log(act_tbl.count);
+	});
 }
 
 // Refresh Function
@@ -99,6 +130,8 @@ $scope.refresh = function(scope_tbl) {
 		// Find table
 		$scope.tables.find(function(tbl){
 			return tbl.table_name == scope_tbl.table_name}).rows = response;
+    // Count entries
+    $scope.countEntries(scope_tbl.table_name);
 	})
 	$scope.status = "Refreshing... done";
 }
@@ -187,7 +220,7 @@ $scope.send = function (cud, param){
       	act_tbl = $scope.tables.find(
         	function(tbl){return tbl.table_name == param.table.table_name});
         //act_tbl.rows.splice(/*row-index*/param.colum, 1);
-        $scope.refresh(act_tbl, 5);
+        $scope.refresh(act_tbl);
       }
       else if (cud == 'update' && response != 0) {
         // worked
@@ -207,16 +240,11 @@ $scope.send = function (cud, param){
       	act_tbl = $scope.tables.find(
         	function(tbl){return tbl.table_name == param.table.table_name});
       	// Refresh current table
-      	$scope.refresh(act_tbl, 5);
+      	$scope.refresh(act_tbl);
       }
     })
   }
 
-}
-// TODO: Obsolete
-$scope.refreshTable = function(table) {
-  console.log("Refresh button clicked", table);
-  $scope.refresh(table);
 }
 
 
