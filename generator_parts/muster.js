@@ -25,10 +25,20 @@ app.controller('sampleCtrl', function ($scope, $http) {
   $scope.PageLimit = 10; // default = 10
 
 $scope.gotoPage = function(inc, table) {
-	$scope.PageIndex += inc;
-	if ($scope.PageIndex < 0)
-		$scope.PageIndex = 0;
+	// TODO: PageIndex for every table
+	first_page = 0;
+	last_page = Math.ceil(table.count / $scope.PageLimit) - 1;
+	new_page = $scope.PageIndex + inc;
+
+	if (new_page < first_page) return;
+	if (new_page > last_page) return;
+	$scope.PageIndex = new_page;
+	console.log("Goto Page clicked!", table.table_name, "Count:", table.count);
 	$scope.refresh(table);
+}
+
+$scope.changeTab = function() {
+	$scope.PageIndex = 0;
 }
 
 $scope.initTables = function() {
@@ -172,7 +182,6 @@ $scope.send = function (cud, param){
       table: param.table.table_name,
       primary_col: param.table.primary_col
     }
-    console.log("CREATE:", body);
     post(cud);
   }
   else if (cud == 'update') {
@@ -184,7 +193,6 @@ $scope.send = function (cud, param){
       primary_col: getPrimaryColumns(param.table.columnsX), //param.table.primary_col/*0-x*/,
       table: param.table.table_name
     }
-    console.log("UPDATE:", body);
     post(cud)
   }
   else if (cud == 'delete') {
@@ -194,9 +202,8 @@ $scope.send = function (cud, param){
       table:param.table.table_name,
       primary_col: getPrimaryColumns(param.table.columnsX)
     }
-    console.log("DELETE:", body);
     post(cud)
-  } else{
+  } else {
     console.log('unknown command (not CRUD)')
   }
 
@@ -246,24 +253,6 @@ $scope.send = function (cud, param){
   }
 
 }
-
-
-/*If there is a value in one of the cells in the last row
-then add an empty row*/
-// cleanflag -> hat nicht mehr funktioniert, zweck fraglich
-// $scope.addNewRow = function (table){
-//   var added = false, row = table.newRows[table.newRows.length -1]
-//   for (var i = 0; i < row.length; i++) {
-//     if (!added && (row[i]+'').length > 0) {
-//       var newLine = []
-//       added = true
-//       for (var colums = 0; colums < row.length; colums++) {
-//         newLine.push('')
-//       };
-//       table.newRows.push(newLine)
-//     }; 
-//   };
-// }
 
 /*Protokoll where what changed*/
 $scope.changeHistory = [], $scope.changeHistorycounter = 0

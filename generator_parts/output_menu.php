@@ -37,8 +37,9 @@
     <div class="container">
       <ul class="nav nav-pills" id="bpm-menu">
         <li ng-repeat="table in tables">
-          <a id="nav-{{table.table_name}}" title="{{table.table_alias}}" href="#{{table.table_name}}" data-toggle="tab">
-          <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
+          <a id="nav-{{table.table_name}}" title="{{table.table_alias}}"
+            href="#{{table.table_name}}" data-toggle="tab" ng-click="changeTab()">
+            <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
         </li>
       </ul>
     </div>
