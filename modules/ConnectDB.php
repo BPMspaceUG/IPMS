@@ -84,9 +84,9 @@
       $primary_col = "";
 
       if ($res2)
-      while ($row2 = $res2->fetch_assoc()) {        
+      while ($row2 = $res2->fetch_assoc()) {
         $columns[] = $row2;
-      }      
+      }
       
       $res[] = array(
         "table_name" => $table,

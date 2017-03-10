@@ -35,6 +35,11 @@
     // echo "no mysqli error";
   }
 
+  // create state_machine tables if not exist
+  $query = "CREATE TABLE IF NOT EXIST ";
+  $con->query($query);
+
+
   $all_table_names = array();
   // Die richtige Datenbank auswählen
   for ($i=0;$i<count($data);$i++) {
