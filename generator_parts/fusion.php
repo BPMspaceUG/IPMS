@@ -102,8 +102,10 @@
   // $output_script = stream_get_contents($handle);
   // fclose($handle);
 
+  //--- HEADER
   $handle = fopen("./output_header.php", "r");
   $output_header = stream_get_contents($handle);
+  $output_header = str_replace('replaceDBName', $db_name, $output_header);
   $log.= '<h4>$output_header</h4>'.$output_header;
 
   $handle = fopen("./output_menu.php", "r");
@@ -119,17 +121,13 @@
   $log.= '<h4>$output_footer</h4>'.$output_footer;
 
   // put Javascript in Footer
+  $musterJS = 'tables = '.json_encode($data).';'; // save structure data in JS variable
   $handle = fopen("./muster.js", "r");
-  $musterJS = 'tables = '.json_encode($data).';';
-  //echo "json_encode all_table_names:";
-  //var_dump(json_encode($all_table_names));
-  
   $musterJS .= stream_get_contents($handle);
+  $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
-
   fclose($handle);
 
-  // var_dump($log );
 
   $output_all = '<?php'
     // .$output_LiamHeader

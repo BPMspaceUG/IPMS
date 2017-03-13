@@ -5,7 +5,7 @@ var tables = tables
 // for debugging
 console.log('All tables (', tables.length, '):', tables);
 
-var app = angular.module("sampleApp", ["xeditable"])
+var app = angular.module("genApp", ["xeditable"])
 app.run(function(editableOptions) {
   editableOptions.theme = 'bs2'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
@@ -16,15 +16,16 @@ app.filter('ceil', function() {
     };
 });
 
-app.controller('sampleCtrl', function ($scope, $http) {
+app.controller('genCtrl', function ($scope, $http) {
   $scope.historyLog = false  
   $scope.tables = []
   $scope.debug = window.location.search.match('debug=1')
   $scope.status = "";
   $scope.PageIndex = 0;
   $scope.PageLimit = 10; // default = 10
+  $scope.sqlwhere = []
 
-$scope.gotoPage = function(inc, table) {
+$scope.gotoPage = function(inc, table, index) {
 	// TODO: PageIndex for every table
 	first_page = 0;
 	last_page = Math.ceil(table.count / $scope.PageLimit) - 1;
@@ -34,7 +35,7 @@ $scope.gotoPage = function(inc, table) {
 	if (new_page > last_page) return;
 	$scope.PageIndex = new_page;
 	console.log("Goto Page clicked!", table.table_name, "Count:", table.count);
-	$scope.refresh(table);
+	$scope.refresh(table, index);
 }
 
 $scope.changeTab = function() {
@@ -121,8 +122,9 @@ $scope.countEntries = function(table_name) {
 }
 
 // Refresh Function
-$scope.refresh = function(scope_tbl) {
+$scope.refresh = function(scope_tbl, index) {
 	$scope.status = "Refreshing...";
+  	console.log($scope.sqlwhere[index]);
 	// Request from server
 	$http({
 		url: window.location.pathname, // use same page for reading out data
@@ -133,15 +135,16 @@ $scope.refresh = function(scope_tbl) {
 			tablename: scope_tbl.table_name,
 			limitStart: $scope.PageIndex * $scope.PageLimit,
 			limitSize: $scope.PageLimit,
-			select: "*"
+			select: "*",
+      		where: $scope.sqlwhere[index]
 		}
 	}
 	}).success(function(response){
 		// Find table
 		$scope.tables.find(function(tbl){
 			return tbl.table_name == scope_tbl.table_name}).rows = response;
-    // Count entries
-    $scope.countEntries(scope_tbl.table_name);
+   	 	// Count entries
+    	$scope.countEntries(scope_tbl.table_name);
 	})
 	$scope.status = "Refreshing... done";
 }

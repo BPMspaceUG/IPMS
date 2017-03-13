@@ -11,9 +11,15 @@
                 <!--
                 <input type="text" style="width:50px" class="form-control pull-right" ng-model="PageLimit">
                 -->
-                <button class="btn btn-default btn-sm pull-right" ng-click="refresh(table);">
-                  <i class="fa fa-refresh"></i> Refresh
-                </button>
+                <form class="form-inline pull-right">
+                  <div class="form-group">
+                    <input type="text" class="form-control" style="width:200px;" placeholder="WHERE"
+                      ng-model="sqlwhere[$index]" />
+                    <button class="btn btn-default btn-sm" ng-click="refresh(table, $index);">
+                      <i class="fa fa-refresh"></i> Refresh
+                    </button>
+                  </div>
+                </form>
                 <div class="clearfix"></div>
               </h3>
             </div>
@@ -91,8 +97,8 @@
                       <li><a href="#">5</a></li>
                     </ul>-->
                     <ul class="pagination pull-right"><!-- visible-xs -->
-                        <li><a href="" ng-click="gotoPage(-1, table)">« Page</a></li>
-                        <li><a href="" ng-click="gotoPage(1, table)">Page »</a></li>
+                        <li><a href="" ng-click="gotoPage(-1, table, $index)">« Page</a></li>
+                        <li><a href="" ng-click="gotoPage(1, table, $index)">Page »</a></li>
                     </ul>
                   </div>
                 </div>

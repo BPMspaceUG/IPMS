@@ -62,8 +62,14 @@
     }
     //================================== READ
     public function read($param) {
+      $where = isset($param["where"]) ? $param["where"] : "";
+      if (trim($where) <> "") $where = " WHERE ".$param["where"];
+
       $query = "SELECT ".$param["select"]." FROM ".
-        $param["tablename"] ." LIMIT ".$param["limitStart"].",".$param["limitSize"].";";      
+        $param["tablename"].$where." LIMIT ".$param["limitStart"].",".$param["limitSize"].";";  
+
+      //var_dump($query);
+
       $res = $this->db->query($query);
       return $this->parseToJSON($res);
     }

@@ -1,6 +1,8 @@
     <!--  Footer -->
     <div class="row well">
-      <div class="col-md-3">BPMspace sample using</div>                  
+      <div class="col-md-3">
+        <small>BPMspace replaceDBName using</small>
+      </div>                  
       <div class="col-md-9">
         <small>
           <ul class="list-inline">
