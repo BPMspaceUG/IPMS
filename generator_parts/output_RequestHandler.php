@@ -49,6 +49,22 @@
       $where = substr($where, 0, -5); // remove last ' AND ' (5 chars)
       return $where;
     }
+    private function buildSQLUpdatePart($cols, $primarycols, $rows) {
+      $update = "";
+      // Convert everything to lowercase      
+      $primarycols = array_map('strtolower', $primarycols);
+      $cols = array_map('strtolower', $cols);
+      // Loop every element
+      foreach ($cols as $col) {
+        // update only when no primary column
+        if (!in_array($col, $primarycols)) {
+          $update = $update . $col . "='" . $rows[$col] . "'";
+          $update = $update . ", ";
+        }
+      }
+      $update = substr($update, 0, -2); // remove last ' ,' (2 chars)
+      return $update;
+    }
     //================================== CREATE
     public function create($param) {
       // Inputs
@@ -64,36 +80,20 @@
     public function read($param) {
       $where = isset($param["where"]) ? $param["where"] : "";
       if (trim($where) <> "") $where = " WHERE ".$param["where"];
-
+      // SQL
       $query = "SELECT ".$param["select"]." FROM ".
-        $param["tablename"].$where." LIMIT ".$param["limitStart"].",".$param["limitSize"].";";  
-
+        $param["tablename"].$where." LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
       //var_dump($query);
-
       $res = $this->db->query($query);
       return $this->parseToJSON($res);
     }
     //================================== UPDATE
     public function update($param) {
-      $str_update = "";
-      $cols = array_keys($param["row"]);
-      $len = count($param["row"]);
-      $pri_cols = array_map('strtolower', $param["primary_col"]); // Convert to lowercase
-      $cols = array_map('strtolower', $cols); // Convert to lowercase
-      // loop each column
-      for ($i=0; $i < $len; $i++) {
-        // check if actual column is not a primary key
-        $act_col = strtolower($cols[$i]); // Convert to lowercase for comparison
-        // compare columns
-        if (!in_array($act_col, $pri_cols)) {
-          $str_update .= $act_col."='".$param["row"][$act_col]."'";
-          if ($i < $len-1)
-            $str_update .= ", ";
-        }
-      }
+      // SQL
+      $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $param["primary_col"], $param["row"]);
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
-      $query = "UPDATE ".$param["table"]." SET ".$str_update." WHERE ".$where.";";
-      // var_dump($query); // for Debugging
+      $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
+      //var_dump($query);
       $res = $this->db->query($query);
       // TODO: Check if rows where REALLY updated!
       // Output

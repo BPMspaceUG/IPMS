@@ -178,6 +178,17 @@ $scope.send = function (cud, param){
     return resultset;
   }
 
+  function convertCols(inputObj) {
+    var key, keys = Object.keys(inputObj);
+    var n = keys.length;
+    var newobj={}
+    while (n--) {
+      key = keys[n];
+      newobj[key.toLowerCase()] = inputObj[key];
+    }
+    return newobj;
+  }
+
   // Assemble data for Create, Update, Delete Functions
   if (cud == 'create') {
     body.paramJS = {
@@ -189,11 +200,11 @@ $scope.send = function (cud, param){
   }
   else if (cud == 'update') {
     var row = $scope.changeHistory.reverse()
-    row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })
+    row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })    
     // relevant data
     body.paramJS = {
-      row: param.row/*as shown on page*/,
-      primary_col: getPrimaryColumns(param.table.columnsX), //param.table.primary_col/*0-x*/,
+      row: convertCols(param.row),
+      primary_col: getPrimaryColumns(param.table.columnsX),
       table: param.table.table_name
     }
     post(cud)
