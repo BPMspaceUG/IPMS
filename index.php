@@ -75,12 +75,14 @@
                   <th width="20px"></th>
                   <th width="30%">TABLENAME</th>
                   <th width="30%">ALIAS</th>
-                  <th width="20%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
+                  <th width="10%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
+                  <th width="10%">STATE-ENGINE</th>
                   <th width="20%">ICON</th>
                 </tr>
               </thead>
               <tbody ng-repeat="tbl in tables track by $index">
                 <tr>
+                  <!-- TODO: ausklappen von Columns -->
                   <td><i class="fa fa-plus-square"></i></td>
                   <td><p>{{tbl.table_name}}</p></td>
                   <td>
@@ -88,10 +90,10 @@
                     ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
                   </td>
                   <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
+                  <td><input type="checkbox" class="form-control" ng-model="tbl.se_active" ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'"></td>         
                   <td>
                     <div class="row">
                       <div class="col-xs-3">
-                        <!-- TODO: ausklappen von Columns -->
                         <i class="{{tbl.table_icon}}" style="cursor: pointer;"></i>
                       </div>
                       <div class="col-xs-9">
@@ -112,6 +114,7 @@
                     &nbsp;&nbsp;&nbsp;
                     <input type="checkbox" ng-model="col.is_in_menu">Editable
                   </td>
+                  <td width="20%">Leer</td>
                 </tr>
               </tbody>
             </table>

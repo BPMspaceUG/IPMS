@@ -141,10 +141,19 @@
     ;
   echo $output_all;
 
-  // Write code to file
+  // ----------------------- Config File
+  $output_config = 
+'<?php
+  define("DB_USER", "'.$db_user.'");
+  define("DB_PASS", "'.$db_pass.'");
+  define("DB_HOST", "'.$db_server.'");
+  define("DB_NAME", "'.$db_name.'");
+?>';
+
+  // ----> Write to file
+
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    // debug
-    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all);
+    file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
   }
 ?>
