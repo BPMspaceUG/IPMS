@@ -68,18 +68,10 @@
                         <i class="fa fa-plus"></i><!-- Create--></button>
                    </td>
                    <td ng-repeat="col in table.newRows[0] track by $index">
+                      <textarea class="form-control nRws" ng-model="table.newRows[0][$index]"></textarea>
                       <div><small>{{ table.columnsX[$index].COLUMN_TYPE }}</small></div>
-                      <textarea class="form-control" ng-model="table.newRows[0][$index]"></textarea>
                    </td>
                   </tr>
-                  <!--
-                  <tr class="newRows" ng-repeat="row in table.newRows track by $index" ng-if="$index > 0">
-                    <td></td>
-                    <td  ng-repeat="col in row track by $index">
-                      <textarea ng-model="table.newRows[$parent.$index][$index]" ></textarea>
-                   </td>
-                  </tr>
-                  -->
                 </tbody>
               </table>
             </div>

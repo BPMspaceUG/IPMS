@@ -236,6 +236,7 @@ $scope.send = function (cud, param){
       $scope.lastResponse = response;
 
       // GUI Notifications for user feedback
+      //-------------------- Entry Deleted
       if (cud == 'delete' && response != 0) {
         // delete from page
       	act_tbl = $scope.tables.find(
@@ -243,6 +244,7 @@ $scope.send = function (cud, param){
         //act_tbl.rows.splice(/*row-index*/param.colum, 1);
         $scope.refresh(act_tbl);
       }
+      //-------------------- Entry Updated
       else if (cud == 'update' && response != 0) {
         // worked
 
@@ -256,10 +258,22 @@ $scope.send = function (cud, param){
         $("#row"+tblID+rowID).removeClass("fresh");
         $("#btnRow"+tblID+rowID ).hide();
       }
+      //-------------------- Entry Created
       else if (cud == 'create' && response != 0) {
+        console.log("-> Entry was created");
       	// Find current table
-      	act_tbl = $scope.tables.find(
-        	function(tbl){return tbl.table_name == param.table.table_name});
+      	act_tbl = $scope.tables.find(function(t){return t.table_name == param.table.table_name});
+        // Clear all entry fields
+        for (var x=0;x<act_tbl.newRows.length;x++) {
+          for (var y=0;y<act_tbl.newRows[x].length;y++) {
+            act_tbl.newRows[x][y] = '';            
+          }
+        }
+        // Set focus on first element after adding, usability issues
+        console.log("-> Focus new Row...")
+        $(".nRws").first().focus();
+        // TODO: Only works at the first table
+        
       	// Refresh current table
       	$scope.refresh(act_tbl);
       }
