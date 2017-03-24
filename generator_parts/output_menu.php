@@ -8,13 +8,13 @@
             <i class="fa fa-caret-square-o-down"></i>
           </a>
         </div>
-        <div class="col-md-12 collapse in text-right" id="bpm-liam-header">
+        <div class="col-md-12 collapse" id="bpm-liam-header">
           <?php include_once('../_header_LIAM.inc.php'); ?>          
         </div>
       </div>
     </div>
     <!-- Company Header -->
-    <div class="row collapse in">
+    <div class="row collapse">
       <div class="col-md-12" id="bpm-logo">
         <div class="col-md-6 ">
           <svg height="100" width="100">
@@ -31,13 +31,16 @@
       </div>
     </div>
   </div>
+  <!--
   <div id="json-renderer" class="collapsed"></div>
+  -->
   <!-- NAVIGATION -->
+  <div style="margin: 0 1em;">
   <nav class="navbar navbar-nav">
     <div class="container">
       <ul class="nav nav-pills" id="bpm-menu">
         <li ng-repeat="table in tables">
-          <a id="nav-{{table.table_name}}" title="{{table.table_alias}}"
+          <a id="nav-{{table.table_name}}" title="Goto table {{table.table_alias}}"
             href="#{{table.table_name}}" data-toggle="tab" ng-click="changeTab()">
             <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
         </li>

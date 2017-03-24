@@ -54,9 +54,6 @@
   $res = $con->query($query_rules);
   $res2 = $con->query($query_states);
 
-  var_dump($res);
-  var_dump($res2);
-
   // Add primary keys  
   $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` ADD PRIMARY KEY (`state_rules_id`);";
   $query_states = "ALTER TABLE `".$db_name."`.`state` ADD PRIMARY KEY (`state_id`);";
@@ -64,9 +61,6 @@
   // Execute queries
   $res = $con->query($query_rules);
   $res2 = $con->query($query_states);
-
-  var_dump($res);
-  var_dump($res2);
 
   //-------------------------------------------------------
 
@@ -77,48 +71,39 @@
   }
 
   $log = '';
-   //Pseudocode alle files aus folder:  folder(this).getfilenames.foreach(file=> $file = fget(file))
+
+  // Pseudocode alle files aus folder:  folder(this).getfilenames.foreach(file=> $file = fget(file))
+  // TODO: Make function, only pass filenames
+
   $handle = fopen("./output_LiamHeader.php", "r");
   $output_LiamHeader = stream_get_contents($handle);
+
   $handle = fopen("./output_DebugHeader.php", "r");
   $output_DebugHeader = stream_get_contents($handle);
 
-  $partname = 'output_RequestHandler';
-  $partpath = './'.$partname.'.php';
-  $handle = fopen($partpath, "r");
-  $output_RequestHandler = fread($handle, filesize($partpath));
-
-  // replace database access information
-  $output_RequestHandler = str_replace('<?php', '', $output_RequestHandler);
-  $output_RequestHandler = str_replace('replaceServer', $db_server, $output_RequestHandler);
-  $output_RequestHandler = str_replace('replaceUser', $db_user, $output_RequestHandler);
-  $output_RequestHandler = str_replace('replacePassword', $db_pass, $output_RequestHandler);
+  // RequestHandler
+  $handle = fopen("./output_RequestHandler.php", "r");
+  $output_RequestHandler = stream_get_contents($handle);
   $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
+  $log .= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
 
-  $escaped = addslashes( $output_RequestHandler );
-  $log.= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
-
-  // $handle = fopen("./output_script.php", "r");
-  // $output_script = stream_get_contents($handle);
-  // fclose($handle);
-
-  //--- HEADER
+  // HTML - Header
   $handle = fopen("./output_header.php", "r");
   $output_header = stream_get_contents($handle);
   $output_header = str_replace('replaceDBName', $db_name, $output_header);
-  $log.= '<h4>$output_header</h4>'.$output_header;
+  $log .= '<h4>$output_header</h4>'.$output_header;
 
   $handle = fopen("./output_menu.php", "r");
   $output_menu = stream_get_contents($handle);
-  $log.= '<h4>$output_menu</h4>'.$output_menu;
+  $log .= '<h4>$output_menu</h4>'.$output_menu;
 
   $handle = fopen("./output_content.php", "r");
   $output_content = stream_get_contents($handle);
-  $log.= '<h4>$output_content</h4>'.$output_content;
+  $log .= '<h4>$output_content</h4>'.$output_content;
 
   $handle = fopen("./output_footer.php", "r");
   $output_footer = stream_get_contents($handle);
-  $log.= '<h4>$output_footer</h4>'.$output_footer;
+  $log .= '<h4>$output_footer</h4>'.$output_footer;
 
   // put Javascript in Footer
   $musterJS = 'tables = '.json_encode($data).';'; // save structure data in JS variable
@@ -129,7 +114,7 @@
   fclose($handle);
 
 
-  $output_all = '<?php'
+  $output_all = ''
     // .$output_LiamHeader
     // .$output_DebugHeader
     .$output_RequestHandler
@@ -139,11 +124,13 @@
     .$output_content
     .$output_footer
     ;
+
   echo $output_all;
 
-  // ----------------------- Config File
+  // ----------------------- Config File generator
   $output_config = 
 '<?php
+  // Database Login
   define("DB_USER", "'.$db_user.'");
   define("DB_PASS", "'.$db_pass.'");
   define("DB_HOST", "'.$db_server.'");
@@ -154,6 +141,7 @@
 
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
+    // file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
   }
 ?>

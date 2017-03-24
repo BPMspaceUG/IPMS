@@ -1,4 +1,6 @@
 <?php
+  // Includes
+  include_once("replaceDBName-config.php"); 
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
@@ -8,22 +10,10 @@
     // Variables
     private $db;
 
-    public function __construct() {      
-      //identifyer for replace in fusion.php
-      $config['db'] =  array(
-        'host' => "replaceServer",
-        'user' => "replaceUser",
-        'password' => "replacePassword",
-        'database' => "replaceDBName"
-      );
-      // create DB connection object
-      $db = new mysqli(
-        $config['db']['host'],
-        $config['db']['user'],
-        $config['db']['password'],
-        $config['db']['database']
-      );
-      /* check connection */
+    public function __construct() {
+      // create DB connection object - Data comes from config file
+      $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+      // check connection
       if($db->connect_errno){
         printf("Connect failed: %s", mysqli_connect_error());
         exit();

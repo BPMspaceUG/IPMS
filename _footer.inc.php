@@ -12,4 +12,3 @@
 	<!--<script type="text/JavaScript" src="../phpSecureLogin/js/forms.js"></script>-->
 </body>
 </html>
-
