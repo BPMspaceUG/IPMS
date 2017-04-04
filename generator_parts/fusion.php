@@ -106,9 +106,10 @@
   $log .= '<h4>$output_footer</h4>'.$output_footer;
 
   // put Javascript in Footer
-  $musterJS = 'tables = '.json_encode($data).';'; // save structure data in JS variable
+  $musterJS = '';
+  //$musterJS = 'tables = '.json_encode($data).';'; // save structure data in JS variable
   $handle = fopen("./muster.js", "r");
-  $musterJS .= stream_get_contents($handle);
+  $musterJS = $musterJS . stream_get_contents($handle);
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
   fclose($handle);
@@ -130,18 +131,28 @@
   // ----------------------- Config File generator
   $output_config = 
 '<?php
+  /*
+    IPMS Generator
+    ==================================================
+    Generated: '.date("Y-m-d H:i:s").'
+  */
+
   // Database Login
   define("DB_USER", "'.$db_user.'");
   define("DB_PASS", "'.$db_pass.'");
   define("DB_HOST", "'.$db_server.'");
   define("DB_NAME", "'.$db_name.'");
+
+  // Structure Configuration Data
+  $config_tables_json = \''.json_encode($data).'\';
 ?>';
 
   // ----> Write to file
 
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    // file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
+    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
+    //file_put_contents("../../IPMS_test/".$db_name."-config.txt", $output_config);
   }
 ?>

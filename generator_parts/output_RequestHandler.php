@@ -1,6 +1,6 @@
 <?php
   // Includes
-  include_once("replaceDBName-config.php"); 
+  include_once("replaceDBName-config.php");
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
@@ -54,6 +54,11 @@
       }
       $update = substr($update, 0, -2); // remove last ' ,' (2 chars)
       return $update;
+    }
+    public function init() {
+      // Send data from config file
+      global $config_tables_json;
+      return $config_tables_json;
     }
     //================================== CREATE
     public function create($param) {

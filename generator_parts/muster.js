@@ -1,9 +1,6 @@
 
-// Mustertabelle
-var tables = tables
-
 // for debugging
-console.log('All tables (', tables.length, '):', tables);
+//console.log('All tables (', tables.length, '):', tables);
 
 var app = angular.module("genApp", ["xeditable"])
 app.run(function(editableOptions) {
@@ -44,60 +41,80 @@ $scope.changeTab = function() {
 
 $scope.initTables = function() {
 	$scope.status = "Initializing...";
-	tables.forEach(
-		function(tbl) {
-			// no need for previous deselectet tables
-			if(!tbl.is_in_menu){return}
-			// Request from server
-			// Read content
-			$http({
-				url: window.location.pathname, // use same page for reading out data
-				method: 'post',
-				data: {
-				cmd: 'read',
-				paramJS: {
-					tablename: tbl.table_name,
-					limitStart: $scope.PageIndex * $scope.PageLimit,
-					limitSize: $scope.PageLimit,
-					select: "*"
+
+	tables = null;
+	$http({
+		url: window.location.pathname, // use same page for reading out data
+		method: 'post',
+		data: {cmd: 'init', paramJS: ''}
+	}).success(function(resp){
+
+		console.log("SWAG", resp);
+
+		tables = resp;
+
+
+		/*********************************************************************/
+
+		tables.forEach(
+				function(tbl) {
+					// no need for previous deselectet tables
+					if(!tbl.is_in_menu){return}
+					// Request from server
+					// Read content
+					$http({
+						url: window.location.pathname, // use same page for reading out data
+						method: 'post',
+						data: {
+						cmd: 'read',
+						paramJS: {
+							tablename: tbl.table_name,
+							limitStart: $scope.PageIndex * $scope.PageLimit,
+							limitSize: $scope.PageLimit,
+							select: "*"
+						}
+					}
+					}).success(function(response){
+						// debugging
+						console.log("Table '", tbl.table_name, "'", tbl);
+						console.log(" - Data:", response);
+						//define additional Rows
+						var newRows = [[]]
+						// Create new rows by columns
+						Object.keys(tbl.columns).forEach(
+							function(){newRows[newRows.length-1].push('')}
+						);
+						//define colum headers
+						var keys = ['names']
+						if(response[0] && typeof response[0] == 'object'){
+							keys = Object.keys(response[0])
+						}
+						$scope.tables.push({
+							table_name: tbl.table_name,
+							table_alias: tbl.table_alias,
+							table_icon: tbl.table_icon,
+							columnsX: tbl.columns,
+							columnames: keys,
+							rows: response,
+							count: 0,
+							newRows : newRows
+						})
+		        // Count entries
+		        $scope.countEntries(tbl.table_name);
+						// open first table in navbar
+						 $('#nav-'+$scope.tables[0].table_name).click();
+						// TODO: Platzhalter für Scope Texfelder generierung  
+					});
+					// Save tablenames in scope
+					$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
 				}
-			}
-			}).success(function(response){
-				// debugging
-				console.log("Table '", tbl.table_name, "'", tbl);
-				console.log(" - Data:", response);
-				//define additional Rows
-				var newRows = [[]]
-				// Create new rows by columns
-				Object.keys(tbl.columns).forEach(
-					function(){newRows[newRows.length-1].push('')}
-				);
-				//define colum headers
-				var keys = ['names']
-				if(response[0] && typeof response[0] == 'object'){
-					keys = Object.keys(response[0])
-				}
-				$scope.tables.push({
-					table_name: tbl.table_name,
-					table_alias: tbl.table_alias,
-					table_icon: tbl.table_icon,
-					columnsX: tbl.columns,
-					columnames: keys,
-					rows: response,
-					count: 0,
-					newRows : newRows
-				})
-        // Count entries
-        $scope.countEntries(tbl.table_name);
-				// open first table in navbar
-				 $('#nav-'+$scope.tables[0].table_name).click();
-				// TODO: Platzhalter für Scope Texfelder generierung  
-			});
-			// Save tablenames in scope
-			$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
-		}
-	)
-	$scope.status = "Initializing... done";
+			)
+			$scope.status = "Initializing... done";
+
+
+		/*********************************************************************/
+
+	});	
 }
 
 $scope.countEntries = function(table_name) {
@@ -210,6 +227,10 @@ $scope.send = function (cud, param){
     post(cud)
   }
   else if (cud == 'delete') {
+  	// Confirmation
+  	IsSure = confirm("Do you really want to delete this entry?");
+  	if (!IsSure) return
+  	// if Sure -> continue
     body.paramJS = {
       id:param.colum,
       row:param.row,
