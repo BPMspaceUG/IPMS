@@ -37,30 +37,28 @@
 
   /* ------------------------------------- Statemachine ! */
 
+  // Create the tables if the do not exist
   $query_rules = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state_rules` (
   `state_rules_id` bigint(20) NOT NULL,
   `state_id_FROM` bigint(20) NOT NULL,
   `state_id_TO` bigint(20) NOT NULL,
   `transition_script` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-  
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;";  
   $query_states = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state` (
   `state_id` bigint(20) NOT NULL,
   `name` varchar(45) DEFAULT NULL,
   `form_data` longtext
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-
   // Execute queries
-  $res = $con->query($query_rules);
-  $res2 = $con->query($query_states);
+  $con->query($query_rules);
+  $con->query($query_states);
 
   // Add primary keys  
   $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` ADD PRIMARY KEY (`state_rules_id`);";
   $query_states = "ALTER TABLE `".$db_name."`.`state` ADD PRIMARY KEY (`state_id`);";
-
   // Execute queries
-  $res = $con->query($query_rules);
-  $res2 = $con->query($query_states);
+  $con->query($query_rules);
+  $con->query($query_states);
 
   //-------------------------------------------------------
 
