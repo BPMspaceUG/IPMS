@@ -19,9 +19,9 @@
   if (isset($host) && isset($user) && isset($pwd)) {
     
     // Connect (with different or standard port)
-    if (isset($port))
+    /*if (isset($port))
       $con = new mysqli($host.":".$port, $user, $pwd);
-    else 
+    else*/ 
       $con = new mysqli($host, $user, $pwd);
     
     // Connection Error ?

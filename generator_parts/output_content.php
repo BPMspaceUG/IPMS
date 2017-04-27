@@ -94,18 +94,20 @@
                     <b>Status:</b> {{status}} - {{table.count}} Entries // Showing page {{PageIndex + 1}} of {{table.count / PageLimit | ceil}}
                   </div>
                   <div class="col col-xs-6">
-                    <!--<ul class="pagination hidden-xs pull-right">
-                      <li><a href="#">1</a></li>
-                      <li><a href="#">2</a></li>
-                      <li><a href="#">3</a></li>
-                      <li><a href="#">4</a></li>
-                      <li><a href="#">5</a></li>
-                    </ul>-->
                     <ul class="pagination pull-right"><!-- visible-xs -->
-                        <li ng-class="{disabled: PageIndex <= 0}">
-                          <a href="" ng-click="gotoPage(-1, table, $index)">« Page</a></li>
-                        <li ng-class="{disabled: (PageIndex + 1) >= (table.count / PageLimit)}">
-                          <a href="" ng-click="gotoPage(1, table, $index)">Page »</a></li>
+                      <li ng-repeat="elem in getPages(table, PageIndex, PageLimit) track by $index"
+                        ng-class="{disabled: elem == PageIndex}">
+                        <a href="" ng-click="gotoPage(elem, table, $index)">{{elem+1}}</a>
+                      </li>
+                      <!-- OLD -->
+                      <!--
+                      <li ng-class="{disabled: PageIndex <= 0}">
+                        <a href="" ng-click="gotoPage(-1, table, $index)">« Page</a>
+                      </li>
+                      <li ng-class="{disabled: (PageIndex + 1) >= (table.count / PageLimit)}">
+                        <a href="" ng-click="gotoPage(1, table, $index)">Page »</a>
+                      </li>
+                      -->
                     </ul>
                   </div>
                 </div>

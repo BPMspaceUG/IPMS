@@ -22,17 +22,54 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.PageLimit = 10; // default = 10
   $scope.sqlwhere = []
 
-$scope.gotoPage = function(inc, table, index) {
+$scope.gotoPage = function(new_page_index, table, index) {
 	// TODO: PageIndex for every table
-	first_page = 0;
-	last_page = Math.ceil(table.count / $scope.PageLimit) - 1;
-	new_page = $scope.PageIndex + inc;
+	first_page = 0
+	last_page = Math.ceil(table.count / $scope.PageLimit) - 1
+	new_page = new_page_index
 
-	if (new_page < first_page) return;
-	if (new_page > last_page) return;
-	$scope.PageIndex = new_page;
-	console.log("Goto Page clicked!", table.table_name, "Count:", table.count);
-	$scope.refresh(table, index);
+	if (new_page < first_page) return
+	if (new_page > last_page) return
+	$scope.PageIndex = new_page
+	console.log("Goto Page clicked!", table.table_name, "Count:", table.count)
+	$scope.refresh(table, index)
+}
+$scope.getPages = function(table, page_index, page_limit) {
+  max_number_of_buttons = 2
+  number_of_pages = Math.ceil(table.count / $scope.PageLimit)
+  page_array = new Array(number_of_pages-1)
+  for (var i=0;i<number_of_pages;i++) page_array[i] = i
+
+  // debug
+  console.log("-> number_of_pages = ", number_of_pages);
+
+  // create array container
+  if (number_of_pages < max_number_of_buttons) {
+    btns = page_array
+  }
+  else {
+    // More Pages than max displayed buttons -> sub array
+    btns_next = page_array.slice(page_index, page_index+max_number_of_buttons+1)
+    if (page_index <= max_number_of_buttons)
+      btns_before = page_array.slice(0, page_index)
+    else
+      btns_before = page_array.slice(page_index-max_number_of_buttons, page_index)
+    // concat
+    btns = btns_before.concat(btns_next)
+
+
+    // Initial case 
+    //half_nr_of_buttons = Math.ceil(max_number_of_buttons / 2) // at 7 -> 3
+    // fill data in array  [firstpage, x-3, x-2, x-1, x, x+1, x+2, x+3, lastpage]
+    // Jumper buttons
+    /*
+    btns[0] = 0 // first page
+    btns[max_number_of_buttons-1] = number_of_pages-1 // last page
+    */
+  }
+  // output
+  console.log("-> btns = ", btns);
+  return btns
 }
 
 $scope.changeTab = function() {
@@ -49,10 +86,7 @@ $scope.initTables = function() {
 		data: {cmd: 'init', paramJS: ''}
 	}).success(function(resp){
 
-		console.log("SWAG", resp);
-
 		tables = resp;
-
 
 		/*********************************************************************/
 

@@ -15,22 +15,23 @@ $scope.username = 'root'
 send fetch database info order for user to ConnectDB.php
 */
 $scope.connectToDB = function(){
-  // log('\nPOST an '+$scope.path+': ')
+  console.log('POST an '+$scope.path+':')
   $http({
     url: $scope.path,
     method: "POST",
     data: { host:$scope.sqlServer, port:$scope.sqlPort, user:$scope.username, pwd:$scope.pw }
   })
   .success(function(data, status, headers, config) {
+    console.log(data)
     $scope.resultData = data
     $scope.dbNames = {model: data[0].database, names : data.map(function(x){return x.database})};
     $scope.handleresult( data );
     $scope.updateTables();
-    log('"Connect"-Response data: '); log(data);
+    console.log('"Connect"-Response data: '); log(data);
   })
   .error(function(data, status, headers, config) {
     $scope.status = status;
-    log('Error-Status: '+JSON.stringify(status));
+    console.log('Error-Status: '+JSON.stringify(status));
     scsSignal(false)
   });
 }
