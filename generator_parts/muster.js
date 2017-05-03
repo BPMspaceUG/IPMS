@@ -40,13 +40,9 @@ $scope.getPages = function(table, page_index, page_limit) {
   page_array = new Array(number_of_pages-1)
   for (var i=0;i<number_of_pages;i++) page_array[i] = i
 
-  // debug
-  console.log("-> number_of_pages = ", number_of_pages);
-
   // create array container
-  if (number_of_pages < max_number_of_buttons) {
+  if (number_of_pages < max_number_of_buttons)
     btns = page_array
-  }
   else {
     // More Pages than max displayed buttons -> sub array
     btns_next = page_array.slice(page_index, page_index+max_number_of_buttons+1)
@@ -56,19 +52,8 @@ $scope.getPages = function(table, page_index, page_limit) {
       btns_before = page_array.slice(page_index-max_number_of_buttons, page_index)
     // concat
     btns = btns_before.concat(btns_next)
-
-
-    // Initial case 
-    //half_nr_of_buttons = Math.ceil(max_number_of_buttons / 2) // at 7 -> 3
-    // fill data in array  [firstpage, x-3, x-2, x-1, x, x+1, x+2, x+3, lastpage]
-    // Jumper buttons
-    /*
-    btns[0] = 0 // first page
-    btns[max_number_of_buttons-1] = number_of_pages-1 // last page
-    */
   }
   // output
-  console.log("-> btns = ", btns);
   return btns
 }
 
@@ -166,9 +151,9 @@ $scope.countEntries = function(table_name) {
 		// Find table in scope
 		act_tbl = $scope.tables.find(
 			function(t){return t.table_name == table_name});
-		console.log("Count Response", response)
+		//console.log("Count Response", response)
 		act_tbl.count = response[0].cnt;
-		console.log(act_tbl.count);
+		//console.log(act_tbl.count);
 	});
 }
 

@@ -108,6 +108,10 @@
   // Class Definition ends here
   // Request Handler ends here
   
+
+  replaceClassStateEngine
+
+
   $RH = new RequestHandler();
   
   // check if at least a command is set

@@ -48,7 +48,8 @@
   $query_states = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state` (
   `state_id` bigint(20) NOT NULL,
   `name` varchar(45) DEFAULT NULL,
-  `form_data` longtext
+  `form_data` longtext,
+  `tablename` varchar(128)  DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
   // Execute queries
   $con->query($query_rules);
@@ -57,7 +58,6 @@
   // Add primary keys  
   $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` ADD PRIMARY KEY (`state_rules_id`);";
   $query_states = "ALTER TABLE `".$db_name."`.`state` ADD PRIMARY KEY (`state_id`);";
-
   // Execute queries
   $con->query($query_rules);
   $con->query($query_states);
@@ -81,10 +81,18 @@
   $handle = fopen("./output_DebugHeader.php", "r");
   $output_DebugHeader = stream_get_contents($handle);
 
+  // Class State Engine
+  $handle = fopen("./output_StateEngine.php", "r");
+  $class_StateEngine = stream_get_contents($handle);
+    // Clear PHP Tags
+    $class_StateEngine = str_replace('<?php', '', $class_StateEngine);
+    $class_StateEngine = str_replace('?>', '', $class_StateEngine);
+
   // RequestHandler
   $handle = fopen("./output_RequestHandler.php", "r");
   $output_RequestHandler = stream_get_contents($handle);
   $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
+  $output_RequestHandler = str_replace('replaceClassStateEngine', $class_StateEngine, $output_RequestHandler);
   $log .= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
 
   // HTML - Header
@@ -151,7 +159,7 @@
 
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
+    file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
     //file_put_contents("../../IPMS_test/".$db_name."-config.txt", $output_config);
   }
