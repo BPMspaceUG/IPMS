@@ -4,7 +4,11 @@
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
-    
+  
+
+  replaceClassStateEngine
+
+
   //RequestHandler Class Definition starts here
   class RequestHandler {
     // Variables
@@ -104,13 +108,18 @@
       // Output
       return $res ? "1" : "0";
     }
+    //==== Statemachine -> substitue StateID of a Table with Statemachine
+    public function getNextStates($param) {
+
+      // TODO: create statemachine class
+      $SE = new StateEngine(); // DB Element ?
+
+      // TODO:
+      return $this->parseToJSON(array("nextstates" => "State X"));
+    }
   }
   // Class Definition ends here
   // Request Handler ends here
-  
-
-  replaceClassStateEngine
-
 
   $RH = new RequestHandler();
   

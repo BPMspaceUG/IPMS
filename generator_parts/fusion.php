@@ -49,7 +49,7 @@
   `state_id` bigint(20) NOT NULL,
   `name` varchar(45) DEFAULT NULL,
   `form_data` longtext,
-  `tablename` varchar(128)  DEFAULT NULL
+  `tablename` varchar(128) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
   // Execute queries
   $con->query($query_rules);

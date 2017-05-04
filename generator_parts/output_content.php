@@ -23,6 +23,10 @@
               </h3>
             </div>
             <div class="panel-body table-responsive" style="padding:0;">
+
+              <!-- DEBUG -->
+              <!-- <pre>{{table}}</pre> -->
+
               <table class="table table-bordered">
                 <thead>
                   <tr>
@@ -48,17 +52,24 @@
                     <td ng-repeat="cell in row track by $index">
                       <!-- xeditable controllfield -->
                       <!-- <a href="#" editable-text="cell">{{ cell || "empty" }}</a> -->
+
+                      <!-- Substitue State Machine -->
+                      <div ng-show="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
+                        <button class="btn btn-success"
+                          ng-click="openSEPopup({row:row, colum:$index, table:table})">State: NEW</button>
+                      </div>
+
                       <!-- normal Textarea -->
-                      <textarea class="form-control" 
-                      rows="1" cols="{{cell.length}}" 
-                       ng-hide="table.is_read_only"
-                      ng-focus="rememberOrigin(table.table_name, table.columnames, row, cell, $parent.$parent.$index, $index)"
-                      ng-blur="checkCellChange(table, row, cell, $parent.$parent.$parent.$index, $parent.$parent.$index, $index)"
-                      ng-model="cell"
-                      ng-if="!(table.columnames[$index] == table.primary_col)">{{cell}}</textarea>
-                      <p ng-if="table.columnames[$index] == table.primary_col || table.is_read_only">{{cell}}</p>
+                      <div ng-hide="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
+                        <textarea class="form-control" rows="1" cols="{{cell.length}}" 
+                         ng-hide="table.is_read_only" ng-focus="rememberOrigin(table.table_name, table.columnames, row, cell, $parent.$parent.$index, $index)" ng-blur="checkCellChange(table, row, cell, $parent.$parent.$parent.$index, $parent.$parent.$index, $index)"
+                        ng-model="cell"
+                        ng-if="!(table.columnames[$index] == table.primary_col)">{{cell}}</textarea>
+                        <p ng-if="table.columnames[$index] == table.primary_col || table.is_read_only">{{cell}}</p>
+                      </div>
                     </td>
                   </tr>
+                  <!-- ############################## N E W ##### R O W #################################### -->
                   <!-- Table AddRow -->
                   <tr class="newRows" ng-hide="table.is_read_only">
                    <td>

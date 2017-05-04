@@ -60,6 +60,11 @@ $scope.getPages = function(table, page_index, page_limit) {
 $scope.changeTab = function() {
 	$scope.PageIndex = 0;
 }
+$scope.openSEPopup = function(element) {
+  console.log("TODO: open SE Popup for ", element);
+  // Try:
+  $scope.send("getNextStates", element);
+}
 
 $scope.initTables = function() {
 	$scope.status = "Initializing...";
@@ -114,6 +119,7 @@ $scope.initTables = function() {
 							table_icon: tbl.table_icon,
 							columnsX: tbl.columns,
               is_read_only: tbl.is_read_only,
+              SE_enabled: (tbl.se_active),
 							columnames: keys,
 							rows: response,
 							count: 0,
@@ -211,7 +217,7 @@ $scope.send = function (cud, param){
         resultset.push(col[i].COLUMN_NAME);
       }
     }
-    console.log("---- Primary Columns:", resultset);
+    //console.log("---- Primary Columns:", resultset);
     return resultset;
   }
 
@@ -258,7 +264,17 @@ $scope.send = function (cud, param){
       primary_col: getPrimaryColumns(param.table.columnsX)
     }
     post(cud)
-  } else {
+  }
+  else if (cud == 'getNextStates') {
+    body.paramJS = {
+      id:param.colum,
+      row:param.row,
+      table:param.table.table_name,
+      primary_col: getPrimaryColumns(param.table.columnsX)
+    }
+    post(cud)
+  }
+  else {
     console.log('unknown command (not CRUD)')
   }
 
