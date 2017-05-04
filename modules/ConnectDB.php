@@ -88,10 +88,13 @@
         $columns[] = $row2;
       }
       
+      // TODO: Check if is a View => then ReadOnly = true
+
       $res[] = array(
         "table_name" => $table,
         "table_alias" => ucfirst($table),
         "is_in_menu" => true,
+        "is_read_only" => false,
         "columns" => $columns
       );
     }

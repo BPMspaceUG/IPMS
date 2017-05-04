@@ -26,7 +26,7 @@
               <table class="table table-bordered">
                 <thead>
                   <tr>
-                    <th><em class="fa fa-cog"></em></th>
+                    <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                     <th ng-repeat="col in table.columnsX">{{col.COLUMN_NAME}}</th>
                   </tr>
                 </thead>
@@ -35,7 +35,7 @@
                   <tr ng-repeat="row in table.rows track by $index" ng-model="table"
                       data-toggle='modal' data-target="modal-container-1"
                       id="row{{'' + $parent.$index + $index}}">
-                    <td class="controllcoulm">
+                    <td class="controllcoulm" ng-hide="table.is_read_only">
                       <!-- Delete Button -->
                       <button id="del{{$index}}" class="btn btn-danger" title="Delete this Row"
                         ng-click="send('delete', {row:row, colum:$index, table:table})">
@@ -51,15 +51,16 @@
                       <!-- normal Textarea -->
                       <textarea class="form-control" 
                       rows="1" cols="{{cell.length}}" 
+                       ng-hide="table.is_read_only"
                       ng-focus="rememberOrigin(table.table_name, table.columnames, row, cell, $parent.$parent.$index, $index)"
                       ng-blur="checkCellChange(table, row, cell, $parent.$parent.$parent.$index, $parent.$parent.$index, $index)"
                       ng-model="cell"
                       ng-if="!(table.columnames[$index] == table.primary_col)">{{cell}}</textarea>
-                      <p ng-if="table.columnames[$index] == table.primary_col">{{cell}}</p>
+                      <p ng-if="table.columnames[$index] == table.primary_col || table.is_read_only">{{cell}}</p>
                     </td>
                   </tr>
                   <!-- Table AddRow -->
-                  <tr class="newRows">
+                  <tr class="newRows" ng-hide="table.is_read_only">
                    <td>
                       <!-- Create Button -->
                       <button class="btn btn-primary" title="Create new Row"

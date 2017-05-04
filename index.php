@@ -75,8 +75,9 @@
                   <th width="20px"></th>
                   <th width="30%">TABLENAME</th>
                   <th width="30%">ALIAS</th>
-                  <th width="10%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
-                  <th width="10%">STATE-ENGINE</th>
+                  <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
+                  <th width="5%">STATE-ENGINE</th>
+                  <th width="5%">RO (View)</th>
                   <th width="20%">ICON</th>
                 </tr>
               </thead>
@@ -91,6 +92,7 @@
                   </td>
                   <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
                   <td><input type="checkbox" class="form-control" ng-model="tbl.se_active" ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'"></td>         
+                  <td><input type="checkbox" class="form-control" ng-model="tbl.is_read_only"></td>
                   <td>
                     <div class="row">
                       <div class="col-xs-3">

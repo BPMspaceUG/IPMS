@@ -113,6 +113,7 @@ $scope.initTables = function() {
 							table_alias: tbl.table_alias,
 							table_icon: tbl.table_icon,
 							columnsX: tbl.columns,
+              is_read_only: tbl.is_read_only,
 							columnames: keys,
 							rows: response,
 							count: 0,
