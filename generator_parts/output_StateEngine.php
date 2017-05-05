@@ -17,15 +17,17 @@
     private $colname_from = ' state_id_FROM';
     private $colname_to = 'state_id_TO';
     
-    public function __construct($db, $tbl_root, $tbl_states, $tbl_rules, $col_rootID, $col_stateID, $colname_stateID_at_TblStates) {
-      // set initial variables
+
+    public function __construct($db/*, $tbl_root, $tbl_states, $tbl_rules, $col_rootID, $col_stateID, $colname_stateID_at_TblStates*/) {
       $this->db = $db;
+      /*
       $this->table = $tbl_root;
       $this->table_states = $tbl_states;
       $this->table_rules = $tbl_rules;
       $this->colname_rootID = $col_rootID;
       $this->colname_stateID = $col_stateID;
       $this->colname_stateID_at_TblStates = $colname_stateID_at_TblStates;
+      */
     }
     private function getResultArray($result) {
       $results_array = array();

@@ -110,12 +110,11 @@
     }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
-
-      // TODO: create statemachine class
-      $SE = new StateEngine(); // DB Element ?
-
-      // TODO:
-      return $this->parseToJSON(array("nextstates" => "State X"));
+      //var_dump($param);
+      $SE = new StateEngine($this->db);
+      $res = $SE->getNextStates($param["row"]["state_id_ext"]);
+      // Output
+      return json_encode($res); //$this->parseToJSON(array("nextstates" => "State X"));
     }
   }
   // Class Definition ends here

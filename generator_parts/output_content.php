@@ -56,7 +56,7 @@
                       <!-- Substitue State Machine -->
                       <div ng-show="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
                         <button class="btn btn-success"
-                          ng-click="openSEPopup({row:row, colum:$index, table:table})">State: NEW</button>
+                          ng-click="openSEPopup({row:row, colum:$index, table:table})">NEW</button>
                       </div>
 
                       <!-- normal Textarea -->
