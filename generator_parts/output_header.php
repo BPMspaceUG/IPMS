@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" ng-app="genApp">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <title>replaceDBName</title>
@@ -12,5 +12,5 @@
   <link rel="stylesheet" href="../css/jsonviewer.css" />
   <link rel="stylesheet" href="../IPMS/css/muster.css" />
 </head>
-<body ng-controller="genCtrl">
+<body ng-app="genApp" ng-controller="genCtrl">
   <div>

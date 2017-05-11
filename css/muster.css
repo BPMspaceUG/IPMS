@@ -1,7 +1,7 @@
-.newRows {background-color: #d8edff;}
+.newRows {background-color: #cffda2; /*#d8edff;*/}
 .btnUpdate {display: none;}
 thead tr {background-color: #eee;}
-.fresh {background-color: #cffda2;}
+.fresh {/*background-color: #cffda2;*/}
 .controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}
 .fresh .controllcoulm { background-color: #abfd5c; }
 
@@ -13,7 +13,7 @@ thead tr {background-color: #eee;}
   border-style: none;
   margin:0;
 }
-.panel-table .panel-body .table-bordered > thead > tr > th:first-of-type {
+.panel-table .panel-body .table-bordered > thead > tr > th:last-of-type {
     text-align:center;
     width: 100px;
 }

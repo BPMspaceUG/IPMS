@@ -21,6 +21,22 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.PageIndex = 0;
   $scope.PageLimit = 10; // default = 10
   $scope.sqlwhere = []
+  $scope.nextstates = []
+
+$scope.editTask=function(tbl, row) {
+  $scope.selectedTask = row
+  $scope.selectedTable = tbl
+};
+$scope.saveTask=function() {
+  console.log("Saving...")
+  //console.log($scope.selectedTask, $scope.selectedTable)
+  // update complete row
+  $scope.send('update', {
+    row: $scope.selectedTask,
+    table: $scope.selectedTable
+  })
+};
+
 
 $scope.gotoPage = function(new_page_index, table, index) {
 	// TODO: PageIndex for every table
@@ -58,14 +74,15 @@ $scope.getPages = function(table, page_index, page_limit) {
 }
 
 $scope.changeTab = function() {
+  // start at index 0 -> Feature: Maybe save and restore
 	$scope.PageIndex = 0;
 }
+//*************
+// TODO: remove
 $scope.openSEPopup = function(element) {
-  console.log("TODO: open SE Popup for ", element);
-  // Try:
   $scope.send("getNextStates", element);
 }
-
+//*************
 $scope.initTables = function() {
 	$scope.status = "Initializing...";
 
@@ -194,19 +211,18 @@ $scope.refresh = function(scope_tbl, index) {
 
 $scope.initTables();
 
-/*
-  $('#json-renderer').jsonViewer($scope.tables,{collapsed: true});
-*/
 
 /*
 Allround send for changes to DB
 */
 $scope.send = function (cud, param){
-  console.log(param.x)
-  console.log("Send-Function called, Params:", param);
+  //console.log(param.x)
+  console.log("-> Send # CUD=", cud, "Params:", param)
 
-  var body = {cmd : 'cud', paramJS : {}};
-  // unused: columName = Object.keys(param.table.columnsX[0])[param.colum];
+  var body = {cmd: 'cud', paramJS: {}}
+
+  // TODO: probably not the best idea to send the primary columns from client
+  // better assebmle them on the server side
 
   // Function which identifies _all_ primary columns
   function getPrimaryColumns(col) {
@@ -232,54 +248,50 @@ $scope.send = function (cud, param){
     return newobj;
   }
 
+
   // Assemble data for Create, Update, Delete Functions
+  // TODO: ----> kann man verbessern, alles sehr ähnlich
   if (cud == 'create') {
     body.paramJS = {
       row: param.row,
       table: param.table.table_name,
       primary_col: param.table.primary_col
     }
-    post(cud);
   }
   else if (cud == 'update') {
-    var row = $scope.changeHistory.reverse()
-    row.find(function(entry){if (entry.origin && (entry.rowID == param.x[0]) ){return entry.postRow} })    
+    //console.log($scope.selectedTask)
     // relevant data
     body.paramJS = {
-      row: convertCols(param.row),
-      primary_col: getPrimaryColumns(param.table.columnsX),
-      table: param.table.table_name
+      row: convertCols($scope.selectedTask),
+      primary_col: getPrimaryColumns($scope.selectedTable.columnsX),
+      table: $scope.selectedTable.table_name
     }
-    post(cud)
   }
-  else if (cud == 'delete') {
-  	// Confirmation
-  	IsSure = confirm("Do you really want to delete this entry?");
-  	if (!IsSure) return
+  else if (cud == 'delete' || cud == 'getNextStates') {
+  	// Confirmation when deleting
+    if (cud == 'delete') {
+  	  IsSure = confirm("Do you really want to delete this entry?");
+  	  if (!IsSure) return
+    }
   	// if Sure -> continue
     body.paramJS = {
-      id:param.colum,
-      row:param.row,
-      table:param.table.table_name,
+      id: param.colum,
+      row: param.row,
+      table: param.table.table_name,
       primary_col: getPrimaryColumns(param.table.columnsX)
     }
-    post(cud)
-  }
-  else if (cud == 'getNextStates') {
-    body.paramJS = {
-      id:param.colum,
-      row:param.row,
-      table:param.table.table_name,
-      primary_col: getPrimaryColumns(param.table.columnsX)
-    }
-    post(cud)
   }
   else {
-    console.log('unknown command (not CRUD)')
+    console.log('unknown command: ', cud)
+    return
   }
+  post()
 
 
-  function post(){    
+
+  function post(){
+    console.log("POST-Request", "Command:", cud, "Params:", body.paramJS)
+
     $http({
       url:window.location.pathname,
       method:'post',
@@ -307,7 +319,7 @@ $scope.send = function (cud, param){
 
         // TODO: There could be a better solution, here the row is stored in the client in a history
         // but what if there are more changes and it gets corrupted? better the server sends back the
-        // table and the primary column content -> so then the data intergrity is garanteed
+        // table and the primary column content -> so the data integrity is guaranteed
 
         var tblID = param.x[1];
         var rowID = param.x[0];
@@ -334,12 +346,19 @@ $scope.send = function (cud, param){
       	// Refresh current table
       	$scope.refresh(act_tbl);
       }
+      //---------------------- StateEngine (List Transitions)
+      else if (cud == 'getNextStates') {
+        $scope.nextstates = response
+        console.log("WINNING")
+        $('#myModal').modal('show')
+      }
     })
   }
 
 }
 
 /*Protokoll where what changed*/
+/*
 $scope.changeHistory = [], $scope.changeHistorycounter = 0
 $scope.rememberOrigin = function (table, cols, row, cell, rowID, colID){
   $scope.changeHistorycounter ++
@@ -355,8 +374,10 @@ $scope.rememberOrigin = function (table, cols, row, cell, rowID, colID){
    changeHistorycounter:$scope.changeHistorycounter
  })
 }
+*/
 
 /*If cell content changed, protokoll the change*/
+/*
 $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
 
   console.log('#cCC: table: ' + table + ', row: ' + row +
@@ -388,5 +409,6 @@ $scope.checkCellChange = function (table, row, cell, tblID, rowID, colID){
      $scope.changeHistory.slice(0, -1)
   }
 }
+*/
 
 });
