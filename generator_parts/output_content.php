@@ -34,11 +34,11 @@
                       data-toggle='modal' data-target="modal-container-1"
                       id="row{{'' + $parent.$index + $index}}">
                     <!-- Data entries -->
-                    <td ng-repeat="cell in row track by $index">
+                    <td animate-on-change="cell" ng-repeat="cell in row track by $index">
                       <!-- Substitue State Machine -->
                       <div ng-show="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
                         <button class="btn btn-primary"
-                          ng-click="openSEPopup({row:row, colum:$index, table:table})">NEW [{{cell}}]</button>
+                          ng-click="openSEPopup(table, row)">State {{cell}}</button>
                       </div>
                       <!-- Normal field -->
                       <p ng-hide="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">{{cell}}</p>
@@ -93,19 +93,16 @@
                   </div>
                   <div class="col col-xs-6">
                     <ul class="pagination pull-right"><!-- visible-xs -->
+                      <li ng-class="{disabled: PageIndex <= 0}">
+                        <a href="" ng-click="gotoPage(0, table, $index)">«</a>
+                      </li>
                       <li ng-repeat="elem in getPages(table, PageIndex, PageLimit) track by $index"
                         ng-class="{disabled: elem == PageIndex}">
                         <a href="" ng-click="gotoPage(elem, table, $index)">{{elem+1}}</a>
                       </li>
-                      <!-- OLD -->
-                      <!--
-                      <li ng-class="{disabled: PageIndex <= 0}">
-                        <a href="" ng-click="gotoPage(-1, table, $index)">« Page</a>
+                       <li ng-class="{disabled: (PageIndex + 1) >= (table.count / PageLimit)}">
+                        <a href="" ng-click="gotoPage((table.count / PageLimit)-1, table, $index)">»</a>
                       </li>
-                      <li ng-class="{disabled: (PageIndex + 1) >= (table.count / PageLimit)}">
-                        <a href="" ng-click="gotoPage(1, table, $index)">Page »</a>
-                      </li>
-                      -->
                     </ul>
                   </div>
                 </div>
@@ -153,7 +150,9 @@
 	      <div class="modal-footer">
 	      	<span class="pull-left">
 	      		<span>Goto &rarr; </span>
-	        	<button type="button" class="btn btn-primary" ng-repeat="state in nextstates">{{state.name}}</button>
+            <span ng-repeat="state in nextstates">
+	        	  <button type="button" class="btn btn-primary" ng-click="gotoState(state)" >{{state.name}}</button>
+            </span>
 	        </span>
 	        <button type="button" class="btn btn-default pull-right" data-dismiss="modal">Close</button>
 	      </div>

@@ -49,3 +49,12 @@ used to vertically center elements, may need modification if you're not using de
   line-height: 34px;
 }
 
+[animate-on-change] {
+  transition: all 1s;
+  -webkit-transition: all 1s;
+}
+[animate-on-change].changed {
+  background-color: #cffda2;
+  transition: none;
+  -webkit-transition: none;
+}
