@@ -13,6 +13,7 @@
   class RequestHandler {
     // Variables
     private $db;
+    private $SE;
 
     public function __construct() {
       // create DB connection object - Data comes from config file
@@ -24,6 +25,7 @@
       }
       $db->query("SET NAMES utf8");
       $this->db = $db;
+      $this->SE = new StateEngine($this->db);
     }
     // Format data for output
     private function parseToJSON($result) {
@@ -82,8 +84,12 @@
       // SQL
       $query = "SELECT ".$param["select"]." FROM ".
         $param["tablename"].$where." LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
-      //var_dump($query);
       $res = $this->db->query($query);
+
+      // TODO: Also read out statemachine and concat with results
+      $states = array("states" => array("id" => 1, "name" => "unknown")); //$this->SE->getStateAsObject(1);
+      //$result = array_merge($res, $states);
+
       return $this->parseToJSON($res);
     }
     //================================== UPDATE
@@ -110,11 +116,14 @@
     }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
-      //var_dump($param);
-      $SE = new StateEngine($this->db);
-      $res = $SE->getNextStates($param["row"]["state_id_ext"]);
-      // Output
-      return json_encode($res); //$this->parseToJSON(array("nextstates" => "State X"));
+      $res = $this->SE->getNextStates($param["row"]["state_id_ext"]);
+      return json_encode($res);
+    }
+    public function getStates($param) {
+      // IN: (table_name)
+      // OUT: [{id: 1, name: 'unknown'}, {id: 2, name: 'test'}]
+      $res = $this->SE->getStates(); //$param["row"]["state_id_ext"]);
+      return json_encode($res);
     }
   }
   // Class Definition ends here

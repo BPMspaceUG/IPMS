@@ -36,9 +36,9 @@
                     <!-- Data entries -->
                     <td animate-on-change="cell" ng-repeat="cell in row track by $index">
                       <!-- Substitue State Machine -->
-                      <div ng-show="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
+                      <div ng-if="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
                         <button class="btn btn-primary"
-                          ng-click="openSEPopup(table, row)">State {{cell}}</button>
+                          ng-click="openSEPopup(table, row)">{{subState(cell)}}</button>
                       </div>
                       <!-- Normal field -->
                       <p ng-hide="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">{{cell}}</p>
@@ -46,7 +46,7 @@
                     <!-- Edit options -->
                     <td class="controllcoulm" ng-hide="table.is_read_only">
                       <!-- Update Button -->
-                      <a class="btn btn-default" data-toggle="modal" data-target="#modal" ng-click="editTask(table, row)">
+                      <a class="btn btn-default" data-toggle="modal" data-target="#modal" ng-click="loadRow(table, row)">
                         <i class="fa fa-pencil"></i>
                       </a>
                       <!-- Delete Button -->

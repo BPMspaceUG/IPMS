@@ -46,7 +46,7 @@
       return $this->getResultArray($res);
     }    
 	public function getStates() {
-        $query = "SELECT name FROM ".$this->table_states; 
+        $query = "SELECT state_id AS 'id', name FROM ".$this->table_states; 
       $res = $this->db->query($query);
 	  //echo json_encode($res);
       return $this->getResultArray($res);
