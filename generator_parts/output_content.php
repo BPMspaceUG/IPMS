@@ -37,7 +37,7 @@
                     <td animate-on-change="cell" ng-repeat="cell in row track by $index">
                       <!-- Substitue State Machine -->
                       <div ng-if="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
-                        <button class="btn btn-primary"
+                        <button class="btn" ng-class="'state'+cell"
                           ng-click="openSEPopup(table, row)">{{subState(cell)}}</button>
                       </div>
                       <!-- Normal field -->

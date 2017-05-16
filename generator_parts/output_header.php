@@ -1,16 +1,18 @@
+
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en-US">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <title>replaceDBName</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- CSS -->
-  <link rel="stylesheet" href="../css/bootstrap.min.css" media="screen" />
-  <link rel="stylesheet" href="../css/bootstrap-theme.min.css" media="screen" />
-  <link rel="stylesheet" href="../css/font-awesome.min.css" />
-  <link rel="stylesheet" href="../css/fuelux.min.css" />
-  <link rel="stylesheet" href="../css/xeditable.css" />
-  <link rel="stylesheet" href="../css/jsonviewer.css" />
-  <link rel="stylesheet" href="../IPMS/css/muster.css" />
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="../css/font-awesome.min.css">
+  <!-- Custom CSS -->
+  <style>
+replaceCSS
+  </style>
 </head>
 <body ng-app="genApp" ng-controller="genCtrl">
   <div>

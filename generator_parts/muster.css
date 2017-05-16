@@ -1,8 +1,9 @@
 .newRows {background-color: #cffda2; /*#d8edff;*/}
 thead tr {background-color: #eee;}
-.fresh {/*background-color: #cffda2;*/}
 .controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}
+/*
 .fresh .controllcoulm { background-color: #abfd5c; }
+*/
 
 /**********************************************************/
 .panel-table .panel-body{
@@ -57,3 +58,40 @@ used to vertically center elements, may need modification if you're not using de
   transition: none;
   -webkit-transition: none;
 }
+
+#bpm-liam-header { 
+  margin-top: -20px; 
+  margin-bottom: 10px; 
+  padding-right: 50px;
+}
+#bpm-logo-care { 
+  position:relativ;  
+  z-index: 10;  
+  margin-right: -20px;
+}
+#bpm-logo    { 
+  position:relativ; 
+  margin-bottom: 20px;
+}
+#bpm-menu {
+  margin-right: 20px; 
+  margin-left: 20px; 
+  margin-bottom: 10px;
+}
+#bpm-content {
+  margin-right: 20px; 
+  margin-left: 20px; 
+  margin-bottom: 10px;
+}
+#bpm-footer {
+  margin-right: 10px; 
+  margin-left: 10px; 
+  margin-bottom: 10px;
+}
+
+/* State Engine */
+.state1 {background-color: green !important;}
+.state2 {background-color: yellow !important;}
+.state3 {background-color: red !important;}
+.state4 {background-color: orange !important;}
+.state5 {background-color: blue !important;}

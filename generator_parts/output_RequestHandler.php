@@ -116,7 +116,13 @@
     }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
-      $res = $this->SE->getNextStates($param["row"]["state_id_ext"]);
+      // Find right column (Maybe optimize with GUID)
+      $keys = array_keys($param["row"]);
+      $kid = array_search('state_id', $keys); // <= Column must contain state_id
+      $real_key = $keys[$kid];
+      $stateID = $param["row"][$real_key];
+      // execute query
+      $res = $this->SE->getNextStates($stateID);
       return json_encode($res);
     }
     public function getStates($param) {

@@ -101,6 +101,11 @@
   $output_header = str_replace('replaceDBName', $db_name, $output_header);
   $log .= '<h4>$output_header</h4>'.$output_header;
 
+    // CSS in Header
+    $handle = fopen("./muster.css", "r");
+    $output_css = stream_get_contents($handle);
+    $output_header = str_replace('replaceCSS', $output_css, $output_header);
+
   $handle = fopen("./output_menu.php", "r");
   $output_menu = stream_get_contents($handle);
   $log .= '<h4>$output_menu</h4>'.$output_menu;

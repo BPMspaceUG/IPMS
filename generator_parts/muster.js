@@ -61,7 +61,6 @@ app.controller('genCtrl', function ($scope, $http) {
     max_number_of_buttons = 2
     number_of_pages = Math.ceil(table.count / $scope.PageLimit)
     if (number_of_pages <= 0) return
-    console.log("Number of pages", number_of_pages)
     page_array = new Array(number_of_pages-1)
     for (var i=0;i<number_of_pages;i++) page_array[i] = i
 
@@ -147,16 +146,16 @@ app.controller('genCtrl', function ($scope, $http) {
 						table_alias: tbl.table_alias,
 						table_icon: tbl.table_icon,
 						columnsX: tbl.columns,
-        				is_read_only: tbl.is_read_only,
-        				SE_enabled: (tbl.se_active),
+        		is_read_only: tbl.is_read_only,
+        		SE_enabled: (tbl.se_active),
 						columnames: keys,
 						rows: response,
 						count: 0,
 						newRows : newRows
 					})
 
-	       			// Count entries
-	        		$scope.countEntries(tbl.table_name);
+	       	// Count entries
+	        $scope.countEntries(tbl.table_name);
 					// open first table in navbar
 					 $('#nav-'+$scope.tables[0].table_name).click();
 					// TODO: Platzhalter für Scope Texfelder generierung  
