@@ -90,8 +90,10 @@ used to vertically center elements, may need modification if you're not using de
 }
 
 /* State Engine */
-.state1 {background-color: green !important;}
-.state2 {background-color: yellow !important;}
-.state3 {background-color: red !important;}
-.state4 {background-color: orange !important;}
-.state5 {background-color: blue !important;}
+.state1 {background-color: green;}
+.state2 {background-color: yellow;}
+.state3 {background-color: red;}
+.state4 {background-color: orange;}
+.state5 {background-color: blue;}
+.state6 {background-color: lightblue;}
+.state7 {background-color: lightgreen;}

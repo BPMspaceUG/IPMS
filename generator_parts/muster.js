@@ -90,7 +90,12 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.gotoState = function(nextstate) {
     // TODO: Optimize ... check on serverside if possible etc.
-    $scope.selectedTask.state_id_ext = nextstate.id
+    res = null;
+    for (property in $scope.selectedTask) {
+      if (property.indexOf('state_id') >= 0)
+        res = property
+    }
+    $scope.selectedTask[res] = nextstate.id
     $scope.send('update')
   }
 
