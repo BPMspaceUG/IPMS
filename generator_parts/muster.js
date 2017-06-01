@@ -1,21 +1,16 @@
 
 var app = angular.module("genApp", ["xeditable"])
+
 app.run(function(editableOptions) {
   editableOptions.theme = 'bs2'; // bootstrap3 theme. Can be also 'bs2', 'default'
 });
 
 app.filter('ceil', function() {
-    return function(input) {
-        return Math.ceil(input);
-    };
+    return function(input) {return Math.ceil(input)}
 });
 
 app.controller('genCtrl', function ($scope, $http) {
-
-  $scope.historyLog = false  
   $scope.tables = []
-  $scope.debug = window.location.search.match('debug=1')
-  $scope.status = "";
   $scope.PageIndex = 0;
   $scope.PageLimit = 10; // default = 10
   $scope.sqlwhere = []
@@ -23,8 +18,8 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.statenames = []
 
   $scope.changeRow = function(table, row, operation) {
-  	// TODO: this will be the function for everything
-  	// [update, statemachine, delete]
+  	// TODO: this will be the function for everything when a row is changed
+  	//       so for the funtions [update, statemachine, delete]
 
   	// 1.Step -> Copy row in memory
   	//loadRow(table, row)
@@ -58,6 +53,7 @@ app.controller('genCtrl', function ($scope, $http) {
   }
 
   $scope.getPages = function(table, page_index, page_limit) {
+  	// TODO: Optimize
     max_number_of_buttons = 2
     number_of_pages = Math.ceil(table.count / $scope.PageLimit)
     if (number_of_pages <= 0) return
@@ -98,9 +94,11 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.selectedTask[res] = nextstate.id
     $scope.send('update')
   }
+  //$scope.clickFirstTab(tab, index) {if (index == 0)	tab.click()}
+
 
   $scope.initTables = function() {
-  	$scope.status = "Initializing...";
+  	console.log("init Tables...")
 
   	tables = null;
   	$http({
@@ -117,6 +115,11 @@ app.controller('genCtrl', function ($scope, $http) {
 			function(tbl) {
 				// no need for previous deselectet tables
 				if(!tbl.is_in_menu){return}
+
+				// TODO: Only this line
+				//$scope.refresh(tbl)
+
+
 				// Request from server
 				// Read content
 				$http({
@@ -132,9 +135,6 @@ app.controller('genCtrl', function ($scope, $http) {
 					}
 				}
 				}).success(function(response){
-					// debugging
-					console.log("Table '", tbl.table_name, "'", tbl);
-					console.log(" - Data:", response);
 					//define additional Rows
 					var newRows = [[]]
 					// Create new rows by columns
@@ -151,26 +151,23 @@ app.controller('genCtrl', function ($scope, $http) {
 						table_alias: tbl.table_alias,
 						table_icon: tbl.table_icon,
 						columnsX: tbl.columns,
-        		is_read_only: tbl.is_read_only,
-        		SE_enabled: (tbl.se_active),
+        				is_read_only: tbl.is_read_only,
+        				SE_enabled: (tbl.se_active),
 						columnames: keys,
 						rows: response,
 						count: 0,
 						newRows : newRows
 					})
-
-	       	// Count entries
-	        $scope.countEntries(tbl.table_name);
+	       			// Count entries
+	       			$scope.getStatemachine(tbl.table_name)
+	        		$scope.countEntries(tbl.table_name)
 					// open first table in navbar
-					 $('#nav-'+$scope.tables[0].table_name).click();
-					// TODO: Platzhalter für Scope Texfelder generierung  
+					$('.tab').first().click()
 				});
 				// Save tablenames in scope
 				$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
 			}
 		)
-		$scope.status = "Initializing... done";
-
 
   		/*********************************************************************/
 
@@ -184,14 +181,12 @@ app.controller('genCtrl', function ($scope, $http) {
   		method: 'post',
   		data: {
   			cmd: 'read',
-  			paramJS: {tablename: table_name, limitStart: 0, limitSize: 1, 
-  				select: "COUNT(*) AS cnt"
-  			}
-  	}
+  			paramJS: {select: "COUNT(*) AS cnt", tablename: table_name, limitStart: 0, limitSize: 1}
+  		}
   	}).success(function(response){
   		// Find table in scope
   		act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
-  		act_tbl.count = response[0].cnt;
+  		act_tbl.count = response[0].cnt
   	})
   }
 
@@ -220,14 +215,13 @@ app.controller('genCtrl', function ($scope, $http) {
   		act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
   		console.log("States:", response)
   		$scope.statenames = response // save data in scope
-  		console.log("Saved in scope!")
+  		//console.log("Saved in scope!")
   		//act_tbl.count = response[0].cnt;
   	})
   }
   // Refresh Function
   $scope.refresh = function(scope_tbl, index) {
-  	$scope.status = "Refreshing...";
-    console.log($scope.sqlwhere[index]);
+  	console.log("Refreshing...")
   	// Request from server
   	$http({
   		url: window.location.pathname, // use same page for reading out data
@@ -248,8 +242,10 @@ app.controller('genCtrl', function ($scope, $http) {
   		// Add data to Frontend and get additional information
   		$scope.tables.find(function(tbl){return tbl.table_name == scope_tbl.table_name}).rows = response;
   	})
-  	$scope.status = "Refreshing... done";
   }
+
+
+
 
   $scope.initTables();
 
@@ -338,7 +334,6 @@ app.controller('genCtrl', function ($scope, $http) {
           paramJS: body.paramJS
         }
       }).success(function(response){
-        // Debugging
         console.log("ResponseData: ", response);
         $scope.lastResponse = response;
 

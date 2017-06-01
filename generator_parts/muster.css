@@ -1,9 +1,6 @@
-.newRows {background-color: #cffda2; /*#d8edff;*/}
+.newRows {background-color: #cffda2;}
 thead tr {background-color: #eee;}
 .controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}
-/*
-.fresh .controllcoulm { background-color: #abfd5c; }
-*/
 
 /**********************************************************/
 .panel-table .panel-body{
@@ -58,7 +55,7 @@ used to vertically center elements, may need modification if you're not using de
   transition: none;
   -webkit-transition: none;
 }
-
+/*
 #bpm-liam-header { 
   margin-top: -20px; 
   margin-bottom: 10px; 
@@ -88,12 +85,17 @@ used to vertically center elements, may need modification if you're not using de
   margin-left: 10px; 
   margin-bottom: 10px;
 }
-
+*/
 /* State Engine */
-.state1 {background-color: green;}
+.state1 {background-color: greenyellow;}
 .state2 {background-color: yellow;}
 .state3 {background-color: red;}
 .state4 {background-color: orange;}
 .state5 {background-color: blue;}
-.state6 {background-color: lightblue;}
-.state7 {background-color: lightgreen;}
+.state6 {background-color: khaki;}
+.state7 {background-color: lightblue;}
+.state8 {background-color: lightyellow;}
+.state9 {background-color: mediumorchid;}
+.state10 {background-color: tan;}
+.state11 {background-color: wheat;}
+.state12 {background-color: darksalmon;}

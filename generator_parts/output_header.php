@@ -15,4 +15,3 @@ replaceCSS
   </style>
 </head>
 <body ng-app="genApp" ng-controller="genCtrl">
-  <div>
