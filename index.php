@@ -52,101 +52,108 @@
         </form>
       </div>
 
-      <!-- Content of Databases -->
-      <div class="container" ng-if="dbNames">
-        <div class="row">
-          <!-- Database -->
-          <div class="row form-group">
-            <label for="sqlDatabases" class="col-sm-2"><span class="label label-success">1</span> Select Database</label>
-            <select class="form-control" name="repeatSelect" id="repeatSelect" ng-model="dbNames.model" ng-change="updateTables(dbNames.model)" style="display: inline-block; max-width: 400px;">
-              <option ng-repeat="name in dbNames.names" value="{{name}}" >{{name}}</option>
-            </select>
-          </div> 
-          <!-- Tables -->
-          <div class="row">
-            <label for="sqlTables" class="col-sm-2">
-              <span class="label label-success">2</span> Tables
-            </label>
-             <table class="table table-bordered table-striped" id="loadedtables" style="background-color: #eee;"
-               ng-model="tbl" id="row{{$index}}">
-              <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
-              <thead>
-                <tr>
-                  <th width="20px"></th>
-                  <th width="30%">TABLENAME</th>
-                  <th width="30%">ALIAS</th>
-                  <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
-                  <th width="5%">STATE-ENGINE</th>
-                  <th width="5%">RO (View)</th>
-                  <th width="20%">ICON</th>
-                </tr>
-              </thead>
-              <tbody ng-repeat="tbl in tables track by $index">
-                <tr>
-                  <!-- TODO: ausklappen von Columns -->
-                  <td><i class="fa fa-plus-square"></i></td>
-                  <td><p>{{tbl.table_name}}</p></td>
-                  <td>
-                    <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
-                    ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
-                  </td>
-                  <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
-                  <td><input type="checkbox" class="form-control" ng-model="tbl.se_active" ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'"></td>         
-                  <td><input type="checkbox" class="form-control" ng-model="tbl.is_read_only"></td>
-                  <td>
-                    <div class="row">
-                      <div class="col-xs-3">
-                        <i class="{{tbl.table_icon}}" style="cursor: pointer;"></i>
-                      </div>
-                      <div class="col-xs-9">
-                        <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/> 
-                      </div>
-                    </div>                                     
-                  </td>
-                </tr>
-              </tbody>
-              <tbody class="columns" style="display: none;">
-                <tr><td colspan="5"><b>Columns</b></tr>
-                <tr ng-repeat="col in tbl.columns">
-                  <td width="30%">{{col.COLUMN_NAME}}</td>
-                  <td width="15%">{{col.COLUMN_KEY}}</td>
-                  <td width="15%">{{col.COLUMN_TYPE}}</td>
-                  <td width="20%">
-                    <input type="checkbox" ng-model="col.is_in_menu">Is in menu
-                    &nbsp;&nbsp;&nbsp;
-                    <input type="checkbox" ng-model="col.is_in_menu">Editable
-                  </td>
-                  <td width="20%">Leer</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <!-- CONTENT -->
+      <div class="container">
 
-          <!-- Create Button -->
-          <div class="row">&nbsp;</div>
+        <!-- Loading Screen or Errors -->
+        <div class="alert alert-info" ng-show="isLoading">
+          <p>Loading Tables ...</p>
+        </div>
+
+        <!-- Content of Databases -->
+        <div ng-if="dbNames">
           <div class="row">
-            <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
-            <div>
-              <!-- Create Button -->
-              <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()"><i class="fa fa-play"></i> CREATE</button>
-              <!-- Open Test Dir Button -->
-              <a name="test" class="btn btn-sm btn-success" href="../IPMS_test/" target="_blank">
-                <i class="fa fa-folder-open"></i> Open Test Directory
-              </a>
+            <!-- Database -->
+            <div class="row form-group">
+              <label for="sqlDatabases" class="col-sm-2"><span class="label label-success">1</span> Select Database</label>
+              <select class="form-control" name="repeatSelect" id="repeatSelect" ng-model="dbNames.model" ng-change="updateTables(dbNames.model)" style="display: inline-block; max-width: 400px;">
+                <option ng-repeat="name in dbNames.names" value="{{name}}" >{{name}}</option>
+              </select>
+            </div> 
+            <!-- Tables -->
+            <div class="row">
+              <label for="sqlTables" class="col-sm-2">
+                <span class="label label-success">2</span> Tables
+              </label>
+               <table class="table table-bordered table-striped" id="loadedtables" style="background-color: #eee;"
+                 ng-model="tbl" id="row{{$index}}">
+                <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
+                <thead>
+                  <tr>
+                    <th width="20px"></th>
+                    <th width="30%">TABLENAME</th>
+                    <th width="30%">ALIAS</th>
+                    <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
+                    <th width="5%">STATE-ENGINE</th>
+                    <th width="5%">RO (View)</th>
+                    <th width="20%">ICON</th>
+                  </tr>
+                </thead>
+                <tbody ng-repeat="tbl in tables track by $index">
+                  <!-- Table START -->
+                  <tr>
+                    <td><i class="fa fa-plus-square"></i></td>
+                    <td><p>{{tbl.table_name}}</p></td>
+                    <td>
+                      <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
+                      ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
+                    </td>
+                    <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
+                    <td><input type="checkbox" class="form-control" ng-model="tbl.se_active" ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'"></td>         
+                    <td><input type="checkbox" class="form-control" ng-model="tbl.is_read_only"></td>
+                    <td>
+                      <div class="row">
+                        <div class="col-xs-3">
+                          <i class="{{tbl.table_icon}}" style="cursor: pointer;"></i>
+                        </div>
+                        <div class="col-xs-9">
+                          <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/> 
+                        </div>
+                      </div>                                     
+                    </td>
+                  </tr>
+                  <!-- Columns START -->
+                  <tr ng-repeat="col in tbl.columns" ng-show="false" style="font-size: .8em;">
+                    <td>&nbsp;</td>
+                    <td>{{col.COLUMN_NAME}} ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}})</td>
+                    <td><input type="text" ng-model="col.column_alias"></td>
+                    <td colspan="4">
+                      <input type="checkbox" ng-model="col.is_in_menu"> Is In Menu&nbsp;&nbsp;&nbsp;
+                      <input type="checkbox" ng-model="col.is_read_only"> Read Only
+                    </td>
+                  </tr>
+                  <!-- Columns END -->
+                </tbody>
+              </table>
             </div>
-          </div>
-          <!-- File String -->
-          <div class="row">
-            <div class="col-md-12" id="code">
-                <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
-                  All</button>
-                <div readonly style="width: 100%; min-height: 100px; resize: none; padding:
-                  50px 0 0; margin:0 0 50px; overflow:auto;" class="bpm-textarea" id="bpm-code">
-                  Currently Empty
-                </div>
+
+            <!-- Create Button -->
+            <div class="row">&nbsp;</div>
+            <div class="row">
+              <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
+              <div>
+                <!-- Create Button -->
+                <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()"><i class="fa fa-play"></i> CREATE</button>
+                <!-- Open Test Dir Button -->
+                <a name="test" class="btn btn-sm btn-success" href="../IPMS_test/" target="_blank">
+                  <i class="fa fa-folder-open"></i> Open Test Directory
+                </a>
+              </div>
+            </div>
+            <!-- File String -->
+            <div class="row">
+              <div class="col-md-12" id="code">
+                  <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
+                    All</button>
+                  <div readonly style="width: 100%; min-height: 100px; resize: none; padding:
+                    50px 0 0; margin:0 0 50px; overflow:auto;" class="bpm-textarea" id="bpm-code">
+                    Currently Empty
+                  </div>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
 
     <!-- Load Modal -->

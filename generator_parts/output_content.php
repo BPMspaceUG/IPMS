@@ -25,7 +25,7 @@
             <table class="table table-bordered">
               <thead>
                 <tr>
-                  <th ng-repeat="col in table.columnsX">{{col.COLUMN_NAME}}</th>
+                  <th ng-repeat="col in table.columnsX">{{col.column_alias}}</th>
                   <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                 </tr>
               </thead>

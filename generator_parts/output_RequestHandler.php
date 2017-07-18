@@ -3,8 +3,8 @@
   include_once("replaceDBName-config.php");
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
-  $command = $params["cmd"];
-  
+  $command = $params["cmd"];  
+
 
   replaceClassStateEngine
 
@@ -80,9 +80,11 @@
     //================================== READ
 
     public function read($param) {
+
       $where = isset($param["where"]) ? $param["where"] : "";
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
       $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
+
       // SEARCH
       if (trim($where) <> "") {
         // Do a search
@@ -91,7 +93,7 @@
         while ($row = $res->fetch_array()) {
           $k[] = $row[0];
         }
-    // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
+        // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
         $q_str = "";
         foreach ($k as $key) {
           $q_str .= " ".$key." LIKE '%".$where."%' OR ";
@@ -101,6 +103,7 @@
 
         $where = " WHERE ".$q_str;
       }
+
       // ORDER BY
       $ascdesc = strtolower(trim($ascdesc));
       if ($ascdesc == "asc" || $ascdesc == "") $ascdesc == "ASC";
@@ -108,11 +111,11 @@
       if (trim($orderby) <> "")
         $orderby = " ORDER BY ".$param["orderby"]." ".$ascdesc;
       else
-        $orderby = " ORDER BY replacer_id DESC";
+        $orderby = " "; // ORDER BY replacer_id DESC";
 
       // SQL
-      $query = "SELECT ".$param["select"]." FROM ".
-        $param["tablename"].$where.$orderby." LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
+      $query = "SELECT ".$param["select"]." FROM ".$param["tablename"].$where.$orderby.
+        " LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
       $res = $this->db->query($query);
 
       // TODO: Also read out statemachine and concat with results

@@ -163,16 +163,16 @@ app.controller('genCtrl', function ($scope, $http) {
 						table_alias: tbl.table_alias,
 						table_icon: tbl.table_icon,
 						columnsX: tbl.columns,
-        				is_read_only: tbl.is_read_only,
-        				SE_enabled: (tbl.se_active),
+        		is_read_only: tbl.is_read_only,
+        		SE_enabled: (tbl.se_active),
 						columnames: keys,
 						rows: response,
 						count: 0,
 						newRows : newRows
 					})
-	       			// Count entries
-	       			$scope.getStatemachine(tbl.table_name)
-	        		$scope.countEntries(tbl.table_name)
+          // Count entries
+          $scope.getStatemachine(tbl.table_name)
+          $scope.countEntries(tbl.table_name)
 					// open first table in navbar
 					$('.tab').first().click()
 				});
@@ -188,18 +188,30 @@ app.controller('genCtrl', function ($scope, $http) {
 
   $scope.countEntries = function(table_name) {
   	console.log("counting entries from table", table_name);
-  	$http({
-  		url: window.location.pathname,
-  		method: 'post',
-  		data: {
-  			cmd: 'read',
-  			paramJS: {select: "COUNT(*) AS cnt", tablename: table_name, limitStart: 0, limitSize: 1}
-  		}
-  	}).success(function(response){
-  		// Find table in scope
-  		act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
-  		act_tbl.count = response[0].cnt
-  	})
+
+    $http({
+      method: 'POST',
+      url: window.location.pathname,
+      data: {
+        cmd: 'read',
+        paramJS: {
+          select: "COUNT(*) AS cnt",
+          tablename: table_name,
+          limitStart: 0,
+          limitSize: 1
+        }
+      }
+    }).then(function successCallback(response) {
+        //console.log(response[0])
+        // Find table in scope
+        if (response.length > 0) {
+          act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
+          act_tbl.count = response[0].cnt
+        }
+      }, function errorCallback(response) {
+        alert("Error")
+        console.log(response)
+      });
   }
 
   $scope.subState = function(stateID) {
@@ -245,9 +257,9 @@ app.controller('genCtrl', function ($scope, $http) {
   			limitStart: $scope.PageIndex * $scope.PageLimit,
   			limitSize: $scope.PageLimit,
   			select: "*",
-        	where: $scope.sqlwhere[index],
-        	orderby: $scope.sqlorderby[index],
-        	ascdesc: $scope.sqlascdesc[index]
+        where: $scope.sqlwhere[index],
+        orderby: $scope.sqlorderby[index],
+        ascdesc: $scope.sqlascdesc[index]
   		}
   	}
   	}).success(function(response){

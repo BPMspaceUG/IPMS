@@ -79,17 +79,27 @@
         "TABLE_NAME = '$table';";
 
       $res2 = mysqli_query($con, $query);
-      
+
       $columns = array();
       $primary_col = "";
 
-      if ($res2)
-      while ($row2 = $res2->fetch_assoc()) {
-        $columns[] = $row2;
-      }
-      
-      // TODO: Check if is a View => then ReadOnly = true
 
+      if ($res2) {
+        while ($row2 = $res2->fetch_assoc()) {
+          // Column information - TODO: Filter!!!
+          $column_info = $row2;
+          // Additional information
+          $additional_info = array(
+            "column_alias" => ucfirst($row2["COLUMN_NAME"]),
+            "is_in_menu" => true,
+            "read_only" => false
+          );
+          // Merge arrays
+          $columns[] = array_merge($column_info, $additional_info);
+        }
+      }
+
+      // TODO: Check if is a View => then ReadOnly = true
       $res[] = array(
         "table_name" => $table,
         "table_alias" => ucfirst($table),

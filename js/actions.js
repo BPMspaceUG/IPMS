@@ -11,10 +11,13 @@ $scope.sqlServer = 'localhost'
 $scope.sqlPort = 3306
 $scope.username = 'root'
 
+$scope.isLoading = false
+
 /*
 send fetch database info order for user to ConnectDB.php
 */
 $scope.connectToDB = function(){
+  $scope.isLoading = true
   console.log('POST an '+$scope.path+':')
   $http({
     url: $scope.path,
@@ -28,6 +31,7 @@ $scope.connectToDB = function(){
     $scope.handleresult( data );
     $scope.updateTables();
     console.log('"Connect"-Response data: '); log(data);
+    $scope.isLoading = false
   })
   .error(function(data, status, headers, config) {
     $scope.status = status;
@@ -98,9 +102,6 @@ $scope.create_fkt = function(){
   });
 
 }
-
-// todo 
-$scope.checkSpell = function(){}
 
 }]);/*End Controller*/
 
