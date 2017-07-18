@@ -13,10 +13,23 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.tables = []
   $scope.PageIndex = 0;
   $scope.PageLimit = 10; // default = 10
-  $scope.sqlwhere = []
+  $scope.sqlwhere = []  
+  $scope.sqlorderby = []
+  $scope.sqlascdesc = []
   $scope.nextstates = []
   $scope.statenames = []
 
+
+  $scope.sortCol = function(table, columnname, index) {
+    console.log("Click-----------> SORT")
+
+    // TODO: Make sorting by table and not globally
+    //$scope.sqlascdesc = []
+
+    $scope.sqlorderby[index] = columnname
+    $scope.sqlascdesc[index] = ($scope.sqlascdesc[index] == "desc") ? "asc" : "desc"
+    $scope.refresh(table, index)
+  }
   $scope.changeRow = function(table, row, operation) {
   	// TODO: this will be the function for everything when a row is changed
   	//       so for the funtions [update, statemachine, delete]
@@ -30,7 +43,6 @@ app.controller('genCtrl', function ($scope, $http) {
 
   	// 4.Step -> give feedback to the userinterface
   }
-
   $scope.loadRow = function(tbl, row) {
     $scope.selectedTask = angular.copy(row)
     $scope.selectedTable = tbl
@@ -233,7 +245,9 @@ app.controller('genCtrl', function ($scope, $http) {
   			limitStart: $scope.PageIndex * $scope.PageLimit,
   			limitSize: $scope.PageLimit,
   			select: "*",
-        	where: $scope.sqlwhere[index]
+        	where: $scope.sqlwhere[index],
+        	orderby: $scope.sqlorderby[index],
+        	ascdesc: $scope.sqlascdesc[index]
   		}
   	}
   	}).success(function(response){
@@ -292,15 +306,7 @@ app.controller('genCtrl', function ($scope, $http) {
     }
 
     // Assemble data for Create, Update, Delete Functions
-    // TODO: ----> kann man verbessern, alles sehr ähnlich
-    if (cud == 'create') {
-      body.paramJS = {
-        row: param.row,
-        table: param.table.table_name,
-        primary_col: param.table.primary_col
-      }
-    }
-    else if (cud == 'delete' || cud == 'update' || cud == 'getNextStates' || cud == 'getStates') {
+	if (cud == 'create' || cud == 'delete' || cud == 'update' || cud == 'getNextStates' || cud == 'getStates') {
     	console.log($scope.selectedTable)
     	console.log($scope.selectedTask)
    		// Confirmation when deleting

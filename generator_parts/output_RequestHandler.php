@@ -78,12 +78,41 @@
       return $res ? "1" : "0";
     }
     //================================== READ
+
     public function read($param) {
       $where = isset($param["where"]) ? $param["where"] : "";
-      if (trim($where) <> "") $where = " WHERE ".$param["where"];
+      $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
+      $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
+      // SEARCH
+      if (trim($where) <> "") {
+        // Do a search
+        $res = $this->db->query("SHOW COLUMNS FROM ".$param["tablename"].";");
+        $k = [];
+        while ($row = $res->fetch_array()) {
+          $k[] = $row[0];
+        }
+    // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
+        $q_str = "";
+        foreach ($k as $key) {
+          $q_str .= " ".$key." LIKE '%".$where."%' OR ";
+        }
+        // Remove last 'OR '
+        $q_str = substr($q_str, 0, -3);
+
+        $where = " WHERE ".$q_str;
+      }
+      // ORDER BY
+      $ascdesc = strtolower(trim($ascdesc));
+      if ($ascdesc == "asc" || $ascdesc == "") $ascdesc == "ASC";
+      if ($ascdesc == "desc") $ascdesc == "DESC";
+      if (trim($orderby) <> "")
+        $orderby = " ORDER BY ".$param["orderby"]." ".$ascdesc;
+      else
+        $orderby = " ORDER BY replacer_id DESC";
+
       // SQL
       $query = "SELECT ".$param["select"]." FROM ".
-        $param["tablename"].$where." LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
+        $param["tablename"].$where.$orderby." LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
       $res = $this->db->query($query);
 
       // TODO: Also read out statemachine and concat with results

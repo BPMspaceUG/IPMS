@@ -1,4 +1,5 @@
 .newRows {background-color: #cffda2;}
+.newRows:hover {background-color: #cffda2;}
 thead tr {background-color: #eee;}
 .controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}
 
@@ -86,6 +87,9 @@ used to vertically center elements, may need modification if you're not using de
   margin-bottom: 10px;
 }
 */
+/* Table */
+table th span {cursor: pointer;}
+table th span:hover {color: steelblue;}
 /* State Engine */
 .state1 {background-color: greenyellow;}
 .state2 {background-color: yellow;}

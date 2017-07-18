@@ -1,5 +1,4 @@
 <!--  body menu starts here -->
-<!--
 <div class="container">
   <div class="row">
     <div  class="row text-right">
@@ -14,7 +13,6 @@
     </div>
   </div>
   <!-- Company Header -->
-  <!--
   <div class="row collapse">
     <div class="col-md-12" id="bpm-logo">
       <div class="col-md-6 ">
@@ -31,7 +29,6 @@
       </div>
     </div>
   </div>
-  -->
   <!-- NAVIGATION -->
   <nav class="navbar navbar-nav">
     <div class="container">
