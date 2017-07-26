@@ -57,7 +57,7 @@
 
         <!-- Loading Screen or Errors -->
         <div class="alert alert-info" ng-show="isLoading">
-          <p>Loading Tables ...</p>
+          <p><i class="fa fa-cog fa-spin"></i> Loading Tables ...</p>
         </div>
 
         <!-- Content of Databases -->
@@ -92,7 +92,7 @@
                 <tbody ng-repeat="tbl in tables track by $index">
                   <!-- Table START -->
                   <tr>
-                    <td><i class="fa fa-plus-square"></i></td>
+                    <td><a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings"><i class="fa fa-plus-square"></i></a></td>
                     <td><p>{{tbl.table_name}}</p></td>
                     <td>
                       <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
@@ -109,13 +109,13 @@
                         <div class="col-xs-9">
                           <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/> 
                         </div>
-                      </div>                                     
+                      </div>
                     </td>
                   </tr>
                   <!-- Columns START -->
-                  <tr ng-repeat="col in tbl.columns" ng-show="false" style="font-size: .8em;">
+                  <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" style="font-size: .8em;">
                     <td>&nbsp;</td>
-                    <td>{{col.COLUMN_NAME}} ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}})</td>
+                    <td>{{col.COLUMN_NAME}} ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}}, {{col.EXTRA}})</td>
                     <td><input type="text" ng-model="col.column_alias"></td>
                     <td colspan="4">
                       <input type="checkbox" ng-model="col.is_in_menu"> Is In Menu&nbsp;&nbsp;&nbsp;
@@ -127,10 +127,20 @@
               </table>
             </div>
 
+            <!-- Load Config -->
+            <div class="row">&nbsp;</div>
+            <div class="row">
+              <label class="col-sm-2"><span class="label label-success">3</span> Load config</label>
+              <div>
+                <p>(NOT WORKING YET) Paste the content of the configuration file here to load previous made settings</p>
+                <textarea class="form-control" style="width: 100%;"></textarea>
+              </div>
+            </div>
+
             <!-- Create Button -->
             <div class="row">&nbsp;</div>
             <div class="row">
-              <label class="col-sm-2"><span class="label label-success">3</span> Create</label>
+              <label class="col-sm-2"><span class="label label-success">4</span> Create</label>
               <div>
                 <!-- Create Button -->
                 <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()"><i class="fa fa-play"></i> CREATE</button>
@@ -140,6 +150,7 @@
                 </a>
               </div>
             </div>
+
             <!-- File String -->
             <div class="row">
               <div class="col-md-12" id="code">

@@ -1,5 +1,11 @@
+<!-- Loading Screen or Errors -->
+<div class="container">
+  <div class="alert alert-info" ng-show="isLoading">
+    <p><i class="fa fa-cog fa-spin"></i> Loading ...</p>
+  </div>
+</div>
 <!-- body content starts here  -->
-<div style="margin: 0 1em;">
+<div class="container">
 
   <div class="row">
     <div class="col-xs-12 tab-content">
@@ -37,16 +43,19 @@
                     <!--<textarea class="form-control nRws" ng-model="table.newRows[0][$index]"></textarea>-->
                     <!-- Number -->
                     <input class="form-control nRws" type="number"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columnsX[$index].COLUMN_TYPE.indexOf('tiny') < 0"
+                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columnsX[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
+                      !table.columnsX[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Text -->
                     <input class="form-control nRws" type="text"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') < 0"
+                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') < 0 &&
+                      !table.columnsX[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Date -->
                     <!-- Boolean (tinyint or boolean) -->
                     <input class="form-control nRws" type="checkbox"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('tinyint') >= 0"
+                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
+                      !table.columnsX[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Datatype --> 
                     <div><small>{{ table.columnsX[$index].COLUMN_TYPE }}</small></div>
@@ -164,4 +173,4 @@
     </div>
   </div>
 </div> 
-<!-- body content ends here -->
+<!-- content ends here -->

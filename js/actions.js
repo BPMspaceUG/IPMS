@@ -40,6 +40,14 @@ $scope.connectToDB = function(){
   });
 }
 
+$scope.toggle_kids = function(tbl) {
+  if (!tbl.showKids) {
+    tbl.showKids = true
+    return
+  }
+  tbl.showKids = !tbl.showKids;
+}
+
 /*
 define tables for manipulation, also set success signal and icons
 */

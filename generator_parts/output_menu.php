@@ -1,5 +1,6 @@
 <!--  body menu starts here -->
-<div class="container">
+<div class="container">  
+  <!-- Company Header -->
   <div class="row">
     <div  class="row text-right">
       <div class="col-md-12">
@@ -12,7 +13,6 @@
       </div>
     </div>
   </div>
-  <!-- Company Header -->
   <div class="row collapse">
     <div class="col-md-12" id="bpm-logo">
       <div class="col-md-6 ">
@@ -30,13 +30,10 @@
     </div>
   </div>
   <!-- NAVIGATION -->
-  <nav class="navbar navbar-nav">
-    <div class="container">
+  <div class="container">
       <ul class="nav nav-pills">
-        <li ng-repeat="table in tables | orderBy : 'table_alias'">
-          <a title="Goto table {{table.table_alias}}" href="#{{table.table_name}}" class="tab" data-toggle="tab" ng-click="changeTab()">
-            <i class="{{table.table_icon}}"></i>&nbsp;{{table.table_alias}}</a>
-        </li>
+        <li ng-repeat="table in tables | orderBy : 'table_alias'"><a title="Goto table {{table.table_alias}}"
+            href="#{{table.table_name}}" class="tab" data-toggle="tab" ng-click="changeTab()"><i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span></a></li>
       </ul>
-    </div>
-  </nav>
+  </div>
+</div>

@@ -4,7 +4,7 @@
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];  
-
+  
 
   replaceClassStateEngine
 

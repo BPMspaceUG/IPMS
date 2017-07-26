@@ -1,19 +1,21 @@
   <!--  Footer -->
-  <div class="footer">
-    <div class="row text-center">
-      <p style="margin:0;">replaceDBName</p>
-      <small>using</small>  
-      <br/>            
-      <small>
-        <ul class="list-inline">
-          <li><a target="_blank" href="http://getbootstrap.com/">Bootstrap</a></li>
-          <li><a target="_blank" href="https://jquery.com/">jQuery</a></li>
-          <li><a target="_blank" href="https://angularjs.org/">AngularJS</a></li>
-          <li><a target="_blank" href="http://php.net/">PHP</a></li>
-          <li><a target="_blank" href="https://angular-ui.github.io/">AngularUI</a></li>
-          <li><a target="_blank" href="https://github.com/peredurabefrog/phpSecureLogin">phpSecureLogin</a></li>
-        </ul>
-      </small>
+  <div class="container">
+    <div class="footer">
+      <div class="row text-center">
+        <p style="margin:0;">replaceDBName</p>
+        <small>using</small>  
+        <br/>            
+        <small>
+          <ul class="list-inline">
+            <li><a target="_blank" href="http://getbootstrap.com/">Bootstrap</a></li>
+            <li><a target="_blank" href="https://jquery.com/">jQuery</a></li>
+            <li><a target="_blank" href="https://angularjs.org/">AngularJS</a></li>
+            <li><a target="_blank" href="http://php.net/">PHP</a></li>
+            <li><a target="_blank" href="https://angular-ui.github.io/">AngularUI</a></li>
+            <li><a target="_blank" href="https://github.com/peredurabefrog/phpSecureLogin">phpSecureLogin</a></li>
+          </ul>
+        </small>
+      </div>
     </div>
   </div>
   <!-- JS -->
