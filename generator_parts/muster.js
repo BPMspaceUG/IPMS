@@ -1,13 +1,9 @@
 
-var app = angular.module("genApp", ["xeditable"])
-
-app.run(function(editableOptions) {
-  editableOptions.theme = 'bs2'; // bootstrap3 theme. Can be also 'bs2', 'default'
-});
+var app = angular.module("genApp", [])
 
 app.filter('ceil', function() {
-    return function(input) {return Math.ceil(input)}
-});
+  return function(input) {return Math.ceil(input)}
+})
 
 app.controller('genCtrl', function ($scope, $http) {
   $scope.tables = []
@@ -19,7 +15,6 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.nextstates = []
   $scope.statenames = []
   $scope.isLoading = true
-
 
   $scope.sortCol = function(table, columnname, index) {
     console.log("Click-----------> SORT")
@@ -66,6 +61,8 @@ app.controller('genCtrl', function ($scope, $http) {
   }
 
   $scope.getPages = function(table, page_index, page_limit) {
+    if (!table.count) return
+    console.log("gettin pages...", table.count)
   	// TODO: Optimize
     max_number_of_buttons = 2
     number_of_pages = Math.ceil(table.count / $scope.PageLimit)
@@ -112,80 +109,36 @@ app.controller('genCtrl', function ($scope, $http) {
 
   $scope.initTables = function() {
   	console.log("init Tables...")
-
-  	tables = null;
+    // Request data from config file
   	$http({
-  		url: window.location.pathname, // use same page for reading out data
+  		url: window.location.pathname,
   		method: 'post',
   		data: {cmd: 'init', paramJS: ''}
   	}).success(function(resp){
-
-  		tables = resp;
-
-  		/*********************************************************************/
-
-  		tables.forEach(
-			function(tbl) {
-				// no need for previous deselectet tables
-				if(!tbl.is_in_menu){return}
-
-				// TODO: Only this line
-				//$scope.refresh(tbl)
-
-				// Request additional info from server
-				$http({
-					url: window.location.pathname, // use same page for reading out data
-					method: 'post',
-					data: {
-					cmd: 'read',
-					paramJS: {
-						tablename: tbl.table_name,
-						limitStart: $scope.PageIndex * $scope.PageLimit,
-						limitSize: $scope.PageLimit,
-						select: "*"
-					}
-				}
-				}).success(function(response){
-					//define additional Rows
-					var newRows = [[]]
-					// Create new rows by columns
-					Object.keys(tbl.columns).forEach(
-						function(){newRows[newRows.length-1].push('')}
-					);
-					//define colum headers
-					var keys = ['names']
-					if(response[0] && typeof response[0] == 'object'){
-						keys = Object.keys(response[0])
-					}
-					$scope.tables.push({
-						table_name: tbl.table_name,
-						table_alias: tbl.table_alias,
-						table_icon: tbl.table_icon,
-						columnsX: tbl.columns,
-        		is_read_only: tbl.is_read_only,
-        		SE_enabled: (tbl.se_active),
-						columnames: keys,
-						rows: response,
-						count: 0,
-						newRows : newRows
-					})
-          // Count entries
-          $scope.getStatemachine(tbl.table_name)
-          $scope.countEntries(tbl.table_name)
-					// open first table in navbar
-					$('.tab').first().click()
-          $scope.isLoading = false
-				});
-				// Save tablenames in scope
-				$scope.tablenames = $scope.tables.map(function(tbl){return tbl.table_name})
-			}
-		)
-
-  		/*********************************************************************/
-
+      // Init each table
+  		resp.forEach(function(t){
+        // If table is in menu
+        if (t.is_in_menu) {
+          // Add the first row for adding new data
+          var newRows = [[]]
+          // Create new rows by columns
+          Object.keys(t.columns).forEach(function(){newRows[newRows.length-1].push('')})
+          t.newRows = newRows
+          // Push into angular scope
+          $scope.tables.push(t)
+          console.log("Added Table:", t)
+        }
+      })
+      // Refresh each table
+      $scope.tables.forEach(function(t){
+        $scope.refresh(t)
+      })
+      // GUI
+      $scope.isLoading = false
+      //$(".tab").first().click() // select first tab
   	});	
   }
-  $scope.countEntries = function(table_name) {
+  $scope.countEntries = function(table_name, index) {
   	console.log("counting entries from table", table_name);
 
     $http({
@@ -197,23 +150,23 @@ app.controller('genCtrl', function ($scope, $http) {
           select: "COUNT(*) AS cnt",
           tablename: table_name,
           limitStart: 0,
-          limitSize: 1
+          limitSize: 1,
+          where: $scope.sqlwhere[index],
+          orderby: $scope.sqlorderby[index],
+          ascdesc: $scope.sqlascdesc[index]
         }
       }
-    }).then(function successCallback(response) {
+    }).success(function(response){
         console.log("response", response[0])
         // Find table in scope
         if (response.length > 0) {
           act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
           act_tbl.count = response[0].cnt
         }
-      }, function errorCallback(response) {
-        alert("Error")
-        console.log(response)
-      });
+    });
   }
 
-  $scope.subState = function(stateID) {
+  $scope.substituteSE = function(stateID) {
     // Converts stateID -> Statename
     res = stateID
     $scope.statenames.forEach(function(state){
@@ -225,7 +178,7 @@ app.controller('genCtrl', function ($scope, $http) {
   // Statemachine
   $scope.getStatemachine = function(table_name) {
     // TODO: Check if table has even a state engine!
-    console.log("get states from table", table_name);
+    console.log("get states from table", table_name)
   	$http({
   		url: window.location.pathname,
   		method: 'post',
@@ -263,15 +216,14 @@ app.controller('genCtrl', function ($scope, $http) {
   	}
   	}).success(function(response){
       	$scope.getStatemachine(scope_tbl.table_name)
-      	$scope.countEntries(scope_tbl.table_name)
+      	$scope.countEntries(scope_tbl.table_name, index)
   		// Add data to Frontend and get additional information
   		$scope.tables.find(function(tbl){return tbl.table_name == scope_tbl.table_name}).rows = response;
   	})
   }
 
 
-  $scope.initTables();
-
+  $scope.initTables()
 
 
   /*
@@ -284,9 +236,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
     // TODO: remove this
     // load in memory
-    if (param)
-    	$scope.loadRow(param.table, param.row)
-
+    if (param) $scope.loadRow(param.table, param.row)
 
     // TODO: probably not the best idea to send the primary columns from client
     // better assebmle them on the server side
@@ -315,24 +265,25 @@ app.controller('genCtrl', function ($scope, $http) {
     }
 
     // Assemble data for Create, Update, Delete Functions
-	if (cud == 'create' || cud == 'delete' || cud == 'update' || cud == 'getNextStates' || cud == 'getStates') {
-    	//console.log($scope.selectedTable)
-    	//console.log($scope.selectedTask)
-   		// Confirmation when deleting
-      if (cud == 'delete') {
-    		IsSure = confirm("Do you really want to delete this entry?");
-    		if (!IsSure) return
-      }
-		  // if Sure -> continue
-		  body.paramJS = {
-  			row: convertCols($scope.selectedTask),
-  			primary_col: getPrimaryColumns($scope.selectedTable.columnsX),
-  			table: $scope.selectedTable.table_name
-  		}
-	} else {
-		// Unknown Command
-    	console.log('unknown command: ', cud)
-    	return
+  	if (cud == 'create' || cud == 'delete' || cud == 'update'
+     || cud == 'getNextStates' || cud == 'getStates') {
+      	//console.log($scope.selectedTable)
+      	//console.log($scope.selectedTask)
+     		// Confirmation when deleting
+        if (cud == 'delete') {
+      		IsSure = confirm("Do you really want to delete this entry?");
+      		if (!IsSure) return
+        }
+  		  // if Sure -> continue
+  		  body.paramJS = {
+    			row: convertCols($scope.selectedTask),
+    			primary_col: getPrimaryColumns($scope.selectedTable.columns),
+    			table: $scope.selectedTable.table_name
+    		}
+  	} else {
+  		// Unknown Command
+      console.log('unknown command: ', cud)
+      return
     }
     post()
 
@@ -350,26 +301,24 @@ app.controller('genCtrl', function ($scope, $http) {
         }
       }).success(function(response){
         console.log("ResponseData: ", response);
-
         //-------------------- Entry Deleted
-        if (response != 0 && (cud == 'delete' || cud == 'update')) {          
+        if (response != 0 && (cud == 'delete' || cud == 'update')) {
           $('#myModal').modal('hide') // Hide stateModal
           $scope.refresh($scope.selectedTable) // Refresh current table
         }
         //-------------------- Entry Created
         else if (cud == 'create' && response != 0) {
-          console.log("-> New Entry was created");
-
+          console.log("-> New Entry was created")
         	// Find current table & Clear all entry fields
-        	act_tbl = $scope.selectedTable //$scope.tables.find(function(t){return t.table_name == param.table.table_name});
+        	act_tbl = $scope.selectedTable
           for (var x=0;x<act_tbl.newRows.length;x++) {
             for (var y=0;y<act_tbl.newRows[x].length;y++) {
-              act_tbl.newRows[x][y] = '';            
+              act_tbl.newRows[x][y] = ''
             }
           }
           // Set focus on first element after adding, usability issues
-          $(".nRws").first().focus();
-        	// Refresh current table 
+          $(".nRws").first().focus()
+        	// Refresh current table
         	$scope.refresh($scope.selectedTable)
         }
         //---------------------- StateEngine (List Transitions)

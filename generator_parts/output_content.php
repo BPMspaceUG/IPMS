@@ -31,7 +31,7 @@
             <table class="table table-bordered">
               <thead>
                 <tr>
-                  <th ng-repeat="col in table.columnsX">{{col.column_alias}}</th>
+                  <th ng-repeat="col in table.columns">{{col.column_alias}}</th>
                   <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                 </tr>
               </thead>
@@ -43,22 +43,22 @@
                     <!--<textarea class="form-control nRws" ng-model="table.newRows[0][$index]"></textarea>-->
                     <!-- Number -->
                     <input class="form-control nRws" type="number"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columnsX[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
-                      !table.columnsX[$index].is_read_only"
+                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columns[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
+                      !table.columns[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Text -->
                     <input class="form-control nRws" type="text"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('int') < 0 &&
-                      !table.columnsX[$index].is_read_only"
+                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') < 0 &&
+                      !table.columns[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Date -->
                     <!-- Boolean (tinyint or boolean) -->
                     <input class="form-control nRws" type="checkbox"
-                      ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
-                      !table.columnsX[$index].is_read_only"
+                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
+                      !table.columns[$index].is_read_only"
                       ng-model="table.newRows[0][$index]">
                     <!-- Datatype --> 
-                    <div><small>{{ table.columnsX[$index].COLUMN_TYPE }}</small></div>
+                    <div><small>{{table.columns[$index].COLUMN_TYPE}}</small></div>
                  </td>
                  <td>
                     <!-- Create Button -->
@@ -74,12 +74,12 @@
                   <!-- Data entries -->
                   <td animate-on-change="cell" ng-repeat="cell in row track by $index">
                     <!-- Substitue State Machine -->
-                    <div ng-if="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">
+                    <div ng-if="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
                       <button class="btn" ng-class="'state'+cell"
-                        ng-click="openSEPopup(table, row)">{{subState(cell)}}</button>
+                        ng-click="openSEPopup(table, row)">{{substituteSE(cell)}}</button>
                     </div>
                     <!-- Normal field -->
-                    <p ng-hide="((table.columnames[$index].indexOf('state') >= 0) && table.SE_enabled)">{{cell | limitTo: 20}}{{cell.length > 20 ? '...' : ''}}</p>
+                    <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">{{cell | limitTo: 20}}{{cell.length > 20 ? '...' : ''}}</p>
                   </td>
                   <!-- Edit options -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">
@@ -99,7 +99,7 @@
           <div class="panel-footer">
               <div class="row">
                 <div class="col col-xs-6">
-                  {{table.count}} Entries total - Showing page {{PageIndex + 1}} of {{table.count / PageLimit | ceil}}
+                  {{table.count}} Entries total - Page {{PageIndex + 1}} of {{table.count / PageLimit | ceil}}
                 </div>
                 <div class="col col-xs-6">
                   <ul class="pagination pull-right"><!-- visible-xs -->
@@ -134,16 +134,25 @@
       <div class="modal-body">
         <form class="form-horizontal">
           <div class="form-group" ng-repeat="(key, value) in selectedTask">
-            <label for="x" class="col-sm-3 control-label">{{key}}</label>
-            <div class="col-sm-9">
-              <input type="text" class="form-control" ng-model="selectedTask[key]">
-            </div>
+          	<div ng-if="!(key.indexOf('state') >= 0)">
+	            <label for="x" class="col-sm-3 control-label">{{key}}</label>
+	            <div class="col-sm-9">              
+	            	<input type="text" class="form-control" ng-model="selectedTask[key]">
+	            </div>
+	        </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" ng-click="saveTask()" data-dismiss="modal">OK</button>
-        <button type="button" class="btn btn-default pull-right" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary" ng-click="saveTask()">
+        	<i class="fa fa-floppy-o"></i> Save
+        </button>
+        <button class="btn btn-primary" ng-click="saveTask()" data-dismiss="modal">
+        	<i class="fa fa-floppy-o"></i> Save &amp; Close
+        </button>
+        <button type="button" class="btn btn-default pull-right" data-dismiss="modal">
+        	<i class="fa fa-times"></i> Close
+        </button>
       </div>
     </div>
   </div>
