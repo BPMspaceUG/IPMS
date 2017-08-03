@@ -54,14 +54,26 @@
   // Execute queries
   $con->query($query_rules);
   $con->query($query_states);
-
-  // Add primary keys  
+  // Add primary keys
   $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` ADD PRIMARY KEY (`state_rules_id`);";
   $query_states = "ALTER TABLE `".$db_name."`.`state` ADD PRIMARY KEY (`state_id`);";
   // Execute queries
   $con->query($query_rules);
   $con->query($query_states);
+  // Add auto_increment
+  $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` MODIFY `state_rules_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT;";
+  $query_states = "ALTER TABLE `".$db_name."`.`state` MODIFY `state_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT;";
+  // Execute queries
+  $con->query($query_rules);
+  $con->query($query_states);
 
+  // INSERT MINIMUM DATA
+  // TODO: Loop for each Table with StateEngine checked create a new StateMachine
+  // TODO: Check if a stateEngine already exists
+  $query_states = "INSERT INTO `".$db_name."`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
+    "(1, 'new', '', 'connections'),(2, 'active', '', ''),(3, 'inactive', '', '')";
+  $con->query($query_states);
+  
   //-------------------------------------------------------
 
   $all_table_names = array();

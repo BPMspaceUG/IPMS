@@ -30,10 +30,11 @@
     </div>
   </div>
   <!-- NAVIGATION -->
-  <div class="container">
-      <ul class="nav nav-pills">
-        <li ng-repeat="table in tables | orderBy : 'table_alias'"><a title="Goto table {{table.table_alias}}"
-            href="#{{table.table_name}}" class="tab" data-toggle="tab" ng-click="changeTab()"><i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span></a></li>
-      </ul>
-  </div>
+  <ul class="nav nav-tabs" role="tablist" id="myTabs">
+    <li ng-repeat="table in tables | orderBy : 'table_alias' track by $index" role="presentation" ng-class="{active: ($index == 0)}">
+      <a href="#{{table.table_name}}" aria-controls="{{table.table_name}}" data-toggle="tab" role="tab" ng-click="changeTab()">
+        <i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span>
+      </a>
+    </li>
+  </ul> 
 </div>

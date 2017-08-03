@@ -135,7 +135,7 @@ app.controller('genCtrl', function ($scope, $http) {
       })
       // GUI
       $scope.isLoading = false
-      //$(".tab").first().click() // select first tab
+      $scope.changeTab()
   	});	
   }
   $scope.countEntries = function(table_name, index) {
@@ -264,6 +264,7 @@ app.controller('genCtrl', function ($scope, $http) {
       return newobj;
     }
 
+
     // Assemble data for Create, Update, Delete Functions
   	if (cud == 'create' || cud == 'delete' || cud == 'update'
      || cud == 'getNextStates' || cud == 'getStates') {
@@ -291,7 +292,6 @@ app.controller('genCtrl', function ($scope, $http) {
 
     function post(){
       console.log("POST-Request", "Command:", cud, "Params:", body.paramJS)
-
       $http({
         url: window.location.pathname,
         method: 'POST',
@@ -333,17 +333,15 @@ app.controller('genCtrl', function ($scope, $http) {
     }
   }
 })
-
 // Update animation
-// TODO: only animate when cmd [update] was sent
 app.directive('animateOnChange', function($timeout) {
   return function(scope, element, attr) {
     scope.$watch(attr.animateOnChange, function(nv,ov) {
-      if (nv!=ov) {
+      // TODO: only animate when cmd [update] was sent
+      if (nv != ov) {
         element.addClass('changed');
-        // Could be enhanced to take duration as a parameter
-        $timeout(function() {element.removeClass('changed');}, 1000);
+        $timeout(function() {element.removeClass('changed');}, 1500);
       }
-    });
-  };
-});
+    })
+  }
+})

@@ -10,7 +10,7 @@
   <div class="row">
     <div class="col-xs-12 tab-content">
 
-      <div ng-repeat="table in tables track by $index" class="tab-pane" id="{{table.table_name}}">
+      <div ng-repeat="table in tables track by $index" class="tab-pane" ng-class="{active: ($index == 0)}" id="{{table.table_name}}">
         <div class="panel panel-default panel-table" disabled>
           <div class="panel-heading">
             <h3 class="panel-title">
@@ -36,11 +36,9 @@
                 </tr>
               </thead>
               <tbody>
-                <!-- ########## N E W ##### R O W ########## -->
-                <!-- Table AddRow -->
+                <!-- ============= NEW ROW ============= -->
                 <tr class="newRows" ng-hide="table.is_read_only">
                  <td ng-repeat="col in table.newRows[0] track by $index">
-                    <!--<textarea class="form-control nRws" ng-model="table.newRows[0][$index]"></textarea>-->
                     <!-- Number -->
                     <input class="form-control nRws" type="number"
                       ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columns[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
@@ -67,7 +65,7 @@
                       <i class="fa fa-plus"></i> Add</button>
                  </td>
                 </tr>
-                <!-- Table Content -->
+                <!-- ============= CONTENT ============= -->
                 <tr ng-repeat="row in table.rows track by $index" ng-model="table"
                     data-toggle='modal' data-target="modal-container-1"
                     id="row{{'' + $parent.$index + $index}}">
@@ -79,7 +77,9 @@
                         ng-click="openSEPopup(table, row)">{{substituteSE(cell)}}</button>
                     </div>
                     <!-- Normal field -->
-                    <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">{{cell | limitTo: 20}}{{cell.length > 20 ? '...' : ''}}</p>
+                    <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
+                    	{{cell | limitTo: 20}}{{cell.length > 20 ? '...' : ''}}
+                    </p>
                   </td>
                   <!-- Edit options -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">

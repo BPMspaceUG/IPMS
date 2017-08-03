@@ -2,11 +2,10 @@
   <div class="container">
     <div class="footer">
       <div class="row text-center">
-        <p style="margin:0;">replaceDBName</p>
-        <small>using</small>  
-        <br/>            
         <small>
           <ul class="list-inline">
+            <li><b>replaceDBName</b></li>
+            <li>using</li>
             <li><a target="_blank" href="http://getbootstrap.com/">Bootstrap</a></li>
             <li><a target="_blank" href="https://jquery.com/">jQuery</a></li>
             <li><a target="_blank" href="https://angularjs.org/">AngularJS</a></li>
