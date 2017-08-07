@@ -7,21 +7,21 @@ app.filter('ceil', function() {
 
 app.controller('genCtrl', function ($scope, $http) {
   $scope.tables = []
-  $scope.PageIndex = 0;
+  $scope.isLoading = true
   $scope.PageLimit = 10; // default = 10
+  // This variables should be for each Table
+  $scope.PageIndex = 0;
   $scope.sqlwhere = []  
   $scope.sqlorderby = []
   $scope.sqlascdesc = []
   $scope.nextstates = []
   $scope.statenames = []
-  $scope.isLoading = true
 
   $scope.sortCol = function(table, columnname, index) {
     console.log("Click-----------> SORT")
-
+    
     // TODO: Make sorting by table and not globally
     //$scope.sqlascdesc = []
-
     $scope.sqlorderby[index] = columnname
     $scope.sqlascdesc[index] = ($scope.sqlascdesc[index] == "desc") ? "asc" : "desc"
     $scope.refresh(table, index)

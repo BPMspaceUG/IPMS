@@ -29,16 +29,19 @@
           </div>
           <div class="panel-body table-responsive">
             <table class="table table-bordered">
+              <!-- ============= COLUMN HEADERS ============= -->
               <thead>
-                <tr>
-                  <th ng-repeat="col in table.columns">{{col.column_alias}}</th>
+                <tr>                 
+                  <th ng-repeat="col in table.columns" ng-if="col.is_in_menu">
+                    <span>{{col.column_alias}}</span>
+                  </th>
                   <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                 </tr>
               </thead>
               <tbody>
                 <!-- ============= NEW ROW ============= -->
                 <tr class="newRows" ng-hide="table.is_read_only">
-                 <td ng-repeat="col in table.newRows[0] track by $index">
+                  <td ng-repeat="col in table.newRows[0] track by $index" ng-if="table.columns[$index].is_in_menu">
                     <!-- Number -->
                     <input class="form-control nRws" type="number"
                       ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columns[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
@@ -70,7 +73,7 @@
                     data-toggle='modal' data-target="modal-container-1"
                     id="row{{'' + $parent.$index + $index}}">
                   <!-- Data entries -->
-                  <td animate-on-change="cell" ng-repeat="cell in row track by $index">
+                  <td animate-on-change="cell" ng-repeat="cell in row track by $index" ng-if="table.columns[$index].is_in_menu">
                     <!-- Substitue State Machine -->
                     <div ng-if="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
                       <button class="btn" ng-class="'state'+cell"
