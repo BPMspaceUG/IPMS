@@ -16,7 +16,7 @@
     ini_set('display_errors', 1);
     error_reporting(E_ALL);
   }
-  
+
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";
   $create_test_file = FALSE;
@@ -26,119 +26,93 @@
       mkdir('../../IPMS_test', 0755, true);
     }
   }
-  
+
   //open DB connection or die
   $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
-  if ($con->connect_errno > 0){
+  if ($con->connect_errno > 0)
     die('Unable to connect to database [' . $db->connect_error . ']');
-  } else {
-    // echo "no mysqli error";
-  }
 
   /* ------------------------------------- Statemachine ! */
-
-  // Create the tables if the do not exist
+  // Create Table RULES
   $query_rules = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state_rules` (
-  `state_rules_id` bigint(20) NOT NULL,
+  `state_rules_id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `state_id_FROM` bigint(20) NOT NULL,
   `state_id_TO` bigint(20) NOT NULL,
   `transition_script` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+  // Create Table STATES
   $query_states = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state` (
-  `state_id` bigint(20) NOT NULL,
+  `state_id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(45) DEFAULT NULL,
   `form_data` longtext,
   `tablename` varchar(128) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
   // Execute queries
   $con->query($query_rules);
   $con->query($query_states);
-  // Add primary keys
-  $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` ADD PRIMARY KEY (`state_rules_id`);";
-  $query_states = "ALTER TABLE `".$db_name."`.`state` ADD PRIMARY KEY (`state_id`);";
-  // Execute queries
-  $con->query($query_rules);
-  $con->query($query_states);
-  // Add auto_increment
-  $query_rules = "ALTER TABLE `".$db_name."`.`state_rules` MODIFY `state_rules_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT;";
-  $query_states = "ALTER TABLE `".$db_name."`.`state` MODIFY `state_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT;";
-  // Execute queries
-  $con->query($query_rules);
-  $con->query($query_states);
-
   // INSERT MINIMUM DATA
   // TODO: Loop for each Table with StateEngine checked create a new StateMachine
   // TODO: Check if a stateEngine already exists
   $query_states = "INSERT INTO `".$db_name."`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
     "(1, 'new', '', 'connections'),(2, 'active', '', ''),(3, 'inactive', '', '')";
-  $con->query($query_states);
-  
+  $con->query($query_states);  
   //-------------------------------------------------------
 
   $all_table_names = array();
-  // Die richtige Datenbank auswählen
-  for ($i=0;$i<count($data);$i++) {
+
+  // Select database
+  for ($i=0;$i<count($data);$i++)
     array_push($all_table_names, $data[$i]["table_name"]);
-  }
 
-  $log = '';
-
-  // Pseudocode alle files aus folder:  folder(this).getfilenames.foreach(file=> $file = fget(file))
   // TODO: Make function, only pass filenames
 
+  /*
+  // --- Liam
   $handle = fopen("./output_LiamHeader.php", "r");
   $output_LiamHeader = stream_get_contents($handle);
-
+  // --- Debug Header
   $handle = fopen("./output_DebugHeader.php", "r");
   $output_DebugHeader = stream_get_contents($handle);
+  */
 
-  // Class State Engine
+  // --- Class State Engine
   $handle = fopen("./output_StateEngine.php", "r");
   $class_StateEngine = stream_get_contents($handle);
     // Clear PHP Tags
     $class_StateEngine = str_replace('<?php', '', $class_StateEngine);
     $class_StateEngine = str_replace('?>', '', $class_StateEngine);
-
-  // RequestHandler
+  // --- RequestHandler
   $handle = fopen("./output_RequestHandler.php", "r");
   $output_RequestHandler = stream_get_contents($handle);
   $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
+  // --- StateEngine in RequestHandler
   $output_RequestHandler = str_replace('replaceClassStateEngine', $class_StateEngine, $output_RequestHandler);
-  $log .= '<h4>$output_RequestHandler</h4>'.$output_RequestHandler ;
-
-  // HTML - Header
+  // --- HTML - Header
   $handle = fopen("./output_header.php", "r");
   $output_header = stream_get_contents($handle);
   $output_header = str_replace('replaceDBName', $db_name, $output_header);
-  $log .= '<h4>$output_header</h4>'.$output_header;
-
-    // CSS in Header
+    // --- CSS in Header
     $handle = fopen("./muster.css", "r");
     $output_css = stream_get_contents($handle);
     $output_header = str_replace('replaceCSS', $output_css, $output_header);
-
+  // --- Menu
   $handle = fopen("./output_menu.php", "r");
   $output_menu = stream_get_contents($handle);
-  $log .= '<h4>$output_menu</h4>'.$output_menu;
-
+  // --- Content
   $handle = fopen("./output_content.php", "r");
   $output_content = stream_get_contents($handle);
-  $log .= '<h4>$output_content</h4>'.$output_content;
-
+  // --- Footer
   $handle = fopen("./output_footer.php", "r");
   $output_footer = stream_get_contents($handle);
-  $log .= '<h4>$output_footer</h4>'.$output_footer;
-
   // put Javascript in Footer
   $musterJS = '';
-  //$musterJS = 'tables = '.json_encode($data).';'; // save structure data in JS variable
   $handle = fopen("./muster.js", "r");
   $musterJS = $musterJS . stream_get_contents($handle);
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
-  fclose($handle);
 
+  // Finally close FileHandler
+  fclose($handle);
 
   $output_all = ''
     // .$output_LiamHeader
@@ -176,8 +150,8 @@
 
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
+    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
     //file_put_contents("../../IPMS_test/".$db_name."-config.txt", $output_config);
   }
 ?>
