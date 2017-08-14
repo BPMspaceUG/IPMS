@@ -1,43 +1,21 @@
 
 var app = angular.module("genApp", [])
-
-app.filter('ceil', function() {
-  return function(input) {return Math.ceil(input)}
-})
-
+//--- Controller
 app.controller('genCtrl', function ($scope, $http) {
   $scope.tables = []
   $scope.isLoading = true
-  $scope.PageLimit = 10; // default = 10
-  // This variables should be for each Table
-  $scope.PageIndex = 0;
-  $scope.sqlwhere = []  
-  $scope.sqlorderby = []
-  $scope.sqlascdesc = []
-  $scope.nextstates = []
-  $scope.statenames = []
+  $scope.PageLimit = 10 // default = 10  
 
   $scope.sortCol = function(table, columnname, index) {
     console.log("Click-----------> SORT")
     
     // TODO: Make sorting by table and not globally
     //$scope.sqlascdesc = []
+    /*
     $scope.sqlorderby[index] = columnname
     $scope.sqlascdesc[index] = ($scope.sqlascdesc[index] == "desc") ? "asc" : "desc"
     $scope.refresh(table, index)
-  }
-  $scope.changeRow = function(table, row, operation) {
-  	// TODO: this will be the function for everything when a row is changed
-  	//       so for the funtions [update, statemachine, delete]
-
-  	// 1.Step -> Copy row in memory
-  	//loadRow(table, row)
-
-  	// 2.Step -> change the row and request additional information from server
-
-  	// 3.Step -> execute if allowed
-
-  	// 4.Step -> give feedback to the userinterface
+    */
   }
   $scope.loadRow = function(tbl, row) {
     $scope.selectedTask = angular.copy(row)
@@ -47,56 +25,31 @@ app.controller('genCtrl', function ($scope, $http) {
     console.log("Ok button clicked...")
     $scope.send('update')
   }
-  $scope.gotoPage = function(new_page_index, table, index) {
+  $scope.gotoPage = function(new_page_index, table) {
   	// TODO: PageIndex for every table
-  	first_page = 0
-  	last_page = Math.ceil(table.count / $scope.PageLimit) - 1
+  	indx_first_page = 0
+  	indx_last_page = Math.ceil(table.count / $scope.PageLimit) - 1
   	new_page = new_page_index
-
-  	if (new_page < first_page) return
-  	if (new_page > last_page) return
-  	$scope.PageIndex = new_page
-  	console.log("Goto Page clicked!", table.table_name, "Count:", table.count)
-  	$scope.refresh(table, index)
+    // Check borders
+  	if (new_page < indx_first_page) new_page = indx_first_page
+  	if (new_page > indx_last_page) new_page = indx_last_page
+    // Set new index
+  	table.PageIndex = new_page
+  	console.log("-> Goto Page clicked!", table.table_name, "Count:", table.count)
+  	$scope.refresh(table.table_name)
   }
-
-  $scope.getPages = function(table, page_index, page_limit) {
-    if (!table.count) return
-    console.log("gettin pages...", table.count)
-  	// TODO: Optimize
-    max_number_of_buttons = 2
-    number_of_pages = Math.ceil(table.count / $scope.PageLimit)
-    if (number_of_pages <= 0) return
-    page_array = new Array(number_of_pages-1)
-    for (var i=0;i<number_of_pages;i++) page_array[i] = i
-
-    // create array container
-    if (number_of_pages < max_number_of_buttons)
-      btns = page_array
-    else {
-      // More Pages than max displayed buttons -> sub array
-      btns_next = page_array.slice(page_index, page_index+max_number_of_buttons+1)
-      if (page_index <= max_number_of_buttons)
-        btns_before = page_array.slice(0, page_index)
-      else
-        btns_before = page_array.slice(page_index-max_number_of_buttons, page_index)
-      // concat
-      btns = btns_before.concat(btns_next)
-    }
-    // output
-    return btns
+  $scope.range = function(n) {
+    n = Math.ceil(n)
+    if (n == NaN) return
+    return new Array(n)
   }
-  $scope.changeTab = function() {
-    // start at index 0 -> Feature: Maybe save and restore
-  	$scope.PageIndex = 0;
-  }  
   $scope.openSEPopup = function(tbl, row) {
     $scope.loadRow(tbl, row) // select current Row
     $scope.send("getNextStates")
   }
   $scope.gotoState = function(nextstate) {
     // TODO: Optimize ... check on serverside if possible etc.
-    res = null;
+    res = null
     for (property in $scope.selectedTask) {
       if (property.indexOf('state_id') >= 0)
         res = property
@@ -104,9 +57,14 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.selectedTask[res] = nextstate.id
     $scope.send('update')
   }
-  //$scope.clickFirstTab(tab, index) {if (index == 0)	tab.click()}
 
-
+  $scope.getTableByName = function(tablename) {
+    if (typeof tablename != "string") return
+    return $scope.tables.find(function(t){ return t.table_name == tablename; })
+  }
+  $scope.getNrOfPages = function(table) {
+    return Math.ceil(table.count / $scope.PageLimit)
+  }
   $scope.initTables = function() {
   	console.log("init Tables...")
     // Request data from config file
@@ -119,6 +77,13 @@ app.controller('genCtrl', function ($scope, $http) {
   		resp.forEach(function(t){
         // If table is in menu
         if (t.is_in_menu) {
+          // Add where, sqlwhere, order
+          t.sqlwhere = ''
+          t.sqlorderby = ''
+          t.sqlascdesc = ''
+          t.nextstates = []
+          t.statenames = []
+          t.PageIndex = 0
           // Add the first row for adding new data
           var newRows = [[]]
           // Create new rows by columns
@@ -130,17 +95,14 @@ app.controller('genCtrl', function ($scope, $http) {
         }
       })
       // Refresh each table
-      $scope.tables.forEach(function(t){
-        $scope.refresh(t)
-      })
+      $scope.tables.forEach(function(t){$scope.refresh(t.table_name);})
       // GUI
       $scope.isLoading = false
-      $scope.changeTab()
   	});	
   }
-  $scope.countEntries = function(table_name, index) {
-  	console.log("counting entries from table", table_name);
-
+  $scope.countEntries = function(table_name) {  	
+    //console.log("Started counting from", table_name)
+    t = $scope.getTableByName(table_name)
     $http({
       method: 'POST',
       url: window.location.pathname,
@@ -148,28 +110,23 @@ app.controller('genCtrl', function ($scope, $http) {
         cmd: 'read',
         paramJS: {
           select: "COUNT(*) AS cnt",
-          tablename: table_name,
-          limitStart: 0,
-          limitSize: 1,
-          where: $scope.sqlwhere[index],
-          orderby: $scope.sqlorderby[index],
-          ascdesc: $scope.sqlascdesc[index]
+          tablename: t.table_name,
+          limitStart: 0, limitSize: 1,
+          where: t.sqlwhere,
+          orderby: t.sqlorderby,
+          ascdesc: t.sqlascdesc
         }
       }
     }).success(function(response){
-        console.log("response", response[0])
-        // Find table in scope
-        if (response.length > 0) {
-          act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
-          act_tbl.count = response[0].cnt
-        }
+        console.log("Counted entries from [", table_name, "] ...", response[0].cnt)
+        $scope.getTableByName(table_name).count = response[0].cnt
     });
   }
-
-  $scope.substituteSE = function(stateID) {
+  $scope.substituteSE = function(tablename, stateID) {
+    t = $scope.getTableByName(tablename)
     // Converts stateID -> Statename
     res = stateID
-    $scope.statenames.forEach(function(state){
+    t.statenames.forEach(function(state){
       if (parseInt(state.id) == parseInt(stateID))
         res = state.name
     })
@@ -177,8 +134,11 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   // Statemachine
   $scope.getStatemachine = function(table_name) {
-    // TODO: Check if table has even a state engine!
-    console.log("get states from table", table_name)
+    t = $scope.getTableByName(table_name)
+    // Check if table has a state engine
+    if (!t.se_active) return
+    console.log("get states from table [", table_name, "]")
+
   	$http({
   		url: window.location.pathname,
   		method: 'post',
@@ -187,17 +147,21 @@ app.controller('genCtrl', function ($scope, $http) {
   			paramJS: {tablename: table_name}
   	}
   	}).success(function(response){
-  		// Find table in scope
-  		act_tbl = $scope.tables.find(function(t){return t.table_name == table_name})
-  		//console.log("States:", response)
-  		$scope.statenames = response // save data in scope
-  		//act_tbl.count = response[0].cnt;
+      // Save statemachine at the table
+      $scope.getTableByName(table_name).statenames = response
   	})
   }
   // Refresh Function
-  $scope.refresh = function(scope_tbl, index) {
-    // TODO: Remove index!
-  	console.log("Refreshing...")
+  $scope.refresh = function(table_name) {
+
+  	console.log("Started refreshing", table_name)
+    t = $scope.getTableByName(table_name)
+    pI = t.PageIndex
+    // When there is text in the searchbar
+    searchterm = t.sqlwhere
+    if (searchterm && searchterm.length > 0)
+        t.PageIndex = 0; // jump to page 1 when searching    
+
   	// Request from server
   	$http({
   		url: window.location.pathname, // use same page for reading out data
@@ -205,26 +169,29 @@ app.controller('genCtrl', function ($scope, $http) {
   		data: {
   		cmd: 'read',
   		paramJS: {
-  			tablename: scope_tbl.table_name,
-  			limitStart: $scope.PageIndex * $scope.PageLimit,
+  			tablename: t.table_name,
+  			limitStart: pI * $scope.PageLimit,
   			limitSize: $scope.PageLimit,
   			select: "*",
-        where: $scope.sqlwhere[index],
-        orderby: $scope.sqlorderby[index],
-        ascdesc: $scope.sqlascdesc[index]
+        where: t.sqlwhere,
+        orderby: t.sqlorderby,
+        ascdesc: t.sqlascdesc
   		}
   	}
   	}).success(function(response){
-      	$scope.getStatemachine(scope_tbl.table_name)
-      	$scope.countEntries(scope_tbl.table_name, index)
-  		// Add data to Frontend and get additional information
-  		$scope.tables.find(function(tbl){return tbl.table_name == scope_tbl.table_name}).rows = response;
+      //console.log("Refreshed [", table_name, "] ...", response)
+      $scope.getTableByName(table_name).rows = response // Save cells in tablevar
+      if (response.length >= $scope.PageLimit)
+        $scope.countEntries(table_name) // countrequest if nr of entries >= PageLimit
+      else {
+        if (pI == 0) $scope.getTableByName(table_name).count = response.length // Save nr of entries in table
+      }
+      // Get the states from table
+      $scope.getStatemachine(table_name)
   	})
   }
 
-
   $scope.initTables()
-
 
   /*
   Allround send for changes to DB
@@ -264,7 +231,6 @@ app.controller('genCtrl', function ($scope, $http) {
       return newobj;
     }
 
-
     // Assemble data for Create, Update, Delete Functions
   	if (cud == 'create' || cud == 'delete' || cud == 'update'
      || cud == 'getNextStates' || cud == 'getStates') {
@@ -272,7 +238,7 @@ app.controller('genCtrl', function ($scope, $http) {
       	//console.log($scope.selectedTask)
      		// Confirmation when deleting
         if (cud == 'delete') {
-      		IsSure = confirm("Do you really want to delete this entry?");
+      		IsSure = confirm("Do you really want to delete this entry?")
       		if (!IsSure) return
         }
   		  // if Sure -> continue
@@ -291,7 +257,10 @@ app.controller('genCtrl', function ($scope, $http) {
     //========================================
 
     function post(){
+
       console.log("POST-Request", "Command:", cud, "Params:", body.paramJS)
+      t = $scope.selectedTable
+
       $http({
         url: window.location.pathname,
         method: 'POST',
@@ -304,22 +273,21 @@ app.controller('genCtrl', function ($scope, $http) {
         //-------------------- Entry Deleted
         if (response != 0 && (cud == 'delete' || cud == 'update')) {
           $('#myModal').modal('hide') // Hide stateModal
-          $scope.refresh($scope.selectedTable) // Refresh current table
+          $scope.refresh(t.table_name) // Refresh current table
         }
         //-------------------- Entry Created
         else if (cud == 'create' && response != 0) {
           console.log("-> New Entry was created")
-        	// Find current table & Clear all entry fields
-        	act_tbl = $scope.selectedTable
-          for (var x=0;x<act_tbl.newRows.length;x++) {
-            for (var y=0;y<act_tbl.newRows[x].length;y++) {
-              act_tbl.newRows[x][y] = ''
+        	// Find current table & Clear all entry fields        	
+          for (var x=0;x<t.newRows.length;x++) {
+            for (var y=0;y<t.newRows[x].length;y++) {
+              t.newRows[x][y] = ''
             }
           }
           // Set focus on first element after adding, usability issues
           $(".nRws").first().focus()
         	// Refresh current table
-        	$scope.refresh($scope.selectedTable)
+        	$scope.refresh(act_tbl.table_name)
         }
         //---------------------- StateEngine (List Transitions)
         else if (cud == 'getNextStates') {
@@ -333,7 +301,7 @@ app.controller('genCtrl', function ($scope, $http) {
     }
   }
 })
-// Update animation
+//--- Directive
 app.directive('animateOnChange', function($timeout) {
   return function(scope, element, attr) {
     scope.$watch(attr.animateOnChange, function(nv,ov) {

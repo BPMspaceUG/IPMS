@@ -54,7 +54,7 @@
       foreach ($cols as $col) {
         // update only when no primary column
         if (!in_array($col, $primarycols)) {
-          $update = $update . $col . "='" . $rows[$col] . "'";
+          $update = $update . $col."='".$this->db->real_escape_string($rows[$col])."'";
           $update = $update . ", ";
         }
       }
@@ -71,6 +71,8 @@
       // Inputs
       $tablename = $param["table"];
       $rowdata = $param["row"];
+      for ($i=0;$i<count($rowdata);$i++)
+        $rowdata[$i] = $this->db->real_escape_string($rowdata[$i]);
       // Operation
       $query = "INSERT INTO ".$tablename." VALUES ('".implode("','", $rowdata)."');";
       $res = $this->db->query($query);
@@ -80,7 +82,7 @@
     //================================== READ
 
     public function read($param) {
-
+      // Parameters
       $where = isset($param["where"]) ? $param["where"] : "";
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
       $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";

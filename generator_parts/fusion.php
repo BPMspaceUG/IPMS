@@ -1,5 +1,4 @@
 <?php
-  //var_dump($_REQUEST);
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
     $_REQUEST = json_decode(file_get_contents('php://input'), true);
   }
@@ -10,12 +9,14 @@
   $db_name = $_REQUEST['db_name'];
   $data = $_REQUEST["data"]; // TODO: Nur relevante Daten übergeben!
 
+  /*
   $DEBUG = FALSE;
   if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on')) {
     $DEBUG = TRUE;
     ini_set('display_errors', 1);
     error_reporting(E_ALL);
   }
+  */
 
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";
@@ -53,9 +54,15 @@
   // INSERT MINIMUM DATA
   // TODO: Loop for each Table with StateEngine checked create a new StateMachine
   // TODO: Check if a stateEngine already exists
-  $query_states = "INSERT INTO `".$db_name."`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
-    "(1, 'new', '', 'connections'),(2, 'active', '', ''),(3, 'inactive', '', '')";
-  $con->query($query_states);  
+    // [
+        // -> States
+        $query_states = "INSERT INTO `$db_name`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
+        "(1, 'new', '', 'connections'),(2, 'active', '', ''),(3, 'inactive', '', '')";
+        $con->query($query_states);
+        // -> Rules
+        $query_rules = "INSERT INTO `$db_name`.`state_rules` (`state_rules_id`, `state_id_FROM`, `state_id_TO`, `transition_script`) VALUES (1, 1, 1, ''), (2, 2, 2, ''), (3, 3, 3, ''), (4, 1, 2, ''), (5, 2, 3, '')";
+        $con->query($query_rules);
+  // ]
   //-------------------------------------------------------
 
   $all_table_names = array();

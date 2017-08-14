@@ -119,7 +119,8 @@
                     <td><input type="text" ng-model="col.column_alias"></td>
                     <td colspan="4">
                       <input type="checkbox" ng-model="col.is_in_menu"> Is In Menu&nbsp;&nbsp;&nbsp;
-                      <input type="checkbox" ng-model="col.is_read_only"> Read Only
+                      <input type="checkbox" ng-model="col.is_read_only"> Read Only&nbsp;&nbsp;&nbsp;
+                      <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
                     </td>
                   </tr>
                   <!-- Columns END -->

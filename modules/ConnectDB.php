@@ -92,7 +92,8 @@
           $additional_info = array(
             "column_alias" => ucfirst($row2["COLUMN_NAME"]),
             "is_in_menu" => true,
-            "read_only" => false
+            "read_only" => false,
+            "is_ckeditor" => false
           );
           // Merge arrays
           $columns[] = array_merge($column_info, $additional_info);

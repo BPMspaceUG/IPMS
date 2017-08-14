@@ -11,24 +11,28 @@
     <div class="col-xs-12 tab-content">
 
       <div ng-repeat="table in tables track by $index" class="tab-pane" ng-class="{active: ($index == 0)}" id="{{table.table_name}}">
-        <div class="panel panel-default panel-table" disabled>
+        <div class="panel panel-primary panel-table" disabled>
           <div class="panel-heading">
             <h3 class="panel-title">
               <div class="pull-left" style="margin-top: .4em; font-weight: bold;">{{table.table_alias}}</div>
               <!-- Where filter -->
               <form class="form-inline pull-right">
                 <div class="form-group">
+                	<!-- ADD -->
+                  <button class="btn btn-success" title="Add new entry" ng-hide="table.is_read_only"
+                  	ng-click="refresh(table.table_name);"><i class="fa fa-plus"></i></button>
                   <input type="text" class="form-control" style="width:200px;" placeholder="Search..."
-                    ng-model="sqlwhere[$index]" />
+                    ng-model="table.sqlwhere" />
+                  <!-- REFRESH -->
                   <button class="btn btn-default" title="Refresh table"
-                    ng-click="refresh(table, $index);"><i class="fa fa-refresh"></i></button>
+                  	ng-click="refresh(table.table_name);"><i class="fa fa-refresh"></i></button>                  
                 </div>
               </form>
               <div class="clearfix"></div>
             </h3>
           </div>
           <div class="panel-body table-responsive">
-            <table class="table table-bordered">
+            <table class="table table-bordered table-striped table-hover table-condensed">
               <!-- ============= COLUMN HEADERS ============= -->
               <thead>
                 <tr>                 
@@ -77,7 +81,7 @@
                     <!-- Substitue State Machine -->
                     <div ng-if="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
                       <button class="btn" ng-class="'state'+cell"
-                        ng-click="openSEPopup(table, row)">{{substituteSE(cell)}}</button>
+                        ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, cell)}}</button>
                     </div>
                     <!-- Normal field -->
                     <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
@@ -102,19 +106,24 @@
           <div class="panel-footer">
               <div class="row">
                 <div class="col col-xs-6">
-                  {{table.count}} Entries total - Page {{PageIndex + 1}} of {{table.count / PageLimit | ceil}}
+                  <span class="text-primary">
+                    {{table.count}} Entries total - Page {{table.PageIndex + 1}} of {{ getNrOfPages(table) }}
+                  </span>
                 </div>
                 <div class="col col-xs-6">
                   <ul class="pagination pull-right"><!-- visible-xs -->
-                    <li ng-class="{disabled: PageIndex <= 0}">
-                      <a href="" ng-click="gotoPage(0, table, $index)">«</a>
+                    <!-- JUMP to first page -->
+                    <li ng-class="{disabled: table.PageIndex <= 0}">
+                      <a href="" ng-click="gotoPage(0, table)">«</a>
+                    </li>          
+                    <!-- Page Buttons -->
+                    <li ng-repeat="x in range(getNrOfPages(table)) track by $index"
+                      ng-class="{disabled: $index == table.PageIndex}">
+                      <a href="" ng-click="gotoPage($index, table)">{{$index+1}}</a>
                     </li>
-                    <li ng-repeat="elem in getPages(table, PageIndex, PageLimit) track by $index"
-                      ng-class="{disabled: elem == PageIndex}">
-                      <a href="" ng-click="gotoPage(elem, table, $index)">{{elem+1}}</a>
-                    </li>
-                     <li ng-class="{disabled: (PageIndex + 1) >= (table.count / PageLimit)}">
-                      <a href="" ng-click="gotoPage((table.count / PageLimit)-1, table, $index)">»</a>
+                    <!-- JUMP to last page -->
+                     <li ng-class="{disabled: (table.PageIndex + 1) >= (table.count / PageLimit)}">
+                      <a href="" ng-click="gotoPage(999999, table)">»</a>
                     </li>
                   </ul>
                 </div>
@@ -132,7 +141,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">Edit</h4>
+        <h4 class="modal-title">Edit Entry</h4>
       </div>
       <div class="modal-body">
         <form class="form-horizontal">
