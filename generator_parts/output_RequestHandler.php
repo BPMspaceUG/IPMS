@@ -71,10 +71,13 @@
       // Inputs
       $tablename = $param["table"];
       $rowdata = $param["row"];
-      for ($i=0;$i<count($rowdata);$i++)
-        $rowdata[$i] = $this->db->real_escape_string($rowdata[$i]);
+      // Split array
+      foreach ($rowdata as $key => $value) {
+        $keys[] = $this->db->real_escape_string($key);
+        $vals[] = $this->db->real_escape_string($value);
+      }
       // Operation
-      $query = "INSERT INTO ".$tablename." VALUES ('".implode("','", $rowdata)."');";
+      $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
       $res = $this->db->query($query);
       // Output
       return $res ? "1" : "0";
@@ -151,10 +154,17 @@
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
       // Find right column (Maybe optimize with GUID)
-      $keys = array_keys($param["row"]);
-      $kid = array_search('state_id', $keys); // <= Column must contain state_id
-      $real_key = $keys[$kid];
-      $stateID = $param["row"][$real_key];
+      $row = $param["row"];
+      $stateID = false;
+      foreach ($row as $key => $value) {
+        // if column contains *state_id*
+        if (strpos($key, 'state') !== false) {
+          $stateID = $value;
+          break;
+        }
+      }
+      // Return invalid
+      if ($stateID === false) return json_encode(array());
       // execute query
       $res = $this->SE->getNextStates($stateID);
       return json_encode($res);

@@ -83,7 +83,6 @@
       $columns = array();
       $primary_col = "";
 
-
       if ($res2) {
         while ($row2 = $res2->fetch_assoc()) {
           // Column information - TODO: Filter!!!
@@ -95,8 +94,19 @@
             "read_only" => false,
             "is_ckeditor" => false
           );
+
+          // Filter columns array
+          $allowed  = ['COLUMN_NAME', 'DATA_TYPE', 'COLUMN_TYPE', 'COLUMN_KEY', 'EXTRA'];
+          $filtered = array_filter(
+            $column_info,
+            function ($key) use ($allowed) {
+              return in_array($key, $allowed);
+            },
+            ARRAY_FILTER_USE_KEY
+          );
+
           // Merge arrays
-          $columns[] = array_merge($column_info, $additional_info);
+          $columns[] = array_merge($filtered, $additional_info);
         }
       }
 

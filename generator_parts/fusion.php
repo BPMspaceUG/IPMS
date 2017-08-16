@@ -67,7 +67,7 @@
 
   $all_table_names = array();
 
-  // Select database
+  // Make array with all table names
   for ($i=0;$i<count($data);$i++)
     array_push($all_table_names, $data[$i]["table_name"]);
 
@@ -134,6 +134,10 @@
 
   echo $output_all;
 
+
+  // ---> ENCODE Data as JSON
+  $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
   // ----------------------- Config File generator
   $output_config = 
 '<?php
@@ -150,7 +154,7 @@
   define("DB_NAME", "'.$db_name.'");
 
   // Structure Configuration Data
-  $config_tables_json = \''.json_encode($data).'\';
+  $config_tables_json = \''.$json.'\';
 ?>';
 
   // ----> Write to file

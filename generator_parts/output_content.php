@@ -18,13 +18,14 @@
               <!-- Where filter -->
               <form class="form-inline pull-right">
                 <div class="form-group">
-                	<!-- ADD -->
-                  <button class="btn btn-success" title="Add new entry" ng-hide="table.is_read_only"
-                  	ng-click="refresh(table.table_name);"><i class="fa fa-plus"></i></button>
+                  <!-- ADD -->
+                  <button class="btn btn-success" title="Add new entry" ng-hide="table.is_read_only" type="button"
+                  	ng-click="addEntry(table.table_name);"><i class="fa fa-plus"></i></button>
+                  <!-- SEARCH -->
                   <input type="text" class="form-control" style="width:200px;" placeholder="Search..."
-                    ng-model="table.sqlwhere" />
+                    ng-model="table.sqlwhere"/>
                   <!-- REFRESH -->
-                  <button class="btn btn-default" title="Refresh table"
+                  <button class="btn btn-default" title="Refresh table" 
                   	ng-click="refresh(table.table_name);"><i class="fa fa-refresh"></i></button>                  
                 </div>
               </form>
@@ -43,35 +44,6 @@
                 </tr>
               </thead>
               <tbody>
-                <!-- ============= NEW ROW ============= -->
-                <tr class="newRows" ng-hide="table.is_read_only">
-                  <td ng-repeat="col in table.newRows[0] track by $index" ng-if="table.columns[$index].is_in_menu">
-                    <!-- Number -->
-                    <input class="form-control nRws" type="number"
-                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') >= 0 && table.columns[$index].COLUMN_TYPE.indexOf('tiny') < 0 &&
-                      !table.columns[$index].is_read_only"
-                      ng-model="table.newRows[0][$index]">
-                    <!-- Text -->
-                    <input class="form-control nRws" type="text"
-                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('int') < 0 &&
-                      !table.columns[$index].is_read_only"
-                      ng-model="table.newRows[0][$index]">
-                    <!-- Date -->
-                    <!-- Boolean (tinyint or boolean) -->
-                    <input class="form-control nRws" type="checkbox"
-                      ng-show="table.columns[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
-                      !table.columns[$index].is_read_only"
-                      ng-model="table.newRows[0][$index]">
-                    <!-- Datatype --> 
-                    <div><small>{{table.columns[$index].COLUMN_TYPE}}</small></div>
-                 </td>
-                 <td>
-                    <!-- Create Button -->
-                    <button class="btn btn-success" title="Create new Row"
-                      ng-click="send('create', {row:table.newRows[0], table:table})">
-                      <i class="fa fa-plus"></i> Add</button>
-                 </td>
-                </tr>
                 <!-- ============= CONTENT ============= -->
                 <tr ng-repeat="row in table.rows track by $index" ng-model="table"
                     data-toggle='modal' data-target="modal-container-1"
@@ -91,7 +63,8 @@
                   <!-- Edit options -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">
                     <!-- Update Button -->
-                    <a class="btn btn-default" data-toggle="modal" data-target="#modal" ng-click="loadRow(table, row)">
+                    <a class="btn btn-default" data-toggle="modal" data-target="#modal"
+                    	ng-click="loadRow(table, row)" title="Edit this row">
                       <i class="fa fa-pencil"></i>
                     </a>
                     <!-- Delete Button -->
@@ -117,9 +90,9 @@
                       <a href="" ng-click="gotoPage(0, table)">«</a>
                     </li>          
                     <!-- Page Buttons -->
-                    <li ng-repeat="x in range(getNrOfPages(table)) track by $index"
-                      ng-class="{disabled: $index == table.PageIndex}">
-                      <a href="" ng-click="gotoPage($index, table)">{{$index+1}}</a>
+                    <li ng-repeat="btn in getPageination(table.table_name)"
+                      ng-class="{disabled: btn + table.PageIndex == table.PageIndex}">
+                      <a href="" ng-click="gotoPage(btn + table.PageIndex, table)">{{btn + table.PageIndex + 1}}</a>
                     </li>
                     <!-- JUMP to last page -->
                      <li ng-class="{disabled: (table.PageIndex + 1) >= (table.count / PageLimit)}">
@@ -146,25 +119,25 @@
       <div class="modal-body">
         <form class="form-horizontal">
           <div class="form-group" ng-repeat="(key, value) in selectedTask">
-          	<div ng-if="!(key.indexOf('state') >= 0)">
+          	<!--<div ng-if="!(key.indexOf('state') >= 0)">-->
 	            <label for="x" class="col-sm-3 control-label">{{key}}</label>
 	            <div class="col-sm-9">              
 	            	<input type="text" class="form-control" ng-model="selectedTask[key]">
 	            </div>
-	        </div>
+	        <!--</div>-->
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" ng-click="saveTask()">
-        	<i class="fa fa-floppy-o"></i> Save
-        </button>
-        <button class="btn btn-primary" ng-click="saveTask()" data-dismiss="modal">
-        	<i class="fa fa-floppy-o"></i> Save &amp; Close
-        </button>
-        <button type="button" class="btn btn-default pull-right" data-dismiss="modal">
-        	<i class="fa fa-times"></i> Close
-        </button>
+      	<span ng-if="!createNewEntry">
+        	<button class="btn btn-primary" ng-click="saveEntry()"><i class="fa fa-floppy-o"></i> Save</button>
+        	<button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal"><i class="fa fa-floppy-o"></i> Save &amp; Close</button>
+        </span>
+        <span ng-if="createNewEntry">
+        	<button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedTask, table: selectedTable})"><i class="fa fa-plus"></i> Create</button>
+        </span>
+        &nbsp;
+        <button class="btn btn-default pull-right" type="button" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
       </div>
     </div>
   </div>
@@ -184,7 +157,7 @@
       <div class="modal-footer">
         <span class="pull-left">
           <span>Goto &rarr; </span>
-          <span ng-repeat="state in nextstates">
+          <span ng-repeat="state in selectedTable.nextstates">
             <!--<pre>{{state}}</pre>-->
             <button type="button" class="btn" ng-class="'state'+state.id" ng-click="gotoState(state)" >{{state.name}}</button>
           </span>

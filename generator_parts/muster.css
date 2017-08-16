@@ -90,6 +90,7 @@ used to vertically center elements, may need modification if you're not using de
 /* Table */
 table th span {cursor: pointer;}
 table th span:hover {color: steelblue;}
+table tr td {white-space: nowrap;}
 /* State Engine */
 .state1 {background-color: greenyellow;}
 .state2 {background-color: yellow;}
