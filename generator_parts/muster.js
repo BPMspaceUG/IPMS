@@ -31,6 +31,15 @@ app.controller('genCtrl', function ($scope, $http) {
     // show modal
     $('#modal').modal('show')
   }
+  $scope.getColAlias = function(table, col_name) {
+  	res = ''
+  	table.columns.forEach(function(col){
+  		// Compare names
+  		if (col.COLUMN_NAME == col_name)
+  			res = col.column_alias
+  	})
+  	if (res == '') return col_name; else return res;
+  }
   $scope.sortCol = function(table, columnname, index) {
     console.log("Click-----------> SORT")
     
@@ -117,6 +126,7 @@ app.controller('genCtrl', function ($scope, $http) {
         if (t.is_in_menu) {
           // Add where, sqlwhere, order
           t.sqlwhere = ''
+          t.sqlwhere_old = ''
           t.sqlorderby = ''
           t.sqlascdesc = ''
           t.nextstates = []
@@ -152,7 +162,10 @@ app.controller('genCtrl', function ($scope, $http) {
     }).success(function(response){
       // Counting done
       console.log("Counted entries from [", table_name, "] ...", response[0].cnt)
-      $scope.getTableByName(table_name).count = response[0].cnt
+      t = $scope.getTableByName(table_name)
+      t.count = response[0].cnt
+      // Goto last page if searching
+      //if (t.sqlwhere != "") $scope.PageIndex = $scope.getNrOfPages(t) - 1
     });
   }
   $scope.substituteSE = function(tablename, stateID) {
@@ -188,11 +201,9 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.refresh = function(table_name) {
   	console.log("Started refreshing", table_name)
     t = $scope.getTableByName(table_name)
-    pI = t.PageIndex
-    // When there is text in the searchbar
-    searchterm = t.sqlwhere
-    if (searchterm && searchterm.length > 0)
-        t.PageIndex = 0; // jump to page 1 when searching
+    // Search-Event(set LIMIT Param to 0)
+    if (t.sqlwhere != t.sqlwhere_old)
+    	t.PageIndex = 0
   	// Request from server
   	$http({
   		url: window.location.pathname, // use same page for reading out data
@@ -201,21 +212,26 @@ app.controller('genCtrl', function ($scope, $http) {
   		cmd: 'read',
   		paramJS: {
   			tablename: t.table_name,
-  			limitStart: pI * $scope.PageLimit,
+  			limitStart: t.PageIndex * $scope.PageLimit,
   			limitSize: $scope.PageLimit,
   			select: "*",
-        where: t.sqlwhere,
-        orderby: t.sqlorderby,
-        ascdesc: t.sqlascdesc
+        	where: t.sqlwhere,
+        	orderby: t.sqlorderby,
+       		ascdesc: t.sqlascdesc
   		}
   	}
   	}).success(function(response){
-      //console.log("Refreshed [", table_name, "] ...", response)
-      $scope.getTableByName(table_name).rows = response // Save cells in tablevar
+      console.log("Refreshed [", table_name, "] ...", response)
+      t = $scope.getTableByName(table_name)      
+      t.rows = response // Save cells in tablevar
+      t.sqlwhere_old = t.sqlwhere
       if (response.length >= $scope.PageLimit)
-        $scope.countEntries(table_name) // countrequest if nr of entries >= PageLimit
+      	// countrequest if nr of entries >= PageLimit
+        $scope.countEntries(table_name)
       else {
-        if (pI == 0) $scope.getTableByName(table_name).count = response.length // Save nr of entries in table
+      	// Save nr of entries in table
+        if (t.PageIndex == 0)
+        	t.count = response.length
       }
       // Get the states from table
       $scope.getStatemachine(table_name)
