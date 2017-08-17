@@ -12,6 +12,10 @@ app.controller('genCtrl', function ($scope, $http) {
     // Task is already loaded in memory
     $scope.send('update')
   }
+  $scope.editEntry = function(table, row) {
+  	$scope.createNewEntry = false
+  	$scope.loadRow(table, row)
+  }
   $scope.addEntry = function(table_name) {
     t = $scope.getTableByName(table_name)
     // create empty element
@@ -65,7 +69,7 @@ app.controller('genCtrl', function ($scope, $http) {
     }
     return pages
   }
-  $scope.loadRow = function(tbl, row) {
+  $scope.loadRow = function(tbl, row) {  	
     $scope.selectedTask = angular.copy(row)
     $scope.selectedTable = tbl
   }
@@ -287,7 +291,6 @@ app.controller('genCtrl', function ($scope, $http) {
         // CREATE - Done
         if (cud == 'create') {
           $('#modal').modal('hide') // Hide create-modal
-          $scope.createNewEntry = false
           // TODO: Maybe jump to entry which was created
         }
         // Refresh table

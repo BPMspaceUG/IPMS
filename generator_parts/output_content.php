@@ -55,16 +55,16 @@
                       <button class="btn" ng-class="'state'+cell"
                         ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, cell)}}</button>
                     </div>
-                    <!-- Normal field -->
+                    <!-- Cell -->
                     <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
-                    	{{cell | limitTo: 20}}{{cell.length > 20 ? '...' : ''}}
+                    	{{cell | limitTo: 50}}{{cell.length > 50 ? '...' : ''}}
                     </p>
                   </td>
                   <!-- Edit options -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">
                     <!-- Update Button -->
                     <a class="btn btn-default" data-toggle="modal" data-target="#modal"
-                    	ng-click="loadRow(table, row)" title="Edit this row">
+                    	ng-click="editEntry(table, row)" title="Edit this row">
                       <i class="fa fa-pencil"></i>
                     </a>
                     <!-- Delete Button -->
