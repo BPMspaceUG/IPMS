@@ -2,8 +2,7 @@
 <?php  include_once '_header.inc.php'; ?>
 <!-- Content -->
 <div ng-app="IPMS">
-    <div ng-controller="IPMScontrol"> 
-
+    <div ng-controller="IPMScontrol">
       <!-- CONNECT Part -->
       <div class="container" style="padding-top: 30px">
         <form class="bpm-server-connect" action="modules/ConnectDB.php">
@@ -80,20 +79,20 @@
                 <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
                 <thead>
                   <tr>
-                    <th width="20px"></th>
-                    <th width="30%">TABLENAME</th>
-                    <th width="30%">ALIAS</th>
+                    <th width="10px"></th>
+                    <th width="15%">TABLENAME</th>
+                    <th width="20%">ALIAS</th>
                     <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
                     <th width="5%">STATE-ENGINE</th>
                     <th width="5%">RO (View)</th>
-                    <th width="20%">ICON</th>
+                    <th width="40%">ICON</th>
                   </tr>
                 </thead>
                 <tbody ng-repeat="tbl in tables track by $index">
                   <!-- Table START -->
                   <tr>
                     <td><a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings"><i class="fa fa-plus-square"></i></a></td>
-                    <td><p>{{tbl.table_name}}</p></td>
+                    <td><p><b>{{tbl.table_name}}</b></p></td>
                     <td>
                       <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
                       ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
@@ -115,12 +114,16 @@
                   <!-- Columns START -->
                   <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" style="font-size: .8em;">
                     <td>&nbsp;</td>
-                    <td>{{col.COLUMN_NAME}} ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}}, {{col.EXTRA}})</td>
+                    <td>{{col.COLUMN_NAME}}<!-- ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}}, {{col.EXTRA}}) --></td>
                     <td><input type="text" ng-model="col.column_alias"></td>
                     <td colspan="4">
-                      <input type="checkbox" ng-model="col.is_in_menu"> Is In Menu&nbsp;&nbsp;&nbsp;
-                      <input type="checkbox" ng-model="col.is_read_only"> Read Only&nbsp;&nbsp;&nbsp;
+                      <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
+                      <input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;
                       <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
+                      &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;<b>FK:</b>
+                      <input type="text" style="width: 80px" ng-model="col.foreignKey.table" placeholder="Table">
+                      <input type="text" style="width: 80px" ng-model="col.foreignKey.col_id" placeholder="JoinID">
+                      <input type="text" style="width: 80px" ng-model="col.foreignKey.col_subst" placeholder="ReplacedCloumn">
                     </td>
                   </tr>
                   <!-- Columns END -->

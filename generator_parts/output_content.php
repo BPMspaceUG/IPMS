@@ -5,7 +5,7 @@
   </div>
 </div>
 <!-- body content starts here  -->
-<div class="container">
+<div class="container" id="content">
 
   <div class="row">
     <div class="col-xs-12 tab-content">
@@ -37,38 +37,37 @@
               <!-- ============= COLUMN HEADERS ============= -->
               <thead>
                 <tr>                 
-                  <th ng-repeat="col in table.columns" ng-if="col.is_in_menu">
-                    <span>{{col.column_alias}}</span>
+                  <th ng-repeat="(key, value) in table.rows[0]">
+                    <span>{{getColAlias(table, key)}}</span>
                   </th>
                   <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                 </tr>
               </thead>
               <tbody>
                 <!-- ============= CONTENT ============= -->
-                <tr ng-repeat="row in table.rows track by $index" ng-model="table"
-                    data-toggle='modal' data-target="modal-container-1"
-                    id="row{{'' + $parent.$index + $index}}">
+                <!-- TODO: do not insert cells via index... because of ORDER! -->
+                <tr ng-repeat="row in table.rows" data-toggle='modal' data-target="modal-container-1">
                   <!-- Data entries -->
-                  <td animate-on-change="cell" ng-repeat="cell in row track by $index" ng-if="table.columns[$index].is_in_menu">
+                  <td ng-repeat="cell in row">
                     <!-- Substitue State Machine -->
+                    <!--
                     <div ng-if="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
                       <button class="btn" ng-class="'state'+cell"
                         ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, cell)}}</button>
                     </div>
+                    -->
                     <!-- Cell -->
-                    <p ng-hide="((table.columns[$index].COLUMN_NAME.indexOf('state') >= 0) && table.se_active)">
-                    	{{cell | limitTo: 50}}{{cell.length > 50 ? '...' : ''}}
-                    </p>
+                    {{cell | limitTo: 50}}{{cell.length > 50 ? '...' : ''}}
                   </td>
                   <!-- Edit options -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">
                     <!-- Update Button -->
-                    <a class="btn btn-default" data-toggle="modal" data-target="#modal"
-                    	ng-click="editEntry(table, row)" title="Edit this row">
+                    <a class="btn btn-default" data-toggle="modal" data-target="#modal" 
+                      ng-click="editEntry(table, row)" title="Edit">
                       <i class="fa fa-pencil"></i>
                     </a>
                     <!-- Delete Button -->
-                    <button id="del{{$index}}" class="btn btn-danger" title="Delete this Row"
+                    <button id="del{{$index}}" class="btn btn-danger" title="Delete"
                       ng-click="send('delete', {row:row, colum:$index, table:table})">
                       <i class="fa fa-times"></i></button>
                   </td>
@@ -115,17 +114,48 @@
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         <h4 class="modal-title">
-          <span ng-if="createNewEntry">Create Entry</span>
-          <span ng-if="!createNewEntry">Edit Entry</span>
+          <span ng-if="createNewEntry"><i class="fa fa-plus"></i> Create Entry</span>
+          <span ng-if="!createNewEntry"><i class="fa fa-pencil"></i> Edit Entry</span>
         </h4>
       </div>
       <div class="modal-body">
         <form class="form-horizontal">
           <div class="form-group" ng-repeat="(key, value) in selectedTask">
           	<div ng-hide="selectedTable.se_active && (key.indexOf('state_id') >= 0)">
-	            <label for="x" class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
-	            <div class="col-sm-9">              
-	            	<input type="text" class="form-control" ng-model="selectedTask[key]">
+              <!-- LABEL -->
+	            <label for="inputX" class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
+              <!-- VALUE -->
+              <div class="col-sm-9">
+                <!-- TODO: Read Only -->
+                <!-- FK -->
+                <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
+                	<p class="form-control-static text-muted"><i class="fa fa-key"></i> Foreign-Key (use DB for now)</p>
+                </span>
+                <!-- NO FK -->
+                <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
+	                <!-- Number  -->
+	                <input class="form-control" type="number" string-to-number 
+	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
+	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
+	                  ng-model="selectedTask[key]">
+	                <!-- Text -->
+	                <input class="form-control" type="text"
+	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
+	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0"
+	                  ng-model="selectedTask[key]">
+	                <!-- LongText (probably HTML) -->
+	                <textarea class="form-control" rows="3"
+	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0"
+	                  ng-model="selectedTask[key]"></textarea>
+	                <!-- TODO: Date -->
+	                <!-- TODO: Boolean (tinyint or boolean)
+	                <input class="form-control" type="checkbox"
+	                  ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
+	                  !table.columnsX[$index].is_read_only"
+	                  ng-model="table.newRows[0][$index]">
+	                <!-- Datatype -->
+	                <!--<div><small class="text-muted">{{ getColByName(selectedTable, key).COLUMN_TYPE }}</small></div>-->
+	              </span>
 	            </div>
 	          </div>
           </div>

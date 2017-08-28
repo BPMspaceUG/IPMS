@@ -1,22 +1,13 @@
 <?php
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
     $_REQUEST = json_decode(file_get_contents('php://input'), true);
-  }
+  }  
   // put parameters into variables
   $db_server = $_REQUEST['host']; //.':'.$_REQUEST['port'];
   $db_user = $_REQUEST['user'];
   $db_pass = $_REQUEST['pwd'];
   $db_name = $_REQUEST['db_name'];
-  $data = $_REQUEST["data"]; // TODO: Nur relevante Daten übergeben!
-
-  /*
-  $DEBUG = FALSE;
-  if  (!empty($_GET) && !empty($_GET["debug"]) && ($_GET["debug"] == 'on')) {
-    $DEBUG = TRUE;
-    ini_set('display_errors', 1);
-    error_reporting(E_ALL);
-  }
-  */
+  $data = $_REQUEST["data"];
 
   // check if liam is present and create test directory for IPMS if not exist
   $content = "";
@@ -27,12 +18,11 @@
       mkdir('../../IPMS_test', 0755, true);
     }
   }
-
-  //open DB connection or die
+  // open DB-Connection or die
   $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
-  if ($con->connect_errno > 0)
+  if ($con->connect_errno > 0) {
     die('Unable to connect to database [' . $db->connect_error . ']');
-
+  }
   /* ------------------------------------- Statemachine ! */
   // Create Table RULES
   $query_rules = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state_rules` (
@@ -68,11 +58,11 @@
   $all_table_names = array();
 
   // Make array with all table names
-  for ($i=0;$i<count($data);$i++)
+  for ($i=0;$i<count($data);$i++) {
     array_push($all_table_names, $data[$i]["table_name"]);
+  }
 
   // TODO: Make function, only pass filenames
-
   /*
   // --- Liam
   $handle = fopen("./output_LiamHeader.php", "r");
@@ -81,7 +71,6 @@
   $handle = fopen("./output_DebugHeader.php", "r");
   $output_DebugHeader = stream_get_contents($handle);
   */
-
   // --- Class State Engine
   $handle = fopen("./output_StateEngine.php", "r");
   $class_StateEngine = stream_get_contents($handle);
@@ -117,7 +106,6 @@
   $musterJS = $musterJS . stream_get_contents($handle);
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
   $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
-
   // Finally close FileHandler
   fclose($handle);
 
@@ -133,7 +121,6 @@
     ;
 
   echo $output_all;
-
 
   // ---> ENCODE Data as JSON
   $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);

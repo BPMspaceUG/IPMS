@@ -6,7 +6,7 @@
   }
   $params = $_POST;
   
-  // // Correctly fetch params
+  // Correctly fetch params
   $host = isset($params['host']) ? $params['host'] : null;
   $port = isset($params['port']) ? $params['port'] : null;
   $user = isset($params['user']) ? $params['user'] : null;
@@ -85,16 +85,26 @@
 
       if ($res2) {
         while ($row2 = $res2->fetch_assoc()) {
-          // Column information - TODO: Filter!!!
+          // Column information
           $column_info = $row2;
           // Additional information
+
+          // Pre fill foreign keys
+          if ($row2["COLUMN_NAME"] == "state_id_FROM" 
+          || $row2["COLUMN_NAME"] == "state_id_TO") {
+            $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "name");
+          } else {
+            $fk = array("table" => "", "col_id" => "", "col_subst" => "");
+          }
+
+          // enrich column info
           $additional_info = array(
             "column_alias" => ucfirst($row2["COLUMN_NAME"]),
             "is_in_menu" => true,
             "read_only" => false,
-            "is_ckeditor" => false
+            "is_ckeditor" => false,
+            "foreignKey" => $fk
           );
-
           // Filter columns array
           $allowed  = ['COLUMN_NAME', 'DATA_TYPE', 'COLUMN_TYPE', 'COLUMN_KEY', 'EXTRA'];
           $filtered = array_filter(

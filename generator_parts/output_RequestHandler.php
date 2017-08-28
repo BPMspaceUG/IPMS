@@ -89,25 +89,7 @@
       $where = isset($param["where"]) ? $param["where"] : "";
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
       $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
-
-      // SEARCH
-      if (trim($where) <> "") {
-        // Do a search
-        $res = $this->db->query("SHOW COLUMNS FROM ".$param["tablename"].";");
-        $k = [];
-        while ($row = $res->fetch_array()) {
-          $k[] = $row[0];
-        }
-        // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
-        $q_str = "";
-        foreach ($k as $key) {
-          $q_str .= " ".$key." LIKE '%".$where."%' OR ";
-        }
-        // Remove last 'OR '
-        $q_str = substr($q_str, 0, -3);
-
-        $where = " WHERE ".$q_str;
-      }
+      $joins = isset($param["join"]) ? $param["join"] : "";
 
       // ORDER BY
       $ascdesc = strtolower(trim($ascdesc));
@@ -118,15 +100,49 @@
       else
         $orderby = " "; // ORDER BY replacer_id DESC";
 
-      // SQL
-      $query = "SELECT ".$param["select"]." FROM ".$param["tablename"].$where.$orderby.
-        " LIMIT ".$param["limitStart"].",".$param["limitSize"].";"; 
+      // LIMIT
+      // TODO: maybe if limit Start = -1 then no limit is used
+      $limit = " LIMIT ".$param["limitStart"].",".$param["limitSize"];
+
+      // JOIN
+      $join_from = $param["tablename"]; // if there is no join
+      $sel = array();
+      $sel_raw = array();
+      $sel_str = "";
+      if (count($joins) > 0) {
+        // Multi-join
+        for ($i=0;$i<count($joins);$i++) {
+          $join_from .= " JOIN ".$joins[$i]["table"]." AS t$i ON ".
+                        "t$i.".$joins[$i]["col_id"]."=".
+                        $param["tablename"].".".$joins[$i]["replace"];
+          $sel[] = "t$i.".$joins[$i]["col_subst"]." AS '".$joins[$i]["replace"]."'";
+          $sel_raw[] = "t$i.".$joins[$i]["col_subst"];
+        }
+        $sel_str = ",".implode(",", $sel);
+      }
+
+      // SEARCH
+      if (trim($where) <> "") {
+        // Get columns from the table
+        $res = $this->db->query("SHOW COLUMNS FROM ".$param["tablename"].";");
+        $k = [];
+        while ($row = $res->fetch_array()) { $k[] = $row[0]; } 
+        $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
+        // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
+        $q_str = "";
+        foreach ($k as $key) {
+          $q_str .= " ".$key." LIKE '%".$where."%' OR ";
+        }
+        // Remove last 'OR '
+        $q_str = substr($q_str, 0, -3);
+
+        $where = " WHERE ".$q_str;
+      }
+      // Concat final query
+      $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
+      $query = str_replace("  ", " ", $query);
       $res = $this->db->query($query);
-
-      // TODO: Also read out statemachine and concat with results
-      $states = array("states" => array("id" => 1, "name" => "unknown")); //$this->SE->getStateAsObject(1);
-      //$result = array_merge($res, $states);
-
+      // Return result as JSON
       return $this->parseToJSON($res);
     }
     //================================== UPDATE

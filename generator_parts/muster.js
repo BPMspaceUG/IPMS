@@ -40,6 +40,15 @@ app.controller('genCtrl', function ($scope, $http) {
   	})
   	if (res == '') return col_name; else return res;
   }
+  $scope.getColByName = function(table, col_name) {
+    res = null // empty object
+    table.columns.forEach(function(col){
+      // Compare names
+      if (col.COLUMN_NAME == col_name)
+        res = col
+    })
+    if (res === null) return null; else return res;
+  }
   $scope.sortCol = function(table, columnname, index) {
     console.log("Click-----------> SORT")
     
@@ -145,6 +154,14 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.countEntries = function(table_name) {  	
     t = $scope.getTableByName(table_name)
+    // Get columns from columns
+    joins = []
+    t.columns.forEach(function(col) {
+      if (col.foreignKey.table != "") { // Check if there is a substitute for the column
+        col.foreignKey.replace = col.COLUMN_NAME
+        joins.push(col.foreignKey)
+      }
+    })
     $http({
       method: 'POST',
       url: window.location.pathname,
@@ -153,21 +170,24 @@ app.controller('genCtrl', function ($scope, $http) {
         paramJS: {
           select: "COUNT(*) AS cnt",
           tablename: t.table_name,
-          limitStart: 0, limitSize: 1,
+          limitStart: 0,
+          limitSize: 1,
           where: t.sqlwhere,
           orderby: t.sqlorderby,
-          ascdesc: t.sqlascdesc
+          ascdesc: t.sqlascdesc,
+          join: joins
         }
       }
     }).success(function(response){
       // Counting done
-      console.log("Counted entries from [", table_name, "] ...", response[0].cnt)
+      console.log("Counted entries from [", table_name, "] ...", response)
       t = $scope.getTableByName(table_name)
       t.count = response[0].cnt
-      // Goto last page if searching
-      //if (t.sqlwhere != "") $scope.PageIndex = $scope.getNrOfPages(t) - 1
     });
   }
+
+  //------------------------------------------------------- Statemachine functions
+
   $scope.substituteSE = function(tablename, stateID) {
     t = $scope.getTableByName(tablename)
     // Converts stateID -> Statename
@@ -178,7 +198,6 @@ app.controller('genCtrl', function ($scope, $http) {
     })
     return res
   }
-  // Statemachine
   $scope.getStatemachine = function(table_name) {
     t = $scope.getTableByName(table_name)
     // Check if table has a state engine
@@ -197,6 +216,9 @@ app.controller('genCtrl', function ($scope, $http) {
       $scope.getTableByName(table_name).statenames = response
   	})
   }
+
+  //-------------------------------------------------------
+
   // Refresh Function
   $scope.refresh = function(table_name) {
   	console.log("Started refreshing", table_name)
@@ -204,6 +226,19 @@ app.controller('genCtrl', function ($scope, $http) {
     // Search-Event(set LIMIT Param to 0)
     if (t.sqlwhere != t.sqlwhere_old)
     	t.PageIndex = 0
+
+    // Get columns from columns
+    sel = []
+    joins = []
+    t.columns.forEach(function(col) {      
+      if (col.foreignKey.table != "") { // Check if there is a substitute for the column
+        col.foreignKey.replace = col.COLUMN_NAME
+        joins.push(col.foreignKey)
+      } else 
+        sel.push(col.COLUMN_NAME)
+    })
+    str_sel = sel.join(",")
+
   	// Request from server
   	$http({
   		url: window.location.pathname, // use same page for reading out data
@@ -214,10 +249,11 @@ app.controller('genCtrl', function ($scope, $http) {
   			tablename: t.table_name,
   			limitStart: t.PageIndex * $scope.PageLimit,
   			limitSize: $scope.PageLimit,
-  			select: "*",
-        	where: t.sqlwhere,
-        	orderby: t.sqlorderby,
-       		ascdesc: t.sqlascdesc
+  			select: str_sel,
+        where: t.sqlwhere,
+        orderby: t.sqlorderby,
+       	ascdesc: t.sqlascdesc,
+        join: joins
   		}
   	}
   	}).success(function(response){
@@ -324,7 +360,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
   }
 })
-//--- Directive
+//--- Directives
 app.directive('animateOnChange', function($timeout) {
   return function(scope, element, attr) {
     scope.$watch(attr.animateOnChange, function(nv,ov) {
@@ -334,5 +370,14 @@ app.directive('animateOnChange', function($timeout) {
         $timeout(function() {element.removeClass('changed');}, 1500);
       }
     })
+  }
+})
+app.directive('stringToNumber', function() {
+  return {
+    require: 'ngModel',
+    link: function(scope, element, attrs, ngModel) {
+      ngModel.$parsers.push(function(value) { return '' + value; })
+      ngModel.$formatters.push(function(value) { return parseFloat(value); })
+    }
   }
 })
