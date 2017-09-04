@@ -17,6 +17,8 @@ used to vertically center elements, may need modification if you're not using de
 .panel-table .panel-footer .col{ line-height: 34px; height: 34px; }
 .panel-table .panel-heading .col h3{ line-height: 30px; height: 30px; }
 .panel-table .panel-body .table-bordered > tbody > tr > td{ line-height: 34px; }
+.fKeyLink {}
+.fKeyLink:hover {text-decoration: none;}
 
 [animate-on-change] { transition: all 1s; -webkit-transition: all 1s; }
 [animate-on-change].changed { background-color: #cffda2; transition: none; -webkit-transition: none; }

@@ -105,7 +105,7 @@
       $limit = " LIMIT ".$param["limitStart"].",".$param["limitSize"];
 
       // JOIN
-      $join_from = $param["tablename"]; // if there is no join
+      $join_from = $param["tablename"]." AS a"; // if there is no join
       $sel = array();
       $sel_raw = array();
       $sel_str = "";
@@ -113,8 +113,7 @@
         // Multi-join
         for ($i=0;$i<count($joins);$i++) {
           $join_from .= " JOIN ".$joins[$i]["table"]." AS t$i ON ".
-                        "t$i.".$joins[$i]["col_id"]."=".
-                        $param["tablename"].".".$joins[$i]["replace"];
+                        "t$i.".$joins[$i]["col_id"]."= a.".$joins[$i]["replace"];
           $sel[] = "t$i.".$joins[$i]["col_subst"]." AS '".$joins[$i]["replace"]."'";
           $sel_raw[] = "t$i.".$joins[$i]["col_subst"];
         }
@@ -131,7 +130,10 @@
         // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
         $q_str = "";
         foreach ($k as $key) {
-          $q_str .= " ".$key." LIKE '%".$where."%' OR ";
+          $prefix = "";
+          // if no "." in string then refer to first table
+          if (strpos($key, ".") === FALSE) $prefix = "a.";
+          $q_str .= " ".$prefix.$key." LIKE '%".$where."%' OR ";
         }
         // Remove last 'OR '
         $q_str = substr($q_str, 0, -3);
@@ -141,6 +143,10 @@
       // Concat final query
       $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
+      /*
+      if ($where <> "")
+        echo $query; // debugging only
+      */
       $res = $this->db->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);

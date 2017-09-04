@@ -6,6 +6,7 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.isLoading = true
   $scope.PageLimit = 10 // default = 10
   $scope.selectedTask = []
+  $scope.FKTbl = []
   $scope.createNewEntry = false
 
   $scope.saveEntry = function() {
@@ -49,16 +50,34 @@ app.controller('genCtrl', function ($scope, $http) {
     })
     if (res === null) return null; else return res;
   }
-  $scope.sortCol = function(table, columnname, index) {
-    console.log("Click-----------> SORT")
-    
-    // TODO: Make sorting by table and not globally
-    //$scope.sqlascdesc = []
-    /*
-    $scope.sqlorderby[index] = columnname
-    $scope.sqlascdesc[index] = ($scope.sqlascdesc[index] == "desc") ? "asc" : "desc"
-    $scope.refresh(table, index)
-    */
+  $scope.sortCol = function(table, columnname) {
+    console.log("Clicked -----------> SORT <-----------")
+    table.sqlascdesc = (table.sqlascdesc == "desc") ? "asc" : "desc"
+    table.sqlorderby = columnname
+    $scope.refresh(table.table_name)
+  }
+  $scope.getSortIcon = function(table, colname) {
+    return "fa fa-arrow";
+  }
+  $scope.openFK = function(table_name) {
+    console.log("-> FK", table_name)
+    // Get the table from foreign key
+    $scope.FKTbl = $scope.getTableByName(table_name)
+    console.log("FK:", $scope.FKTbl)
+    $('#myFKModal').modal('show')
+  }
+  $scope.selectFK = function(row) {
+    console.log("Selected FK:", row)
+    // Write the new key in the current model
+    console.log($scope.selectedTask)
+    // 1. Know the right KEY which has to be edited
+
+    // 2. Save the value, like:
+    $scope.selectedTask.sqms_language_id.id = row.sqms_language_id
+    // 3. Save the substituted value in the model
+    $scope.selectedTask.sqms_language_id = row.language
+    // Close modal
+    $('#myFKModal').modal('hide')
   }
   $scope.getPageination = function(table_name) {
     NrOfButtons = 5
@@ -116,7 +135,9 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.getTableByName = function(tablename) {
     if (typeof tablename != "string") return
-    return $scope.tables.find(function(t){ return t.table_name == tablename; })
+    return $scope.tables.find(function(t){
+      return t.table_name == tablename;
+    })
   }
   $scope.getNrOfPages = function(table) {
     return Math.ceil(table.count / $scope.PageLimit)
@@ -226,22 +247,22 @@ app.controller('genCtrl', function ($scope, $http) {
     // Search-Event(set LIMIT Param to 0)
     if (t.sqlwhere != t.sqlwhere_old)
     	t.PageIndex = 0
-
     // Get columns from columns
     sel = []
     joins = []
-    t.columns.forEach(function(col) {      
+    t.columns.forEach(function(col) {
+      // TODO: -> better on server side
       if (col.foreignKey.table != "") { // Check if there is a substitute for the column
         col.foreignKey.replace = col.COLUMN_NAME
         joins.push(col.foreignKey)
       } else 
-        sel.push(col.COLUMN_NAME)
+        sel.push("a."+col.COLUMN_NAME)
     })
     str_sel = sel.join(",")
 
   	// Request from server
   	$http({
-  		url: window.location.pathname, // use same page for reading out data
+  		url: window.location.pathname,
   		method: 'POST',
   		data: {
   		cmd: 'read',
@@ -274,35 +295,54 @@ app.controller('genCtrl', function ($scope, $http) {
   	})
   }
 
+  // --------------------------
+  
   $scope.initTables()
 
-  /*
-  Allround send for changes to DB
-  */
+  // --------------------------
+
+  $scope.filterFKeys = function(table, row) {
+    var result = {}
+    keys = Object.keys(row) // get column names
+    for (var i=0;i<keys.length;i++) {
+      col = keys[i]
+      if ($scope.getColByName(table, col).foreignKey.table == "") {
+        result[col] = row[col]
+      } else {
+        // TODO: Substitue with the new ID
+        console.log($scope.selectedTask[col], row[col])
+        //if ($scope.selectedTask[col] != row[col])
+        //  result[col] = $scope.selectedTask[col].id
+      }
+    }
+    return result
+  }
+
+  /* Allround send for changes to DB */
   $scope.send = function(cud, param){
-
-    t = $scope.selectedTable
-    console.log("-> Send # CUD=", cud, "Params:", param)
-    var body = {cmd: 'cud', paramJS: {}}
-
     // TODO: remove this
     // load in memory
     if (param) $scope.loadRow(param.table, param.row)
+
+    console.log("-> Send [", cud, "] Params:", param)
+    var body = {cmd: 'cud', paramJS: {}}
+
+    t = $scope.selectedTable
+    //console.log("Selected Table:", t)
 
     // TODO: probably not the best idea to send the primary columns from client
     // better assebmle them on the server side
 
     // Function which identifies _all_ primary columns
     function getPrimaryColumns(col) {
-      var resultset = [];
+      var resultset = []
       for (var i = 0; i < col.length-1; i++) {
-        if (col[i].COLUMN_KEY.indexOf("PRI") >= 0) {
-          // Column is primary column
-          resultset.push(col[i].COLUMN_NAME);
-        }
+        if (col[i].COLUMN_KEY.indexOf("PRI") >= 0)
+          resultset.push(col[i].COLUMN_NAME)
       }
       return resultset;
     }
+
 
     // Assemble data for Create, Update, Delete Functions
   	if (cud == 'create' || cud == 'delete' || cud == 'update'
@@ -318,6 +358,10 @@ app.controller('genCtrl', function ($scope, $http) {
     			primary_col: getPrimaryColumns(t.columns),
     			table: t.table_name
     		}
+        // Filter out foreign keys
+        if (cud == 'update')
+          body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+
   	} else {
   		// Unknown Command
       console.log('unknown command: ', cud)
@@ -325,6 +369,7 @@ app.controller('genCtrl', function ($scope, $http) {
     }
     // ------------------- Finally -> Send request
     console.log("### POST", "Command:", cud, "Params:", body.paramJS)
+    // Send request to server
     $http({
       url: window.location.pathname,
       method: 'POST',
@@ -333,9 +378,8 @@ app.controller('genCtrl', function ($scope, $http) {
         paramJS: body.paramJS
       }
     }).success(function(response) {
-
+      // Response
       console.log("ResponseData: ", response)
-
       //-------------------- table data was modified
       if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {
         // hide modals
@@ -356,11 +400,15 @@ app.controller('genCtrl', function ($scope, $http) {
       else if (cud == 'getStates') {
       	alert("WTF")
       }
+      else {
+        alert("An Error occoured while "+cud+" command.")
+      }
     })
 
   }
 })
 //--- Directives
+/*
 app.directive('animateOnChange', function($timeout) {
   return function(scope, element, attr) {
     scope.$watch(attr.animateOnChange, function(nv,ov) {
@@ -372,6 +420,7 @@ app.directive('animateOnChange', function($timeout) {
     })
   }
 })
+*/
 app.directive('stringToNumber', function() {
   return {
     require: 'ngModel',
