@@ -61,7 +61,7 @@
                   <td ng-repeat="(key, value) in row" ng-if="getColByName(table, key).is_in_menu">
                     <!-- Substitue State Machine -->
                     <div ng-if="(( key.indexOf('state') >= 0) && table.se_active)">
-                      <button class="btn" ng-class="'state'+value"
+                      <button class="btn" ng-class="'state'+ value"
                         ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, value)}}</button>
                     </div>
                     <!-- Cell -->

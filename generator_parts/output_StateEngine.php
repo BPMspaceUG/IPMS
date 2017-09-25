@@ -44,13 +44,18 @@
         " WHERE ".$this->colname_rootID." = $id;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
-    }    
-	public function getStates() {
-        $query = "SELECT state_id AS 'id', name FROM ".$this->table_states; 
+    }
+    public function getStates() {
+      $query = "SELECT state_id AS 'id', name FROM ".$this->table_states;
       $res = $this->db->query($query);
-	  //echo json_encode($res);
       return $this->getResultArray($res);
-    }    
+    }
+    public function getEntryPointByTablename($tablename) {
+      $query = "SELECT state_id AS 'id' FROM ".$this->table_states." WHERE tablename = '$tablename';";
+      $res = $this->db->query($query);
+      $r = $this->getResultArray($res);
+      return (int)$r[0]['id'];
+    }
     public function getStateAsObject($stateid) {
       settype($id, 'integer');
       $query = "SELECT ".$this->colname_stateID_at_TblStates." AS 'id', ".
@@ -62,13 +67,13 @@
     public function getNextStates($actstate) {
       settype($actstate, 'integer');
       $query = "SELECT a.".$this->colname_to." AS 'id', b.".
-        $this->colname_stateName." AS 'name' FROM ".$this->table_rules." AS a INNER JOIN ".
+        $this->colname_stateName." AS 'name' FROM ".$this->table_rules." AS a JOIN ".
         $this->table_states." AS b ON a.".$this->colname_to."=b.".$this->colname_stateID_at_TblStates.
         " WHERE ".$this->colname_from." = $actstate;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-    
+
     public function setState($ElementID, $stateID) {
 
       // get actual state from element

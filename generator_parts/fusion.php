@@ -41,23 +41,72 @@
   // Execute queries
   $con->query($query_rules);
   $con->query($query_states);
-  // INSERT MINIMUM DATA
-  // TODO: Loop for each Table with StateEngine checked create a new StateMachine
-  // TODO: Check if a stateEngine already exists
-    // [
-        // -> States
-        $query_states = "INSERT INTO `$db_name`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
-        "(1, 'new', '', 'connections'),(2, 'active', '', ''),(3, 'inactive', '', '')";
-        $con->query($query_states);
-        // -> Rules
-        $query_rules = "INSERT INTO `$db_name`.`state_rules` (`state_rules_id`, `state_id_FROM`, `state_id_TO`, `transition_script`) VALUES (1, 1, 1, ''), (2, 2, 2, ''), (3, 3, 3, ''), (4, 1, 2, ''), (5, 2, 3, '')";
-        $con->query($query_rules);
-  // ]
+
+  // Log queries in a DB-Changes file
+  $db_changes = "";
+  $db_changes .= $query_rules."\r\n";
+  $db_changes .= $query_states."\r\n";
+
+  // FOREIGN KEYS StateEngine
+  $query_fk = "ALTER TABLE `".$db_name."`.`state_rules` ".
+    "ADD INDEX `state_id_fk1_idx` (`state_id_FROM` ASC), ".
+    "ADD INDEX `state_id_fk_to_idx` (`state_id_TO` ASC);";
+  $con->query($query_fk);
+  $db_changes .= $query_fk."\r\n";
+
+  $query_fk = "ALTER TABLE `".$db_name."`.`state_rules` ADD CONSTRAINT `state_id_fk_from` FOREIGN KEY (`state_id_FROM`) REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION, ADD CONSTRAINT `state_id_fk_to` FOREIGN KEY (`state_id_TO`) REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
+  $con->query($query_fk);
+  $db_changes .= $query_fk."\r\n";
+
+  // Loop for each Table with StateEngine checked create a new StateMachine Column
+  $count = 0;
+
+  for ($i=0;$i<count($data);$i++) {
+    // Get Data
+    $tablename = $data[$i]["table_name"];
+    @$se_active = (bool)$data[$i]["se_active"];
+
+    if ($se_active) {
+      // Add new column - Does not add if already exists
+      $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT 1;";
+      $con->query($q_se);
+      // Add UNIQUE named foreign Key
+      $uid = substr(md5($tablename), 0, 8);
+      $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD CONSTRAINT `state_id_".$uid."` FOREIGN KEY (`state_id`) ".
+        "REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
+      $con->query($q_se);
+
+      // INSERT MINIMUM DATA
+      // TODO: Better check if already statemachine is available already, if not create one
+
+      // -> States
+      $query_states = "INSERT INTO `$db_name`.`state` (`state_id`, `name`, `form_data`, `tablename`) VALUES ".
+        "(".(1+$count*3).", 'new', '', '".$tablename."'),(".(2+$count*3).", 'active', '', ''),(".(3+$count*3).", 'inactive', '', '')";
+      $con->query($query_states);
+      // -> Rules
+      $query_rules = "INSERT INTO `$db_name`.`state_rules` ".
+        "(`state_rules_id`, `state_id_FROM`, `state_id_TO`, `transition_script`) VALUES ".
+        "(".(1+$count*6).", ".(1+$count*3).", ".(1+$count*3).", ''), ".
+        "(".(2+$count*6).", ".(2+$count*3).", ".(2+$count*3).", ''), ".
+        "(".(3+$count*6).", ".(3+$count*3).", ".(3+$count*3).", ''), ".
+        "(".(4+$count*6).", ".(1+$count*3).", ".(2+$count*3).", ''), ".
+        "(".(5+$count*6).", ".(2+$count*3).", ".(3+$count*3).", ''), ".
+        "(".(6+$count*6).", ".(3+$count*3).", ".(2+$count*3).", '')";
+      $con->query($query_rules);
+
+      // Increase counter
+      $count += 1;
+    }
+  }
+
+  // Logging
+  $db_changes .= $query_rules."\r\n";
+  $db_changes .= $query_states."\r\n";
+
   //-------------------------------------------------------
 
-  $all_table_names = array();
-
   // Make array with all table names
+  $all_table_names = array();
   for ($i=0;$i<count($data);$i++) {
     array_push($all_table_names, $data[$i]["table_name"]);
   }
@@ -142,6 +191,11 @@
 
   // Structure Configuration Data
   $config_tables_json = \''.$json.'\';
+
+  // Executed the following SQL Queries:
+  /*
+'.$db_changes.'
+  */
 ?>';
 
   // ----> Write to file

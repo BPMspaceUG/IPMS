@@ -49,7 +49,7 @@
       $update = "";
       // Convert everything to lowercase      
       $primarycols = array_map('strtolower', $primarycols);
-      $cols = array_map('strtolower', $cols);
+      //$cols = array_map('strtolower', $cols);
       // Loop every element
       foreach ($cols as $col) {
         // update only when no primary column
@@ -74,6 +74,11 @@
       // Split array
       foreach ($rowdata as $key => $value) {
         $keys[] = $this->db->real_escape_string($key);
+        // Check if has stateengine
+        if ($value == '%!%PLACE_EP_HERE%!%') {
+          $EP = $this->SE->getEntryPointByTablename($tablename);
+          $value = $EP;
+        }
         $vals[] = $this->db->real_escape_string($value);
       }
       // Operation
@@ -143,10 +148,6 @@
       // Concat final query
       $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
-      /*
-      if ($where <> "")
-        echo $query; // debugging only
-      */
       $res = $this->db->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);
@@ -157,7 +158,6 @@
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $param["primary_col"], $param["row"]);
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
-      //var_dump($query);
       $res = $this->db->query($query);
       // TODO: Check if rows where REALLY updated!
       // Output
@@ -192,9 +192,8 @@
       return json_encode($res);
     }
     public function getStates($param) {
-      // IN: (table_name)
       // OUT: [{id: 1, name: 'unknown'}, {id: 2, name: 'test'}]
-      $res = $this->SE->getStates(); //$param["row"]["state_id_ext"]);
+      $res = $this->SE->getStates();
       return json_encode($res);
     }
   }

@@ -82,6 +82,7 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.getPageination = function(table_name) {
     NrOfButtons = 5
     t = $scope.getTableByName(table_name)
+    if (!t) return
     NrOfPages = $scope.getNrOfPages(t)
 
     // [x] Case 1: Pages are less then NrOfBtns => display all
@@ -140,7 +141,7 @@ app.controller('genCtrl', function ($scope, $http) {
     })
   }
   $scope.getNrOfPages = function(table) {
-    return Math.ceil(table.count / $scope.PageLimit)
+    if (table) return Math.ceil(table.count / $scope.PageLimit)
   }
   $scope.initTables = function() {
   	console.log("init Tables...")
@@ -361,6 +362,10 @@ app.controller('genCtrl', function ($scope, $http) {
         // Filter out foreign keys
         if (cud == 'update')
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+
+        // Check if state_machine
+        if (cud == 'create')
+          body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
 
   	} else {
   		// Unknown Command
