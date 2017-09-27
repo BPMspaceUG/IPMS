@@ -144,7 +144,7 @@
                 <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
                 	<p class="form-control-static">
                     <a href="#" class="fKeyLink"
-                      ng-click="openFK(getColByName(selectedTable, key).foreignKey.table)">
+                      ng-click="openFK(key)">
                       <i class="fa fa-key"></i> {{value}}</a>
                   </p>
                 </span>
@@ -184,7 +184,8 @@
         	<button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal"><i class="fa fa-floppy-o"></i> Save &amp; Close</button>
         </span>
         <span ng-if="createNewEntry">
-        	<button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedTask, table: selectedTable})"><i class="fa fa-plus"></i> Create</button>
+        	<button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedTask, table: selectedTable})">
+            <i class="fa fa-plus"></i> Create</button>
         </span>
         &nbsp;
         <button class="btn btn-default pull-right" type="button" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
@@ -194,7 +195,7 @@
 </div>
 <!-- Modal for ForeignKey -->
 <div class="modal fade" id="myFKModal" tabindex="-1" role="dialog" aria-labelledby="myFKModalLabel">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>

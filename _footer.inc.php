@@ -1,4 +1,4 @@
-	<div class="container well">
+	<div class="container">
 		BPMspace IPMS using <a href="http://getbootstrap.com/" target="_blank">Bootstrap, </a>
 		<a href="https://jquery.com/" target="_blank">jQuery, </a>
 		<a href="https://angularjs.org/" target="_blank">AngularJS, </a>

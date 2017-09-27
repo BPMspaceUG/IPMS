@@ -59,23 +59,35 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.getSortIcon = function(table, colname) {
     return "fa fa-arrow";
   }
-  $scope.openFK = function(table_name) {
-    console.log("-> FK", table_name)
+  $scope.openFK = function(key) {
+    table_name = $scope.getColByName($scope.selectedTable, key).foreignKey.table
+    console.log("-> FK (", key, ")", table_name)
     // Get the table from foreign key
     $scope.FKTbl = $scope.getTableByName(table_name)
+    $scope.FKActCol = key
     console.log("FK:", $scope.FKTbl)
     $('#myFKModal').modal('show')
   }
   $scope.selectFK = function(row) {
     console.log("Selected FK:", row)
     // Write the new key in the current model
-    console.log($scope.selectedTask)
-    // 1. Know the right KEY which has to be edited
-
-    // 2. Save the value, like:
-    $scope.selectedTask.sqms_language_id.id = row.sqms_language_id
+    console.log("Selected Task:", $scope.selectedTask)
+    // 2. Save the value, like (special trick with .id)
+    $scope.selectedTask[$scope.FKActCol+"________newID"] = row[$scope.FKActCol]
     // 3. Save the substituted value in the model
-    $scope.selectedTask.sqms_language_id = row.language
+
+    // Get the foreign column
+    // Substitute
+    substcol = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_subst
+    keys = Object.keys($scope.selectedTask)
+    for (var i=0;i<keys.length;i++) {
+      // check columns
+      if (keys[i] == $scope.FKActCol) {
+        // subsitute column
+        $scope.selectedTask[$scope.FKActCol] = row[substcol]
+      }
+    }
+
     // Close modal
     $('#myFKModal').modal('hide')
   }
@@ -307,13 +319,23 @@ app.controller('genCtrl', function ($scope, $http) {
     keys = Object.keys(row) // get column names
     for (var i=0;i<keys.length;i++) {
       col = keys[i]
-      if ($scope.getColByName(table, col).foreignKey.table == "") {
-        result[col] = row[col]
-      } else {
-        // TODO: Substitue with the new ID
-        console.log($scope.selectedTask[col], row[col])
-        //if ($scope.selectedTask[col] != row[col])
-        //  result[col] = $scope.selectedTask[col].id
+      // if they have no foreign key --> just add to result
+      tmpCol = $scope.getColByName(table, col)
+      if (tmpCol) {
+        if (tmpCol.foreignKey.table == "") {
+          result[col] = row[col]
+        } else {
+          // TODO: Substitue with the new ID
+          console.log("### update FK --- ")
+          console.log("Column:", col)
+          console.log("SelTask:", $scope.selectedTask)
+          // Read id from special trick
+          newID = $scope.selectedTask[col+"________newID"]
+          console.log("NewID=", newID)
+          //result[col] = row[col].id
+          //if ($scope.selectedTask[col] != row[col])
+          result[col] = newID
+        }
       }
     }
     return result
@@ -359,8 +381,8 @@ app.controller('genCtrl', function ($scope, $http) {
     			primary_col: getPrimaryColumns(t.columns),
     			table: t.table_name
     		}
-        // Filter out foreign keys
-        if (cud == 'update')
+          // Filter out foreign keys
+        if (cud == 'update') 
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
 
         // Check if state_machine

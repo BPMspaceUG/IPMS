@@ -58,6 +58,7 @@ table th span {cursor: pointer;}
 table th span:hover {color: steelblue;}
 table tr td {white-space: nowrap;}
 /* State Engine */
+/*
 .state1 {background-color: greenyellow;}
 .state2 {background-color: yellow;}
 .state3 {background-color: red;}
@@ -70,3 +71,4 @@ table tr td {white-space: nowrap;}
 .state10 {background-color: tan;}
 .state11 {background-color: wheat;}
 .state12 {background-color: darksalmon;}
+*/
