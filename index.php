@@ -3,65 +3,79 @@
 <!-- Content -->
 <div ng-app="IPMS">
     <div ng-controller="IPMScontrol">
-      <!-- CONNECT Part -->
-      <div class="container" style="padding-top: 30px">
-        <form class="bpm-server-connect" action="modules/ConnectDB.php">
-          <h3 class="title">connect</h3>
-          <div class="form-group row">
-            <label for="sqlServer" class="col-sm-2 form-control-label">MySQL Server</label>
-            <div class="col-sm-2">
-              <input type="text" class="form-control" autocomplete="off" name="host" id="sqlServer" ng-model="sqlServer" value='{{sqlServer}}'>
-            </div>
-            <label for="sqlPort" class="col-sm-2 form-control-label">MySQL Port</label>
-            <div class="col-sm-2">
-              <input type="number" autocomplete="off" class="form-control" name="port" id="sqlPort" ng-model="sqlPort" value={{sqlPort}}>
-            </div>
-            <div class="col-sm-1">
-              <button id="new" type="reset" class="btn btn-success" name="new">New</button>
-            </div>
-            <div class="col-sm-1">
-              <button id="" type="button" class="btn btn-info" name="_connect" value="true" ng-click="connectToDB()">Connect</button>
-            </div>
-          </div>
-          <div class="form-group row">
-            <label for="username" class="col-sm-2 form-control-label">username</label>
-            <div class="col-sm-2">
-                <input type="text" autocomplete="off"  class="form-control" id="username" name="user" ng-model="username" value='{{username}}'>
-            </div>
-            <label for="password" class="col-sm-2 form-control-label">password</label>
-            <div class="col-sm-2">
-              <input type="password"  autocomplete="off" class="form-control" id="sqlPass" name="pwd" ng-model="pw" value='{{pw}}'>
-            </div>
-            <!-- Button: Load -->
-            <div class="col-sm-1">
-              <a href="#loadDb" name="load" data-toggle="modal" id="loadF" class="btn btn-default "
-                 name="load">Load</a>
-            </div>
-            <!-- Button: Save -->
-            <div class="col-sm-1">
-              <button type="button" name="save" id="save" class="btn btn-primary" name="save">Save</button>
-            </div>
-            <!-- Hidden area -->
-            <div class="col-sm-2">
-              <i class="fa fa-check" aria-hidden="true" style="display: none"></i>
-              <i class="fa fa-minus-circle" aria-hidden="true" style="display: none"></i>
-            </div>
-          </div>
-          <small>This action may take some time</small>
-        </form>
-      </div>
+      	<!-- CONNECT Part -->
+		<div class="container" style="padding-top: 30px">
+			<form class="bpm-server-connect" action="modules/ConnectDB.php">
+		  <h3 class="title">connect</h3>
+		  <div class="form-group row">
+		    <label for="sqlServer" class="col-sm-2 form-control-label">Hostname</label>
+		    <div class="col-sm-2">
+		      <input type="text" class="form-control" autocomplete="off" name="host" id="sqlServer" ng-model="sqlServer" value='{{sqlServer}}'>
+		    </div>
+		    <label for="sqlPort" class="col-sm-2 form-control-label">Port</label>
+		    <div class="col-sm-2">
+		      <input type="number" autocomplete="off" class="form-control" name="port" id="sqlPort" ng-model="sqlPort" value={{sqlPort}}>
+		    </div>
+		    <div class="col-sm-1">
+		      <button id="new" type="reset" class="btn btn-success" name="new">New</button>
+		    </div>
+		    <div class="col-sm-1">
+		      <button id="" type="button" class="btn btn-info" name="_connect" value="true" ng-click="connectToDB()">Connect</button>
+		    </div>
+		  </div>
+		  <div class="form-group row">
+		    <label for="username" class="col-sm-2 form-control-label">Username</label>
+		    <div class="col-sm-2">
+		        <input type="text" autocomplete="off"  class="form-control" id="username" name="user" ng-model="username" value='{{username}}'>
+		    </div>
+		    <label for="password" class="col-sm-2 form-control-label">Password</label>
+		    <div class="col-sm-2">
+		      <input type="password"  autocomplete="off" class="form-control" id="sqlPass" name="pwd" ng-model="pw" value='{{pw}}'>
+		    </div>
+		    <!-- Button: Load -->
+		    <div class="col-sm-1">
+		      <a href="#loadDb" name="load" data-toggle="modal" id="loadF" class="btn btn-default "
+		         name="load">Load</a>
+		    </div>
+		    <!-- Button: Save -->
+		    <div class="col-sm-1">
+		      <button type="button" name="save" id="save" class="btn btn-primary" name="save">Save</button>
+		    </div>
+		    <!-- Hidden area -->
+		    <div class="col-sm-2">
+		      <i class="fa fa-check" aria-hidden="true" style="display: none"></i>
+		      <i class="fa fa-minus-circle" aria-hidden="true" style="display: none"></i>
+		    </div>
+		  </div>
+			</form>
+		</div>
 
       <!-- CONTENT -->
       <div class="container">
-
-        <!-- Loading Screen or Errors -->
+        <!-- Loading -->
         <div class="alert alert-info" ng-show="isLoading">
-          <p><i class="fa fa-cog fa-spin"></i> Loading Tables ...</p>
+          <p><i class="fa fa-cog fa-spin"></i> Loading...</p>
         </div>
 
-        <!-- Content of Databases -->
-        <div ng-if="dbNames">
-          <div class="row">
+		<div ng-if="dbNames">
+
+		    <!-- Load Config -->
+		    <div class="row">&nbsp;</div>
+		    <div class="row">
+		      <label class="col-sm-2"><span class="label label-warning">Optional</span> Load config</label>
+		      <div>
+		        <p>Paste the content of the configuration file here:</p>
+		        <textarea class="form-control configtxt" ng-model="configtext"></textarea>
+		        <br>
+		        <button class="btn btn-default" ng-click="loadconfig(configtext)">
+		        	<i class="fa fa-arrow-right"></i> Parse and Load configuration file</button>
+		      </div>
+		    </div>
+
+		    <hr>
+
+        	<!-- Content of Databases -->        
+          	<div class="row">
             <!-- Database -->
             <div class="row form-group">
               <label for="sqlDatabases" class="col-sm-2"><span class="label label-success">1</span> Select Database</label>
@@ -129,16 +143,6 @@
                   <!-- Columns END -->
                 </tbody>
               </table>
-            </div>
-
-            <!-- Load Config -->
-            <div class="row">&nbsp;</div>
-            <div class="row">
-              <label class="col-sm-2"><span class="label label-success">3</span> Load config</label>
-              <div>
-                <p>(NOT WORKING YET) Paste the content of the configuration file here to load previous made settings</p>
-                <textarea class="form-control" style="width: 100%;"></textarea>
-              </div>
             </div>
 
             <!-- Create Button -->

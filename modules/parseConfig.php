@@ -1,16 +1,25 @@
 <?php
+  // Check if Request Method is POST
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
+    // Convert the input stream into PHP variables from Angular
+    $_POST = json_decode(file_get_contents('php://input'), true);
+  }
+  $params = $_POST;
+
 	// Param
-	$data = htmlspecialchars($_POST['config_data']);
+	$data = htmlspecialchars($params['config_data']);
 	$data = trim($data);
+	$data = html_entity_decode($data);
 
 	if ($data == "") return;
 	// Write config to file
 	file_put_contents("tmp.php", $data);
-
 	include_once("tmp.php");
-
+	// get data
 	$prjname = DB_NAME;
 	$jsvar = $config_tables_json;
+	// delete file
+	unlink("tmp.php");
 
-	echo $jsvar;
+	echo json_encode(array("DBName" => $prjname, "data" => $jsvar));
 ?>
