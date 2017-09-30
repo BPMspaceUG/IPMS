@@ -10,7 +10,7 @@
     private $table_rules = 'state_rules';
     // columns
     private $colname_rootID = 'id';
-    private $colname_stateID = 'state_id_ext';
+    private $colname_stateID = 'state_id';
     
     private $colname_stateID_at_TblStates = 'state_id';
     private $colname_stateName = 'name';
@@ -38,10 +38,13 @@
     }
     public function getActState($id) {
       settype($id, 'integer');
+
       $query = "SELECT a.".$this->colname_stateID." AS 'id', b.".
         $this->colname_stateName." AS 'name' FROM ".$this->table." AS a INNER JOIN ".
         $this->table_states." AS b ON a.".$this->colname_stateID."=b.".$this->colname_stateID_at_TblStates.
         " WHERE ".$this->colname_rootID." = $id;";
+      //echo $query;
+
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
@@ -75,7 +78,6 @@
     }
 
     public function setState($ElementID, $stateID) {
-
       // get actual state from element
       $actstateObj = $this->getActState($ElementID);
       if (count($actstateObj) == 0) return false;
@@ -92,19 +94,18 @@
         
         // Execute all scripts from database at transistion
         foreach ($scripts as $script) {
-          // Set path to scripts
-          $scriptpath = "functions/".$script["transistionScript"]; 
+
+          // Execute Script!
+          eval($script["transition_script"]);
 
           // -----------> Standard Result
+          /*
           $script_result = array(
             "allow_transition" => true,
             "show_message" => false,
             "message" => ""
           );
-          
-          // If script exists then load it
-          if (trim($scriptpath) != "functions/" && file_exists($scriptpath))
-            include_once($scriptpath);
+          */
 
           // update state in DB, when plugin says yes
           if (@$script_result["allow_transition"] == true) {
@@ -132,8 +133,11 @@
     public function getTransitionScripts($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
-      $query = "SELECT transistionScript FROM ".$this->table_rules." WHERE ".
-      "sqms_state_id_FROM = $fromID AND sqms_state_id_TO = $toID;";
+      $query = "SELECT transition_script FROM ".$this->table_rules." WHERE ".
+      "state_id_FROM = $fromID AND state_id_TO = $toID;";
+
+      //echo $query;
+
       $return = array();
       $res = $this->db->query($query);
       $return = $this->getResultArray($res);

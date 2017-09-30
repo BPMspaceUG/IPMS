@@ -158,6 +158,7 @@
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $param["primary_col"], $param["row"]);
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
+
       $res = $this->db->query($query);
       // TODO: Check if rows where REALLY updated!
       // Output
@@ -190,6 +191,13 @@
       // execute query
       $res = $this->SE->getNextStates($stateID);
       return json_encode($res);
+    }
+    public function makeTransition($param) {
+      // Get the correct ID
+      $pricol = $param["primary_col"][0];
+      $ID = $param["row"][$pricol];
+      $nextID = $param["row"]["state_id"];
+      echo $this->SE->setState($ID, $nextID);
     }
     public function getStates($param) {
       // OUT: [{id: 1, name: 'unknown'}, {id: 2, name: 'test'}]

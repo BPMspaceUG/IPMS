@@ -138,13 +138,17 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.gotoState = function(nextstate) {
     // TODO: Optimize ... check on serverside if possible etc.
+
+    // Find correct column
     res = null
     for (property in $scope.selectedTask) {
       if (property.indexOf('state_id') >= 0)
         res = property
     }
+    // Set next state [OLD]
     $scope.selectedTask[res] = nextstate.id
-    $scope.send('update')
+    //$scope.send('update')
+    $scope.send('makeTransition')
   }
   $scope.getTableByName = function(tablename) {
     if (typeof tablename != "string") return
@@ -343,15 +347,12 @@ app.controller('genCtrl', function ($scope, $http) {
 
   /* Allround send for changes to DB */
   $scope.send = function(cud, param){
-    // TODO: remove this
-    // load in memory
     if (param) $scope.loadRow(param.table, param.row)
 
     console.log("-> Send [", cud, "] Params:", param)
     var body = {cmd: 'cud', paramJS: {}}
-
     t = $scope.selectedTable
-    //console.log("Selected Table:", t)
+
 
     // TODO: probably not the best idea to send the primary columns from client
     // better assebmle them on the server side
@@ -369,7 +370,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
     // Assemble data for Create, Update, Delete Functions
   	if (cud == 'create' || cud == 'delete' || cud == 'update'
-     || cud == 'getNextStates' || cud == 'getStates') {
+     || cud == 'getNextStates' || cud == 'getStates' || cud == 'makeTransition') {
      		// Confirmation when deleting
         if (cud == 'delete') {
       		IsSure = confirm("Do you really want to delete this entry?")
@@ -381,10 +382,9 @@ app.controller('genCtrl', function ($scope, $http) {
     			primary_col: getPrimaryColumns(t.columns),
     			table: t.table_name
     		}
-          // Filter out foreign keys
+        // Filter out foreign keys
         if (cud == 'update') 
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
-
         // Check if state_machine
         if (cud == 'create')
           body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
@@ -427,6 +427,13 @@ app.controller('genCtrl', function ($scope, $http) {
       else if (cud == 'getStates') {
       	alert("WTF")
       }
+      else if (cud == 'makeTransition') {
+        // Show Message?
+        if (response.show_message) {
+          alert(response.message)
+        }
+        //alert("Response:\n\n"+response)
+      }
       else {
         alert("An Error occoured while "+cud+" command.")
       }
@@ -434,20 +441,6 @@ app.controller('genCtrl', function ($scope, $http) {
 
   }
 })
-//--- Directives
-/*
-app.directive('animateOnChange', function($timeout) {
-  return function(scope, element, attr) {
-    scope.$watch(attr.animateOnChange, function(nv,ov) {
-      // TODO: only animate when cmd [update] was sent
-      if (nv != ov) {
-        element.addClass('changed');
-        $timeout(function() {element.removeClass('changed');}, 1500);
-      }
-    })
-  }
-})
-*/
 app.directive('stringToNumber', function() {
   return {
     require: 'ngModel',
