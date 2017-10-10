@@ -118,6 +118,8 @@
   </div>
 </div>
 
+</div>
+
 <!-- Modal for Editing DataRows -->
 <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
   <div class="modal-dialog modal-lg" role="document">
@@ -158,12 +160,14 @@
 	                <!-- Text -->
 	                <input class="form-control" type="text"
 	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
-	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0"
+	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
+                    && !getColByName(selectedTable, key).is_ckeditor"
 	                  ng-model="selectedTask[key]">
 	                <!-- LongText (probably HTML) -->
 	                <textarea class="form-control" rows="3"
-	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0"
-	                  ng-model="selectedTask[key]"></textarea>
+	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
+                    || getColByName(selectedTable, key).is_ckeditor"
+	                  ng-model="selectedTask[key]" style="font-family: Courier;"></textarea>
 	                <!-- TODO: Date -->
 	                <!-- TODO: Boolean (tinyint or boolean)
 	                <input class="form-control" type="checkbox"
@@ -254,16 +258,15 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">Go to next State</h4>
+        <h4 class="modal-title" id="myModalLabel">State-Machine</h4>
       </div>
       <div class="modal-body">
-        <p></p>
+        <div id="statediagram"></div>
       </div>
       <div class="modal-footer">
         <span class="pull-left">
           <span>Goto &rarr; </span>
           <span ng-repeat="state in selectedTable.nextstates">
-            <!--<pre>{{state}}</pre>-->
             <button type="button" class="btn" ng-class="'state'+state.id" ng-click="gotoState(state)" >{{state.name}}</button>
           </span>
         </span>

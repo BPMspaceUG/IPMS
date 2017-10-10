@@ -51,7 +51,6 @@ app.controller('genCtrl', function ($scope, $http) {
     if (res === null) return null; else return res;
   }
   $scope.sortCol = function(table, columnname) {
-    console.log("Clicked -----------> SORT <-----------")
     table.sqlascdesc = (table.sqlascdesc == "desc") ? "asc" : "desc"
     table.sqlorderby = columnname
     $scope.refresh(table.table_name)
@@ -254,6 +253,70 @@ app.controller('genCtrl', function ($scope, $http) {
       $scope.getTableByName(table_name).statenames = response
   	})
   }
+  $scope.drawProcess = function() {
+    links = $scope.selectedTable.smLinks
+    labels = $scope.selectedTable.smNodes
+
+    strLinks = ""
+    strLabels = ""
+    strEP = ""
+    links.forEach(function(e){ strLinks += "s"+e.from+"->s"+e.to+";\n" })
+    labels.forEach(function(e){
+      // EntryPoint
+      if (e.entrypoint == 1)
+        strEP = "start->s"+e.id+";\n"
+      // Actual State
+      strActState = ""
+      if (e.id == $scope.selectedTask['state_id'])
+        strActState = " color=blue fontcolor=blue"
+      // Render
+      strLabels += "s"+e.id+" [label=\""+e.name+"\" fontname=Arial"+strActState+"];\n"
+    })
+
+    document.getElementById("statediagram").innerHTML = Viz(`
+    digraph G {
+      # global
+      node [style="filled, rounded" shape=box color=gray39 fontcolor=gray39 fontsize=10 fillcolor=white margin=0.05 width=0 height=0];
+      edge [color=gray39 fontsize=10 fontcolor=gray39 fontname=Arial];
+      start [shape=circle fixedsize=true fillcolor=white color=black fontcolor=black fontsize=10 width=0.35 height=0.35];
+      # links
+      `+strEP+`
+      `+strLinks+`
+      # nodes
+      `+strLabels+`
+    }
+    `);
+  }
+  // stateengine
+  $scope.draw = function() {
+    if (!$scope.selectedTable.se_active) return
+
+    // TODO: get StatemachineID
+
+    $http({
+      url: window.location.pathname,
+      method: 'post',
+      data: {
+        cmd: 'smGetNodes',
+        paramJS: {tablename: 'table_name'}
+    }
+    }).success(function(response){
+      $scope.selectedTable.smNodes = response
+
+      $http({
+        url: window.location.pathname,
+        method: 'post',
+        data: {
+          cmd: 'smGetLinks',
+          paramJS: {tablename: 'table_name'}
+      }
+      }).success(function(response){
+        $scope.selectedTable.smLinks = response
+        $scope.drawProcess()
+      })      
+    })
+
+  }
 
   //-------------------------------------------------------
 
@@ -410,7 +473,7 @@ app.controller('genCtrl', function ($scope, $http) {
       //-------------------- table data was modified
       if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {
         // hide modals
-        $('#myModal').modal('hide') // Hide stateModal
+        //$('#myModal').modal('hide') // Hide stateModal
         // CREATE - Done
         if (cud == 'create') {
           $('#modal').modal('hide') // Hide create-modal
@@ -423,16 +486,17 @@ app.controller('genCtrl', function ($scope, $http) {
       else if (cud == 'getNextStates') {
         $scope.getTableByName(body.paramJS.table).nextstates = response
         $('#myModal').modal('show')
-      }
-      else if (cud == 'getStates') {
-      	alert("WTF")
+        $scope.draw()
       }
       else if (cud == 'makeTransition') {
         // Show Message?
         if (response.show_message) {
           alert(response.message)
         }
-        //alert("Response:\n\n"+response)
+        $('#myModal').modal('hide')
+        $scope.refresh(body.paramJS.table)
+        //$scope.send("getNextStates")
+        //$scope.draw()
       }
       else {
         alert("An Error occoured while "+cud+" command.")

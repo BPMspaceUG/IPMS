@@ -204,6 +204,14 @@
       $res = $this->SE->getStates();
       return json_encode($res);
     }
+    public function smGetNodes($param) {
+      $res = $this->SE->getNodes(1);
+      return json_encode($res);
+    }
+    public function smGetLinks($param) {
+      $res = $this->SE->getLinks(1);
+      return json_encode($res);
+    }
   }
   // Class Definition ends here
   // Request Handler ends here

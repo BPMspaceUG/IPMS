@@ -4,6 +4,9 @@
   ****************************/
   class StateEngine {
     private $db;
+
+    // TODO: Remove all this because this is all now constant!!!
+
     // tables
     private $table = 'connections'; // root element
     private $table_states = 'state';
@@ -76,7 +79,6 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-
     public function setState($ElementID, $stateID) {
       // get actual state from element
       $actstateObj = $this->getActState($ElementID);
@@ -88,7 +90,7 @@
       // check transition, if allowed
       $trans = $this->checkTransition($actstateID, $stateID);
       // check if transition is possible
-      if ($trans) {        
+      if ($trans) {
         $newstateObj = $this->getStateAsObject($stateID);
         $scripts = $this->getTransitionScripts($actstateID, $stateID);
         
@@ -98,14 +100,13 @@
           // Execute Script!
           eval($script["transition_script"]);
 
-          // -----------> Standard Result
-          /*
-          $script_result = array(
-            "allow_transition" => true,
-            "show_message" => false,
-            "message" => ""
-          );
-          */
+          // -----------> Standard Result          
+          if (empty($script_result))
+            $script_result = array(
+              "allow_transition" => true,
+              "show_message" => false,
+              "message" => ""
+            );
 
           // update state in DB, when plugin says yes
           if (@$script_result["allow_transition"] == true) {
@@ -142,6 +143,25 @@
       $res = $this->db->query($query);
       $return = $this->getResultArray($res);
       return $return;
+    }
+    public function getTransitions($tablename) {
+      $stateID = $this->getEntryPointByTablename($tablename);      
+    }
+    //--------------------------------------- New version
+    public function getNodes($SM_ID) {
+      settype($SM_ID, 'integer');
+      $query = "SELECT state_id AS id, name, entrypoint FROM state WHERE statemachine_id = $SM_ID;";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+      // Output: all nodes [id, name]
+    }
+    public function getLinks($SM_ID) {
+      settype($SM_ID, 'integer');
+      $query = "SELECT state_id_FROM AS 'from', state_id_TO AS 'to' FROM state_rules ".
+               "WHERE state_id_FROM AND state_id_TO IN (SELECT state_id FROM state WHERE statemachine_id = $SM_ID);";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+      // Output: all links [from, to]
     }
   }
 ?>
