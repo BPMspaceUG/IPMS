@@ -65,14 +65,18 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.FKTbl = $scope.getTableByName(table_name)
     $scope.FKActCol = key
     console.log("FK:", $scope.FKTbl)
+    console.log("------FKActCol:", $scope.FKActCol)
     $('#myFKModal').modal('show')
   }
   $scope.selectFK = function(row) {
     console.log("Selected FK:", row)
-    // Write the new key in the current model
     console.log("Selected Task:", $scope.selectedTask)
+    console.log("FKActCol:", $scope.FKActCol)
     // 2. Save the value, like (special trick with .id)
-    $scope.selectedTask[$scope.FKActCol+"________newID"] = row[$scope.FKActCol]
+    // OLD: $scope.selectedTask[$scope.FKActCol+"________newID"] = row[$scope.FKActCol]
+    col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
+    $scope.selectedTask[$scope.FKActCol+"________newID"] = row[col]
+
     // 3. Save the substituted value in the model
 
     // Get the foreign column
@@ -227,6 +231,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
   $scope.substituteSE = function(tablename, stateID) {
     t = $scope.getTableByName(tablename)
+    if (!t.se_active) return
     // Converts stateID -> Statename
     res = stateID
     t.statenames.forEach(function(state){
@@ -246,7 +251,7 @@ app.controller('genCtrl', function ($scope, $http) {
   		method: 'post',
   		data: {
   			cmd: 'getStates',
-  			paramJS: {tablename: table_name}
+  			paramJS: {table: table_name}
   	}
   	}).success(function(response){
       // Save statemachine at the table
@@ -291,15 +296,13 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.draw = function() {
     if (!$scope.selectedTable.se_active) return
 
-    // TODO: get StatemachineID
-
+    console.log("Visualize Process...", $scope.selectedTable)
     $http({
       url: window.location.pathname,
       method: 'post',
       data: {
-        cmd: 'smGetNodes',
-        paramJS: {tablename: 'table_name'}
-    }
+        cmd: 'getStates', paramJS: {table: $scope.selectedTable.table_name}
+      }
     }).success(function(response){
       $scope.selectedTable.smNodes = response
 
@@ -307,9 +310,8 @@ app.controller('genCtrl', function ($scope, $http) {
         url: window.location.pathname,
         method: 'post',
         data: {
-          cmd: 'smGetLinks',
-          paramJS: {tablename: 'table_name'}
-      }
+          cmd: 'smGetLinks', paramJS: {table: $scope.selectedTable.table_name}
+        }
       }).success(function(response){
         $scope.selectedTable.smLinks = response
         $scope.drawProcess()
@@ -446,11 +448,16 @@ app.controller('genCtrl', function ($scope, $http) {
     			table: t.table_name
     		}
         // Filter out foreign keys
-        if (cud == 'update') 
+        if (cud == 'update')
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+
         // Check if state_machine
-        if (cud == 'create')
-          body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
+        if (cud == 'create') {
+          // StateEngine for entrypoints --- TODO: Optimize
+          if (t.se_active) body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
+          // check Foreign keys
+          body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+        }
 
   	} else {
   		// Unknown Command

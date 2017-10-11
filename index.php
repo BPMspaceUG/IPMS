@@ -151,11 +151,11 @@
               <label class="col-sm-2"><span class="label label-success">4</span> Create</label>
               <div>
                 <!-- Create Button -->
-                <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()"><i class="fa fa-play"></i> CREATE</button>
+                <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()">
+                  <i class="fa fa-play"></i> CREATE</button>
                 <!-- Open Test Dir Button -->
                 <a name="test" class="btn btn-sm btn-success" href="../IPMS_test/" target="_blank">
-                  <i class="fa fa-folder-open"></i> Open Test Directory
-                </a>
+                  <i class="fa fa-folder-open"></i> Open Test Directory</a>
               </div>
             </div>
 

@@ -3,79 +3,67 @@
     S T A T E     E N G I N E  
   ****************************/
   class StateEngine {
+    // Variables
     private $db;
+    private $ID;
+    private $table;
 
-    // TODO: Remove all this because this is all now constant!!!
-
-    // tables
-    private $table = 'connections'; // root element
-    private $table_states = 'state';
-    private $table_rules = 'state_rules';
-    // columns
-    private $colname_rootID = 'id';
-    private $colname_stateID = 'state_id';
-    
-    private $colname_stateID_at_TblStates = 'state_id';
-    private $colname_stateName = 'name';
-    private $colname_from = ' state_id_FROM';
-    private $colname_to = 'state_id_TO';
-    
-
-    public function __construct($db/*, $tbl_root, $tbl_states, $tbl_rules, $col_rootID, $col_stateID, $colname_stateID_at_TblStates*/) {
+    public function __construct($db, $tablename = "") {
       $this->db = $db;
-      /*
-      $this->table = $tbl_root;
-      $this->table_states = $tbl_states;
-      $this->table_rules = $tbl_rules;
-      $this->colname_rootID = $col_rootID;
-      $this->colname_stateID = $col_stateID;
-      $this->colname_stateID_at_TblStates = $colname_stateID_at_TblStates;
-      */
+      $this->table = $tablename;
+      // get the ID by Tablename
+      if ($tablename != "") {
+        $this->ID = $this->getSMIDByTablename($tablename);
+      }
     }
+
     private function getResultArray($result) {
       $results_array = array();
-      while ($row = $result->fetch_assoc()) {
+      while ($row = $result->fetch_assoc())
         $results_array[] = $row;
-      }
       return $results_array;
     }
-    public function getActState($id) {
-      settype($id, 'integer');
-
-      $query = "SELECT a.".$this->colname_stateID." AS 'id', b.".
-        $this->colname_stateName." AS 'name' FROM ".$this->table." AS a INNER JOIN ".
-        $this->table_states." AS b ON a.".$this->colname_stateID."=b.".$this->colname_stateID_at_TblStates.
-        " WHERE ".$this->colname_rootID." = $id;";
-      //echo $query;
-
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
-    }
-    public function getStates() {
-      $query = "SELECT state_id AS 'id', name FROM ".$this->table_states;
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
-    }
-    public function getEntryPointByTablename($tablename) {
-      $query = "SELECT state_id AS 'id' FROM ".$this->table_states." WHERE tablename = '$tablename';";
+    private function getSMIDByTablename($tablename) {
+      $query = "SELECT id FROM state_machines WHERE tablename = '$tablename';";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
       return (int)$r[0]['id'];
     }
-    public function getStateAsObject($stateid) {
+    private function getStateAsObject($stateid) {
       settype($id, 'integer');
-      $query = "SELECT ".$this->colname_stateID_at_TblStates." AS 'id', ".
-        $this->colname_stateName." AS 'name' FROM ".$this->table_states.
-        " WHERE ".$this->colname_stateID_at_TblStates." = $stateid;";
+      $query = "SELECT state_id AS 'id', name AS 'name' FROM state WHERE state_id = $stateid;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-    public function getNextStates($actstate) {
-      settype($actstate, 'integer');
-      $query = "SELECT a.".$this->colname_to." AS 'id', b.".
-        $this->colname_stateName." AS 'name' FROM ".$this->table_rules." AS a JOIN ".
-        $this->table_states." AS b ON a.".$this->colname_to."=b.".$this->colname_stateID_at_TblStates.
-        " WHERE ".$this->colname_from." = $actstate;";
+
+    public function getStates() {
+      $query = "SELECT state_id AS 'id', name, entrypoint FROM state WHERE statemachine_id = $this->ID;";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+    }
+    public function getLinks() {
+      $query = "SELECT state_id_FROM AS 'from', state_id_TO AS 'to' FROM state_rules ".
+               "WHERE state_id_FROM AND state_id_TO IN (SELECT state_id FROM state WHERE statemachine_id = $this->ID);";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+    }
+    public function getEntryPoint() {
+      $query = "SELECT state_id AS 'id' FROM state WHERE entrypoint = 1 AND statemachine_id = $this->ID;";
+      $res = $this->db->query($query);
+      $r = $this->getResultArray($res);
+      return (int)$r[0]['id'];
+    }
+    public function getNextStates($actStateID) {
+      settype($actStateID, 'integer');
+      $query = "SELECT a.state_id_TO AS 'id', b.name AS 'name' FROM state_rules AS a ".
+        "JOIN state AS b ON a.state_id_TO = b.state_id WHERE state_id_FROM = $actStateID;";
+      $res = $this->db->query($query);
+      return $this->getResultArray($res);
+    }
+    public function getActState($id) {
+      settype($id, 'integer');
+      $query = "SELECT a.state_id AS 'id', b.name AS 'name' FROM ".$this->table.
+        " AS a INNER JOIN state AS b ON a.state_id = b.state_id WHERE id = $id;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
@@ -97,36 +85,32 @@
         // Execute all scripts from database at transistion
         foreach ($scripts as $script) {
 
-          // Execute Script!
+          // --- ! Execute Script (eval = evil) ! ---
           eval($script["transition_script"]);
 
-          // -----------> Standard Result          
-          if (empty($script_result))
+          // -----------> Standard Result
+          if (empty($script_result)) {
             $script_result = array(
               "allow_transition" => true,
               "show_message" => false,
               "message" => ""
             );
-
+          }
           // update state in DB, when plugin says yes
           if (@$script_result["allow_transition"] == true) {
-            $query = "UPDATE ".$this->table." SET ".$this->colname_stateID." = ".$stateID.
-              " WHERE ".$this->colname_rootID." = ".$ElementID.";";
+            $query = "UPDATE ".$this->table." SET state_id = $stateID WHERE id = $ElementID;";
             $res = $this->db->query($query);
           }
-
           // Return
           return json_encode($script_result);
-        }
-        
+        }        
       }
-      return false; // exit
+      return false;
     }
     public function checkTransition($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
-      $query = "SELECT * FROM ".$this->table_rules." WHERE ".$this->colname_from." = $fromID ".
-        "AND ".$this->colname_to." = $toID;";
+      $query = "SELECT * FROM state_rules WHERE state_id_FROM = $fromID AND state_id_TO = $toID;";
       $res = $this->db->query($query);
       $cnt = $res->num_rows;
       return ($cnt > 0);
@@ -134,34 +118,22 @@
     public function getTransitionScripts($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
-      $query = "SELECT transition_script FROM ".$this->table_rules." WHERE ".
+      $query = "SELECT transition_script FROM state_rules WHERE ".
       "state_id_FROM = $fromID AND state_id_TO = $toID;";
-
-      //echo $query;
-
       $return = array();
       $res = $this->db->query($query);
       $return = $this->getResultArray($res);
       return $return;
     }
-    public function getTransitions($tablename) {
-      $stateID = $this->getEntryPointByTablename($tablename);      
-    }
     //--------------------------------------- New version
-    public function getNodes($SM_ID) {
-      settype($SM_ID, 'integer');
-      $query = "SELECT state_id AS id, name, entrypoint FROM state WHERE statemachine_id = $SM_ID;";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
-      // Output: all nodes [id, name]
-    }
-    public function getLinks($SM_ID) {
-      settype($SM_ID, 'integer');
-      $query = "SELECT state_id_FROM AS 'from', state_id_TO AS 'to' FROM state_rules ".
-               "WHERE state_id_FROM AND state_id_TO IN (SELECT state_id FROM state WHERE statemachine_id = $SM_ID);";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
-      // Output: all links [from, to]
+
+    // TODO: Create basic state engine --- returns SM_ID
+    public function createBasicStateMachine($tablename) {
+      // 0. check if a statemachine already exists for this table
+      // 1. Insert new statemachine for a table
+      // 2. Insert states (new, active, inactive)
+      // 3. Insert links (new -> active, active -> inactive)
+      return 1;
     }
   }
 ?>

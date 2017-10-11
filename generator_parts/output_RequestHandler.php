@@ -13,7 +13,7 @@
   class RequestHandler {
     // Variables
     private $db;
-    private $SE;
+    //private $SE;
 
     public function __construct() {
       // create DB connection object - Data comes from config file
@@ -25,7 +25,7 @@
       }
       $db->query("SET NAMES utf8");
       $this->db = $db;
-      $this->SE = new StateEngine($this->db);
+      //$this->SE = new StateEngine($this->db);
     }
     // Format data for output
     private function parseToJSON($result) {
@@ -72,17 +72,24 @@
       $tablename = $param["table"];
       $rowdata = $param["row"];
       // Split array
-      foreach ($rowdata as $key => $value) {
-        $keys[] = $this->db->real_escape_string($key);
+      foreach ($rowdata as $key => $value) {        
         // Check if has stateengine
         if ($value == '%!%PLACE_EP_HERE%!%') {
-          $EP = $this->SE->getEntryPointByTablename($tablename);
-          $value = $EP;
+          $SE = new StateEngine($this->db, $tablename);
+          $value = $SE->getEntryPoint();
         }
+        // Append
+        $keys[] = $this->db->real_escape_string($key);
         $vals[] = $this->db->real_escape_string($value);
       }
       // Operation
       $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
+      //echo $query;
+      // Checking
+      if (count($keys) != count($vals)) {
+        echo "ERORR while buiding Query! (k=".count($keys).", v=".count($vals).")";
+        exit;
+      }
       $res = $this->db->query($query);
       // Output
       return $res ? "1" : "0";
@@ -189,27 +196,31 @@
       // Return invalid
       if ($stateID === false) return json_encode(array());
       // execute query
-      $res = $this->SE->getNextStates($stateID);
+      $tablename = $param["table"];
+      $SE = new StateEngine($this->db, $tablename);
+      $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
     public function makeTransition($param) {
       // Get the correct ID
       $pricol = $param["primary_col"][0];
-      $ID = $param["row"][$pricol];
-      $nextID = $param["row"]["state_id"];
-      echo $this->SE->setState($ID, $nextID);
+      $ElementID = $param["row"][$pricol];
+      $nextStateID = $param["row"]["state_id"];
+      $tablename = $param["table"];
+      // Statemachine
+      $SE = new StateEngine($this->db, $tablename);
+      echo $SE->setState($ElementID, $nextStateID);
     }
     public function getStates($param) {
-      // OUT: [{id: 1, name: 'unknown'}, {id: 2, name: 'test'}]
-      $res = $this->SE->getStates();
-      return json_encode($res);
-    }
-    public function smGetNodes($param) {
-      $res = $this->SE->getNodes(1);
+      $tablename = $param["table"];
+      $SE = new StateEngine($this->db, $tablename);
+      $res = $SE->getStates();
       return json_encode($res);
     }
     public function smGetLinks($param) {
-      $res = $this->SE->getLinks(1);
+      $tablename = $param["table"];
+      $SE = new StateEngine($this->db, $tablename);
+      $res = $SE->getLinks();
       return json_encode($res);
     }
   }

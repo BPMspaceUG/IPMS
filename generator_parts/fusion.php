@@ -132,13 +132,11 @@
 
       // Add Statemachine
       $query = "INSERT INTO `$db_name`.`state_machines` (`id`, `tablename`) VALUES (1, '$tablename');";
-      echo $query;
       $con->query($query);
 
       // -> States
       $query = "INSERT INTO `$db_name`.`state` (`state_id`, `name`, `form_data`, `statemachine_id`, `entrypoint`) VALUES ".
         "(".(1+$count*3).", 'new', '', 1, 1),(".(2+$count*3).", 'active', '', 1, 0),(".(3+$count*3).", 'inactive', '', 1, 0)";
-      echo $query;
       $con->query($query);
       // -> Rules
       $query = "INSERT INTO `$db_name`.`state_rules` ".
