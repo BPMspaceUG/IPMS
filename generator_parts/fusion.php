@@ -25,141 +25,37 @@
   }
   /* ------------------------------------- Statemachine ------------------------------------- */
 
-  // ----------------------------------- Structure
-
-  // Create Table STATEMACHINES
-  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_machines` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `tablename` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
-  $con->query($query);
-
-  // Create Table NODES
-  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state` (
-  `state_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(45) DEFAULT NULL,
-  `form_data` longtext,
-  `entrypoint` tinyint(1) NOT NULL DEFAULT '0',
-  `statemachine_id` bigint(20) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`state_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
-  $con->query($query);
-
-  // Create Table LINKS
-  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_rules` (
-  `state_rules_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `state_id_FROM` bigint(20) NOT NULL,
-  `state_id_TO` bigint(20) NOT NULL,
-  `transition_script` longtext,
-  PRIMARY KEY (`state_rules_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
-  $con->query($query);
-
-  // ----------------------------------- Constrainsts
-
-  // FOREIGN KEYS StateEngine
-
-  // Rules
-  $query = "ALTER TABLE `$db_name`.`state_rules` ".
-    "ADD INDEX `state_id_fk1_idx` (`state_id_FROM` ASC), ".
-    "ADD INDEX `state_id_fk_to_idx` (`state_id_TO` ASC);";
-  $con->query($query);
-  $query = "ALTER TABLE `$db_name`.`state_rules` ADD CONSTRAINT `state_id_fk_from` FOREIGN KEY (`state_id_FROM`) REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION, ADD CONSTRAINT `state_id_fk_to` FOREIGN KEY (`state_id_TO`) REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
-  $con->query($query);
-
-  // Nodes
-  $query = "ALTER TABLE `$db_name`.`state` ".
-    "ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
-  $con->query($query);
-  $query = "ALTER TABLE `$db_name`.`state` ADD CONSTRAINT `state_machine_id_fk` FOREIGN KEY (`statemachine_id`) REFERENCES `".$db_name."`.`state_machines` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
-  $con->query($query);
-
-
-  /*
-  $query = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state_rules` (
-  `state_rules_id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `state_id_FROM` bigint(20) NOT NULL,
-  `state_id_TO` bigint(20) NOT NULL,
-  `transition_script` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
-
-  // Create Table NODES
-  $query_states = "CREATE TABLE IF NOT EXISTS `".$db_name."`.`state` (
-  `state_id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(45) DEFAULT NULL,
-  `form_data` longtext,
-  `tablename` varchar(128) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
-
-  // Execute queries
-  $con->query($query_rules);
-  $con->query($query_states);
-
-  // Log queries in a DB-Changes file
-  $db_changes = "";
-  $db_changes .= $query_rules."\r\n";
-  $db_changes .= $query_states."\r\n";
-*/
-
+  require_once("output_StateEngine.php");
+ 
   // Loop for each Table with StateEngine checked create a new StateMachine Column
-  $count = 0;
-
   for ($i=0;$i<count($data);$i++) {
     // Get Data
     $tablename = $data[$i]["table_name"];
     @$se_active = (bool)$data[$i]["se_active"];
 
     if ($se_active) {
+      // ------- StateEngine Creation -------
+      $SM = new StateEngine($con, $db_name);
+      $SM->createDatabaseStructure();
+      $SM_ID = $SM->createBasicStateMachine($tablename);
+      unset($SM);
+      // ------- /StateEngine Creation -------
 
-      // Add new column - Does not add if already exists
-
-      $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT 1;";
+      // ------------ Connection to existing structure !
+      // Add new column already existing struct - Does not add if already exists
+      $SM = new StateEngine($con, $db_name, $tablename); // Load correct Machine
+      $EP_ID = $SM->getEntryPoint();
+      echo "EntryPoint = $EP_ID\n\n";
+      $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT $EP_ID;";
       $con->query($q_se);
-
       // Add UNIQUE named foreign Key
       $uid = substr(md5($tablename), 0, 8);
       $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD CONSTRAINT `state_id_".$uid."` FOREIGN KEY (`state_id`) ".
-        "REFERENCES `".$db_name."`.`state_nodes` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
+        "REFERENCES `".$db_name."`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
       $con->query($q_se);
-
-
-      // ----------------------------------------------
-      // INSERT MINIMUM DATA
-
-      // TODO: Better check if already statemachine is available already, if not create one
-      // ----------------------------------------------
-
-      // Add Statemachine
-      $query = "INSERT INTO `$db_name`.`state_machines` (`id`, `tablename`) VALUES (1, '$tablename');";
-      $con->query($query);
-
-      // -> States
-      $query = "INSERT INTO `$db_name`.`state` (`state_id`, `name`, `form_data`, `statemachine_id`, `entrypoint`) VALUES ".
-        "(".(1+$count*3).", 'new', '', 1, 1),(".(2+$count*3).", 'active', '', 1, 0),(".(3+$count*3).", 'inactive', '', 1, 0)";
-      $con->query($query);
-      // -> Rules
-      $query = "INSERT INTO `$db_name`.`state_rules` ".
-        "(`state_rules_id`, `state_id_FROM`, `state_id_TO`, `transition_script`) VALUES ".
-        "(".(1+$count*6).", ".(1+$count*3).", ".(1+$count*3).", ''), ".
-        "(".(2+$count*6).", ".(2+$count*3).", ".(2+$count*3).", ''), ".
-        "(".(3+$count*6).", ".(3+$count*3).", ".(3+$count*3).", ''), ".
-        "(".(4+$count*6).", ".(1+$count*3).", ".(2+$count*3).", ''), ".
-        "(".(5+$count*6).", ".(2+$count*3).", ".(3+$count*3).", ''), ".
-        "(".(6+$count*6).", ".(3+$count*3).", ".(2+$count*3).", '')";
-      $con->query($query);
-
-
-      // Increase counter
-      $count += 1;
     }
   }
 
-  // Logging
-  /*
-  $db_changes .= $query_rules."\r\n";
-  $db_changes .= $query_states."\r\n";
-  */
   //-------------------------------------------------------
 
   // Make array with all table names

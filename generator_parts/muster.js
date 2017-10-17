@@ -443,9 +443,9 @@ app.controller('genCtrl', function ($scope, $http) {
         }
   		  // if Sure -> continue
   		  body.paramJS = {
-    			row: $scope.selectedTask,
-    			primary_col: getPrimaryColumns(t.columns),
-    			table: t.table_name
+    			row : $scope.selectedTask,
+    			primary_col : getPrimaryColumns(t.columns),
+    			table : t.table_name
     		}
         // Filter out foreign keys
         if (cud == 'update')

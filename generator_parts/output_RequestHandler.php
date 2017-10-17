@@ -25,7 +25,6 @@
       }
       $db->query("SET NAMES utf8");
       $this->db = $db;
-      //$this->SE = new StateEngine($this->db);
     }
     // Format data for output
     private function parseToJSON($result) {
@@ -71,6 +70,9 @@
       // Inputs
       $tablename = $param["table"];
       $rowdata = $param["row"];
+      var_dump($param);
+      echo "\n\n----------------------------------------------------\n\n";
+      var_dump($this->db);
       // Split array
       foreach ($rowdata as $key => $value) {        
         // Check if has stateengine
@@ -197,7 +199,7 @@
       if ($stateID === false) return json_encode(array());
       // execute query
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, $tablename);
+      $SE = new StateEngine($this->db, DB_NAME, $tablename);
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
@@ -208,18 +210,18 @@
       $nextStateID = $param["row"]["state_id"];
       $tablename = $param["table"];
       // Statemachine
-      $SE = new StateEngine($this->db, $tablename);
+      $SE = new StateEngine($this->db, DB_NAME, $tablename);
       echo $SE->setState($ElementID, $nextStateID);
     }
     public function getStates($param) {
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, $tablename);
+      $SE = new StateEngine($this->db, DB_NAME, $tablename);
       $res = $SE->getStates();
       return json_encode($res);
     }
     public function smGetLinks($param) {
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, $tablename);
+      $SE = new StateEngine($this->db, DB_NAME, $tablename);
       $res = $SE->getLinks();
       return json_encode($res);
     }
