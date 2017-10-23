@@ -3,7 +3,7 @@
   include_once("replaceDBName-config.php");
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
-  $command = $params["cmd"];  
+  $command = $params["cmd"];
   
 
   replaceClassStateEngine
@@ -11,9 +11,7 @@
 
   //RequestHandler Class Definition starts here
   class RequestHandler {
-    // Variables
     private $db;
-    //private $SE;
 
     public function __construct() {
       // create DB connection object - Data comes from config file
@@ -70,9 +68,6 @@
       // Inputs
       $tablename = $param["table"];
       $rowdata = $param["row"];
-      var_dump($param);
-      echo "\n\n----------------------------------------------------\n\n";
-      var_dump($this->db);
       // Split array
       foreach ($rowdata as $key => $value) {        
         // Check if has stateengine
@@ -86,7 +81,6 @@
       }
       // Operation
       $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
-      //echo $query;
       // Checking
       if (count($keys) != count($vals)) {
         echo "ERORR while buiding Query! (k=".count($keys).", v=".count($vals).")";
@@ -211,7 +205,7 @@
       $tablename = $param["table"];
       // Statemachine
       $SE = new StateEngine($this->db, DB_NAME, $tablename);
-      echo $SE->setState($ElementID, $nextStateID);
+      echo $SE->setState($ElementID, $nextStateID, $pricol);
     }
     public function getStates($param) {
       $tablename = $param["table"];
@@ -228,21 +222,16 @@
   }
   // Class Definition ends here
   // Request Handler ends here
+  //----------------------------------------------------------
 
-  $RH = new RequestHandler();
-  
-  // check if at least a command is set
-  if ($command != "") {
-    // are there parameters?
-    if ($params != "") {
-      // execute with parameters
-      $result = $RH->$command($params["paramJS"]);
-    } else {
-      // only execute
-      $result = $RH->$command();
-    }
+  $RH = new RequestHandler();  
+  if ($command != "") { // check if at least a command is set    
+    if ($params != "") // are there parameters?      
+      $result = $RH->$command($params["paramJS"]); // execute with params
+    else
+      $result = $RH->$command(); // only execute
     // Output
     echo $result;
-    exit();
+    exit(); // Terminate further execution
   }
 ?>

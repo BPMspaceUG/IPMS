@@ -9,7 +9,6 @@
     private $db_name = "";
     private $table = "";
 
-
     public function __construct($db, $db_name, $tablename = "") {
       $this->db = $db;
       $this->db_name = $db_name;
@@ -158,20 +157,18 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-    public function getActState($id) {
+    public function getActState($id, $primaryIDColName) {
       settype($id, 'integer');
       $query = "SELECT a.state_id AS 'id', b.name AS 'name' FROM $this->db_name.".$this->table.
-        " AS a INNER JOIN state AS b ON a.state_id = b.state_id WHERE id = $id;";
+        " AS a INNER JOIN state AS b ON a.state_id = b.state_id WHERE $primaryIDColName = $id;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-    public function setState($ElementID, $stateID) {
+    public function setState($ElementID, $stateID, $primaryIDColName) {
       // get actual state from element
-      $actstateObj = $this->getActState($ElementID);
+      $actstateObj = $this->getActState($ElementID, $primaryIDColName);
       if (count($actstateObj) == 0) return false;
       $actstateID = $actstateObj[0]["id"];
-      $db = $this->db;
-      $roottable = $this->table;
 
       // check transition, if allowed
       $trans = $this->checkTransition($actstateID, $stateID);
@@ -196,7 +193,7 @@
           }
           // update state in DB, when plugin says yes
           if (@$script_result["allow_transition"] == true) {
-            $query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE id = $ElementID;";
+            $query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
             $res = $this->db->query($query);
           }
           // Return
@@ -208,7 +205,7 @@
     public function checkTransition($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
-      $query = "SELECT * FROM $this->db_name.state_rules WHERE state_id_FROM = $fromID AND state_id_TO = $toID;";
+      $query = "SELECT * FROM $this->db_name.state_rules WHERE state_id_FROM=$fromID AND state_id_TO=$toID;";
       $res = $this->db->query($query);
       $cnt = $res->num_rows;
       return ($cnt > 0);

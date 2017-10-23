@@ -141,15 +141,17 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.gotoState = function(nextstate) {
     // TODO: Optimize ... check on serverside if possible etc.
-
-    // Find correct column
+    // Find correct column    
     res = null
     for (property in $scope.selectedTask) {
-      if (property.indexOf('state_id') >= 0)
+      if (property.indexOf('state_id') >= 0) {
         res = property
+      	console.log("-------------- correct column found")
+      }
     }
     // Set next state [OLD]
     $scope.selectedTask[res] = nextstate.id
+    console.log("NEXT STATE ID = ", nextstate.id)
     //$scope.send('update')
     $scope.send('makeTransition')
   }
@@ -414,10 +416,9 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.send = function(cud, param){
     if (param) $scope.loadRow(param.table, param.row)
 
-    console.log("-> Send [", cud, "] Params:", param)
+    console.log("-> Send [>>>", cud, "<<<] Params:", param)
     var body = {cmd: 'cud', paramJS: {}}
     t = $scope.selectedTable
-
 
     // TODO: probably not the best idea to send the primary columns from client
     // better assebmle them on the server side
@@ -444,7 +445,7 @@ app.controller('genCtrl', function ($scope, $http) {
   		  // if Sure -> continue
   		  body.paramJS = {
     			row : $scope.selectedTask,
-    			primary_col : getPrimaryColumns(t.columns),
+    			primary_col : getPrimaryColumns(t.columns), // TODO: Serverside
     			table : t.table_name
     		}
         // Filter out foreign keys
