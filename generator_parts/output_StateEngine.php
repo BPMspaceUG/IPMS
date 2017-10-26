@@ -144,10 +144,12 @@
       return $this->getResultArray($res);
     }
     public function getEntryPoint() {
+    	if (!($this->ID > 0)) return -1;
       $query = "SELECT state_id AS 'id' FROM $this->db_name.state ".
       	"WHERE entrypoint = 1 AND statemachine_id = $this->ID;";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
+      echo $query;
       return (int)$r[0]['id'];
     }
     public function getNextStates($actStateID) {

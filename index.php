@@ -112,7 +112,11 @@
                       ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
                     </td>
                     <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
-                    <td><input type="checkbox" class="form-control" ng-model="tbl.se_active" ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'"></td>         
+                    <td>
+                      <input type="checkbox" class="form-control"
+                        ng-model="tbl.se_active"
+                        ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'">
+                    </td>         
                     <td><input type="checkbox" class="form-control" ng-model="tbl.is_read_only"></td>
                     <td>
                       <div class="row">
@@ -148,14 +152,17 @@
             <!-- Create Button -->
             <div class="row">&nbsp;</div>
             <div class="row">
-              <label class="col-sm-2"><span class="label label-success">4</span> Create</label>
+              <label class="col-sm-2"><span class="label label-success">4</span> Generate</label>
               <div>
                 <!-- Create Button -->
                 <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()">
-                  <i class="fa fa-play"></i> CREATE</button>
+                  <i class="fa fa-rocket"></i> Generate!</button>
+                <!-- Open Project -->
+                <a name="test" class="btn btn-default" ng-click="openProject()" target="_blank">
+                  <i class="fa fa-folder-open"></i> Open Project</a>
                 <!-- Open Test Dir Button -->
-                <a name="test" class="btn btn-sm btn-success" href="../IPMS_test/" target="_blank">
-                  <i class="fa fa-folder-open"></i> Open Test Directory</a>
+                <a name="test" class="btn btn-default" href="../IPMS_test/" target="_blank">
+                  <i class="fa fa-folder-open"></i> Open Test-Directory</a>
               </div>
             </div>
 

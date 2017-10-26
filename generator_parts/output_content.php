@@ -169,11 +169,11 @@
                     || getColByName(selectedTable, key).is_ckeditor"
 	                  ng-model="selectedTask[key]" style="font-family: Courier;"></textarea>
 	                <!-- TODO: Date -->
-	                <!-- TODO: Boolean (tinyint or boolean)
+	                <!-- Boolean (tinyint or boolean) -->
 	                <input class="form-control" type="checkbox"
-	                  ng-show="table.columnsX[$index].COLUMN_TYPE.indexOf('tinyint') >= 0 &&
-	                  !table.columnsX[$index].is_read_only"
-	                  ng-model="table.newRows[0][$index]">
+	                  ng-show="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tinyint') >= 0
+                    && !getColByName(selectedTable, key).is_read_only"
+	                  ng-model="selectedTask[key]" style="width: 50px;">
 	                <!-- Datatype -->
 	                <!--<div><small class="text-muted">{{ getColByName(selectedTable, key).COLUMN_TYPE }}</small></div>-->
 	              </span>

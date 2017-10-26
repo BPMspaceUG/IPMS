@@ -73,6 +73,11 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     });
   }
 
+  $scope.openProject = function(){
+    url = document.URL.replace("IPMS", "IPMS_test")
+    window.open(url + $scope.dbNames.model + ".php")
+  }
+
   $scope.toggle_kids = function(tbl) {
     if (!tbl.showKids) {
       tbl.showKids = true

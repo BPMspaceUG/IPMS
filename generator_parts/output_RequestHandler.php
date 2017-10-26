@@ -72,7 +72,7 @@
       foreach ($rowdata as $key => $value) {        
         // Check if has stateengine
         if ($value == '%!%PLACE_EP_HERE%!%') {
-          $SE = new StateEngine($this->db, $tablename);
+          $SE = new StateEngine($this->db, DB_NAME, $tablename);
           $value = $SE->getEntryPoint();
         }
         // Append

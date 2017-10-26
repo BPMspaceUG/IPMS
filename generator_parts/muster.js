@@ -507,7 +507,7 @@ app.controller('genCtrl', function ($scope, $http) {
         //$scope.draw()
       }
       else {
-        alert("An Error occoured while "+cud+" command.")
+        alert("An Error occoured while "+cud+" command.\nServer returned:\n\n" + response)
       }
     })
 
