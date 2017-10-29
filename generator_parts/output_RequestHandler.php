@@ -70,9 +70,9 @@
       $rowdata = $param["row"];
       // Split array
       foreach ($rowdata as $key => $value) {        
-        // Check if has stateengine
+        // Check if has StateMachine
         if ($value == '%!%PLACE_EP_HERE%!%') {
-          $SE = new StateEngine($this->db, DB_NAME, $tablename);
+          $SE = new StateMachine($this->db, DB_NAME, $tablename);
           $value = $SE->getEntryPoint();
         }
         // Append
@@ -193,7 +193,7 @@
       if ($stateID === false) return json_encode(array());
       // execute query
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine($this->db, DB_NAME, $tablename);
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
@@ -204,18 +204,18 @@
       $nextStateID = $param["row"]["state_id"];
       $tablename = $param["table"];
       // Statemachine
-      $SE = new StateEngine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine($this->db, DB_NAME, $tablename);
       echo $SE->setState($ElementID, $nextStateID, $pricol);
     }
     public function getStates($param) {
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine($this->db, DB_NAME, $tablename);
       $res = $SE->getStates();
       return json_encode($res);
     }
     public function smGetLinks($param) {
       $tablename = $param["table"];
-      $SE = new StateEngine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine($this->db, DB_NAME, $tablename);
       $res = $SE->getLinks();
       return json_encode($res);
     }

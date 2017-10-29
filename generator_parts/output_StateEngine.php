@@ -1,8 +1,5 @@
 <?php
-  /****************************
-    S T A T E     E N G I N E  
-  ****************************/
-  class StateEngine {
+  class StateMachine {
     // Variables
     private $db;
     private $ID = -1;
@@ -38,7 +35,6 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-
 
     public function createDatabaseStructure() {
     	$db_name = $this->db_name;
@@ -103,16 +99,13 @@
     public function createBasicStateMachine($tablename) {
     	$db_name = $this->db_name;
       // check if a statemachine already exists for this table
-      echo "Creating SM for table '$tablename'\n";
       $ID = $this->getSMIDByTablename($tablename);
-      echo "StateMachineID = $ID\n";
       if ($ID > 0) return $ID; // SM already exists
       // Insert new statemachine for a table
       $query = "INSERT INTO `$db_name`.`state_machines` (`tablename`) VALUES ('$tablename');";
       $this->db->query($query);
       $ID = $this->db->insert_id; // returns the ID for the created SM
       $this->ID = $ID;
-      echo "Last inserted ID = $ID\n";
       // Insert states (new, active, inactive)
       $ID_new = $this->createNewState('new', 1);
       $ID_active = $this->createNewState('active', 0);
@@ -124,6 +117,7 @@
         "($ID_active, $ID_active, ''), ".
         "($ID_inactive, $ID_inactive, ''), ".
         "($ID_new, $ID_active, ''), ".
+        "($ID_active, $ID_new, ''), ".
         "($ID_active, $ID_inactive, ''), ".
         "($ID_inactive, $ID_active, '')";
       $this->db->query($query);
@@ -149,7 +143,6 @@
       	"WHERE entrypoint = 1 AND statemachine_id = $this->ID;";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
-      echo $query;
       return (int)$r[0]['id'];
     }
     public function getNextStates($actStateID) {
@@ -171,20 +164,16 @@
       $actstateObj = $this->getActState($ElementID, $primaryIDColName);
       if (count($actstateObj) == 0) return false;
       $actstateID = $actstateObj[0]["id"];
-
       // check transition, if allowed
       $trans = $this->checkTransition($actstateID, $stateID);
       // check if transition is possible
       if ($trans) {
         $newstateObj = $this->getStateAsObject($stateID);
-        $scripts = $this->getTransitionScripts($actstateID, $stateID);
-        
+        $scripts = $this->getTransitionScripts($actstateID, $stateID);        
         // Execute all scripts from database at transistion
         foreach ($scripts as $script) {
-
           // --- ! Execute Script (eval = evil) ! ---
           eval($script["transition_script"]);
-
           // -----------> Standard Result
           if (empty($script_result)) {
             $script_result = array(

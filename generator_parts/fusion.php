@@ -27,25 +27,22 @@
 
   require_once("output_StateEngine.php");
  
-  // Loop for each Table with StateEngine checked create a new StateMachine Column
+  // Loop for each Table with StateMachine checked create a new StateMachine Column
   for ($i=0;$i<count($data);$i++) {
     // Get Data
     $tablename = $data[$i]["table_name"];
     @$se_active = (bool)$data[$i]["se_active"];
 
     if ($se_active) {
-      // ------- StateEngine Creation -------
-      $SM = new StateEngine($con, $db_name);
+      // ------- StateMachine Creation
+      $SM = new StateMachine($con, $db_name);
       $SM->createDatabaseStructure();
       $SM_ID = $SM->createBasicStateMachine($tablename);
       unset($SM);
-      // ------- /StateEngine Creation -------
-
       // ------------ Connection to existing structure !
       // Add new column already existing struct - Does not add if already exists
-      $SM = new StateEngine($con, $db_name, $tablename); // Load correct Machine
+      $SM = new StateMachine($con, $db_name, $tablename); // Load correct Machine
       $EP_ID = $SM->getEntryPoint();
-      echo "EntryPoint = $EP_ID\n\n";
       $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT $EP_ID;";
       $con->query($q_se);
       // Add UNIQUE named foreign Key

@@ -261,7 +261,7 @@
         <h4 class="modal-title" id="myModalLabel">State-Machine</h4>
       </div>
       <div class="modal-body">
-        <div id="statediagram"></div>
+        <div id="statediagram" style="max-height: 300px; overflow: auto;"></div>
       </div>
       <div class="modal-footer">
         <span class="pull-left">
