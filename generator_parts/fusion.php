@@ -1,37 +1,45 @@
 <?php
+	// Load data from Angular
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
     $_REQUEST = json_decode(file_get_contents('php://input'), true);
   }  
-  // put parameters into variables
+  // Parameters
   $db_server = $_REQUEST['host']; //.':'.$_REQUEST['port'];
   $db_user = $_REQUEST['user'];
   $db_pass = $_REQUEST['pwd'];
   $db_name = $_REQUEST['db_name'];
   $data = $_REQUEST["data"];
 
-  // check if liam is present and create test directory for IPMS if not exist
+  // check if LIAM is present and create a Directory if not exists
   $content = "";
-  $create_test_file = FALSE;
   $content = @file_get_contents("../../.git/config");
   if (!empty($content) && strpos($content,"https://github.com/BPMspaceUG/LIAM.git")) {
     if (!is_dir('../../IPMS_test')) {
       mkdir('../../IPMS_test', 0755, true);
     }
   }
-  // open DB-Connection or die
+  // Open a new DB-Connection
   $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
   if ($con->connect_errno > 0) {
     die('Unable to connect to database [' . $db->connect_error . ']');
   }
+  // Create an array with all table names
+  $all_table_names = array();
+  for ($i=0;$i<count($data);$i++) {
+    array_push($all_table_names, $data[$i]["table_name"]);
+  }
+
   /* ------------------------------------- Statemachine ------------------------------------- */
 
   require_once("output_StateEngine.php");
  
-  // Loop for each Table with StateMachine checked create a new StateMachine Column
+  // Loop each Table with StateMachine checked create a new StateMachine Column
   for ($i=0;$i<count($data);$i++) {
     // Get Data
     $tablename = $data[$i]["table_name"];
     @$se_active = (bool)$data[$i]["se_active"];
+
+    // TODO: Check if the "table" is no view
 
     if ($se_active) {
       // ------- StateMachine Creation
@@ -55,78 +63,70 @@
 
   //-------------------------------------------------------
 
-  // Make array with all table names
-  $all_table_names = array();
-  for ($i=0;$i<count($data);$i++) {
-    array_push($all_table_names, $data[$i]["table_name"]);
+  function loadFile($fname) {
+  	$fh = fopen($fname, "r");
+  	$content = stream_get_contents($fh);
+  	fclose($fh);
+  	return $content;
   }
 
-  // TODO: Make function, only pass filenames
   /*
   // --- Liam
-  $handle = fopen("./output_LiamHeader.php", "r");
-  $output_LiamHeader = stream_get_contents($handle);
+  $output_LiamHeader = loadFile("./output_LiamHeader.php");
   // --- Debug Header
-  $handle = fopen("./output_DebugHeader.php", "r");
-  $output_DebugHeader = stream_get_contents($handle);
-  */
+  $output_DebugHeader = loadFile("./output_DebugHeader.php");  
+	*/
+
+  // ------------------- Server Side
   // --- Class State Engine
-  $handle = fopen("./output_StateEngine.php", "r");
-  $class_StateEngine = stream_get_contents($handle);
-    // Clear PHP Tags
-    $class_StateEngine = str_replace('<?php', '', $class_StateEngine);
-    $class_StateEngine = str_replace('?>', '', $class_StateEngine);
+  $class_StateEngine = loadFile("./output_StateEngine.php");
+  $class_StateEngine = str_replace('<?php', '', $class_StateEngine);
+  $class_StateEngine = str_replace('?>', '', $class_StateEngine);    
   // --- RequestHandler
-  $handle = fopen("./output_RequestHandler.php", "r");
-  $output_RequestHandler = stream_get_contents($handle);
+  $output_RequestHandler = loadFile("./output_RequestHandler.php");
   $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
-  // --- StateEngine in RequestHandler
   $output_RequestHandler = str_replace('replaceClassStateEngine', $class_StateEngine, $output_RequestHandler);
-  // --- HTML - Header
-  $handle = fopen("./output_header.php", "r");
-  $output_header = stream_get_contents($handle);
+
+  // ------------------- Client Side
+  // --- HTML Header
+  $output_header = loadFile("./output_header.php");
   $output_header = str_replace('replaceDBName', $db_name, $output_header);
-    // --- CSS in Header
-    $handle = fopen("./muster.css", "r");
-    $output_css = stream_get_contents($handle);
-    $output_header = str_replace('replaceCSS', $output_css, $output_header);
+  // --- CSS in Header
+  $output_css = loadFile("./muster.css");
+  $output_header = str_replace('replaceCSS', $output_css, $output_header);
   // --- Menu
-  $handle = fopen("./output_menu.php", "r");
-  $output_menu = stream_get_contents($handle);
+  $output_menu = loadFile("./output_menu.php");
   // --- Content
-  $handle = fopen("./output_content.php", "r");
-  $output_content = stream_get_contents($handle);
+  $output_content = loadFile("./output_content.php");
   // --- Footer
-  $handle = fopen("./output_footer.php", "r");
-  $output_footer = stream_get_contents($handle);
-  // put Javascript in Footer
-  $musterJS = '';
-  $handle = fopen("./muster.js", "r");
-  $musterJS = $musterJS . stream_get_contents($handle);
+  $output_footer = loadFile("./output_footer.php");
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
-  $output_footer = str_replace("replaceMusterJS", $musterJS, $output_footer);
-  // Finally close FileHandler
-  fclose($handle);
+  // --- JavaScript
+  $output_JS = loadFile("./muster.js");
+  // place JS in Footer
+  $output_footer = str_replace("replaceMusterJS", $output_JS, $output_footer);
+
+  // ------------------------------------ Generate Core File
 
   $output_all = ''
-    // .$output_LiamHeader
-    // .$output_DebugHeader
-    .$output_RequestHandler
-    // .$output_script
-    .$output_header
-    .$output_menu
-    .$output_content
-    .$output_footer
-    ;
+  // .$output_LiamHeader
+  // .$output_DebugHeader
+  .$output_RequestHandler
+  // .$output_script
+  .$output_header
+  .$output_menu
+  .$output_content
+  .$output_footer
+  ;
 
   echo $output_all;
 
+  // ------------------------------------ Generate Config File
+
   // ---> ENCODE Data as JSON
   $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
-
   // ----------------------- Config File generator
-  $output_config = 
-'<?php
+  $output_config = '<?php
   /*
     IPMS Generator
     ==================================================
@@ -149,11 +149,9 @@
 ?>';
 
   // ----> Write to file
-
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
-    //file_put_contents("../../IPMS_test/".$db_name.".txt", $output_all); // For debugging
-    //file_put_contents("../../IPMS_test/".$db_name."-config.txt", $output_config);
   }
+
 ?>

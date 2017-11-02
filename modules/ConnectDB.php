@@ -1,4 +1,6 @@
 <?php
+	error_reporting(-1);
+
   // Check if Request Method is POST
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
     // Convert the input stream into PHP variables from Angular
@@ -27,7 +29,6 @@
     // Connection Error ?
     if ($con->connect_error) {
       die("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
-      die ("\nCould not connect to db. Further Script processing terminated ");
     }
     else {
       // Return output
@@ -133,32 +134,20 @@
             "colID" => $row["REFERENCED_COLUMN_NAME"]
           );
         }
-        //var_dump($fKeys);
-        //echo "----------------------------------\n";
+
 
         if (count($columns) > 0 && count($fKeys)) {
-          //var_dump($columns);
           // merge keys        
           for ($i=0;$i<count($columns);$i++) {
             $colname = $columns[$i]["COLUMN_NAME"];
             // check if entry exists
             if (array_key_exists($colname, $fKeys)) {
-              //echo "$colname\n";
-              //var_dump($fKeys[$colname]);
               $columns[$i]["foreignKey"]["table"] = $fKeys[$colname]["refeTable"];
               $columns[$i]["foreignKey"]["col_id"] = $fKeys[$colname]["colID"];
               $columns[$i]["foreignKey"]["col_subst"] = $fKeys[$colname]["colID"];
             }
           }
         }
-
-
-        /*
-        foreach ($fKeys as $key {
-          $key["REFERENCED_TABLE_NAME"];
-          $key["REFERENCED_COLUMN_NAME"];
-        }
-        */
 
       } // Columns finished
 
