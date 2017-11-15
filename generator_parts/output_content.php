@@ -14,10 +14,15 @@
         <div class="panel panel-primary panel-table" disabled>
           <div class="panel-heading">
             <h3 class="panel-title">
-              <div class="pull-left" style="margin-top: .4em; font-weight: bold;">{{table.table_alias}}</div>
+              <div class="pull-left" style="margin-top: .4em; font-weight: bold;">
+                <i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span>
+              </div>
               <!-- Where filter -->
               <form class="form-inline pull-right">
                 <div class="form-group">
+                  <!-- PROCESS -->
+                  <button class="btn btn-default" title="Show Process" ng-hide="!table.se_active" type="button"
+                    ng-click="openSEPopup()"><i class="fa fa-code-fork fa-rotate-90"></i></button>
                   <!-- ADD -->
                   <button class="btn btn-success" title="Add new entry" ng-hide="table.is_read_only" type="button"
                   	ng-click="addEntry(table.table_name);"><i class="fa fa-plus"></i></button>
@@ -39,47 +44,51 @@
           			<tr><th style="padding: 3em 0; font-weight: normal;">No entries found</th></tr>
           		</thead>          		
           	</table>
-            <table class="table table-bordered table-striped table-hover table-condensed" ng-if="table.count > 0">
+            <!-- Dispay real content -->
+            <table class="table table-bordered table-striped table-hover table-condensed tableCont" ng-if="table.count > 0">
               <!-- ============= COLUMN HEADERS ============= -->
               <thead>
-                <tr>                 
+                <tr>
+                  <!-- CTRL Header -->
+                  <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
+                  <!-- Data Headers -->
                   <th ng-repeat="(key, value) in table.rows[0]"
-                    ng-if="getColByName(table, key).is_in_menu">
-                    <span ng-click="sortCol(table, key)">{{getColAlias(table, key)}}
+                    ng-if="getColByName(table, key).is_in_menu" ng-click="sortCol(table, key)">
+                    <span>{{getColAlias(table, key)}}
                       <i class="fa fa-caret-down" ng-show="table.sqlorderby == key && table.sqlascdesc == 'desc'"></i>
                       <i class="fa fa-caret-up" ng-show="table.sqlorderby == key && table.sqlascdesc == 'asc'"></i>
                     </span>
                   </th>
-                  <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                 </tr>
               </thead>
               <tbody>
                 <!-- ============= CONTENT ============= -->
-                <!-- TODO: do not insert cells via index... because of ORDER! -->
                 <tr ng-repeat="row in table.rows" data-toggle='modal' data-target="modal-container-1">
-                  <!-- Data entries -->
+                  <!-- CTRL ROWS -->
+                  <td class="controllcoulm" ng-hide="table.is_read_only">
+                    <!-- Edit Button -->
+                    <a class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Row">
+                      <i class="fa fa-pencil"></i>
+                    </a>
+                    <!-- Delete Button -->
+                    <button id="del{{$index}}" class="btn btn-danger" title="Delete Row"
+                      ng-click="send('delete', {row:row, colum:$index, table:table})">
+                      <i class="fa fa-times"></i></button>
+                  </td>
+                  <!-- DATA ROWS -->
                   <td ng-repeat="(key, value) in row" ng-if="getColByName(table, key).is_in_menu">
                     <!-- Substitue State Machine -->
                     <div ng-if="(( key.indexOf('state') >= 0) && table.se_active)">
-                      <button class="btn" ng-class="'state'+ value"
-                        ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, value)}}</button>
+                      <b ng-class="'state'+ value">{{substituteSE(table.table_name, value)}}</b>
+                      <!--
+                      <span class="btn btn-default btn-sm stateBtn" ng-class="'state'+ value"
+                        ng-click="openSEPopup(table, row)">{{substituteSE(table.table_name, value)}}</span>
+                      -->
                     </div>
                     <!-- Cell -->
                     <span ng-if="!(( key.indexOf('state') >= 0) && table.se_active)">
                    		{{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
                    	</span>
-                  </td>
-                  <!-- Edit options -->
-                  <td class="controllcoulm" ng-hide="table.is_read_only">
-                    <!-- Update Button -->
-                    <a class="btn btn-default" data-toggle="modal" data-target="#modal" 
-                      ng-click="editEntry(table, row)" title="Edit">
-                      <i class="fa fa-pencil"></i>
-                    </a>
-                    <!-- Delete Button -->
-                    <button id="del{{$index}}" class="btn btn-danger" title="Delete"
-                      ng-click="send('delete', {row:row, colum:$index, table:table})">
-                      <i class="fa fa-times"></i></button>
                   </td>
                 </tr>
               </tbody>
@@ -120,6 +129,7 @@
 
 </div>
 
+
 <!-- Modal for Editing DataRows -->
 <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
   <div class="modal-dialog modal-lg" role="document">
@@ -136,19 +146,19 @@
           <!-- Add if is in menu -->
           <div class="form-group" ng-repeat="(key, value) in selectedTask"
             ng-if="getColByName(selectedTable, key).is_in_menu">
-          	<div ng-hide="selectedTable.se_active && (key.indexOf('state_id') >= 0)">
+          	<div ng-hide="selectedTable.se_active && (key.indexOf('state_id') >= 0)">              
               <!-- LABEL -->
 	            <label for="inputX" class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
               <!-- VALUE -->
               <div class="col-sm-9">
-                <!-- TODO: Read Only -->                
+                <!-- TODO: Read Only -->
                 <!-- Foreign Key (FK) -->
                 <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
-                	<p class="form-control-static">
-                    <a href="#" class="fKeyLink"
-                      ng-click="openFK(key)">
-                      <i class="fa fa-key"></i> {{value}}</a>
-                  </p>
+                	<a class="btn btn-default"
+                    ng-click="selectedTable.form_data[key] == 'RO' || openFK(key)"
+                    ng-disabled="selectedTable.form_data[key] == 'RO'">
+                    <i class="fa fa-key"></i> {{value}}
+                  </a>
                 </span>
                 <!-- NO FK -->
                 <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
@@ -156,24 +166,28 @@
 	                <input class="form-control" type="number" string-to-number 
 	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
 	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
-	                  ng-model="selectedTask[key]">
+	                  ng-model="selectedTask[key]"
+                    ng-disabled="selectedTable.form_data[key] == 'RO'">
 	                <!-- Text -->
 	                <input class="form-control" type="text"
 	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
 	                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
                     && !getColByName(selectedTable, key).is_ckeditor"
-	                  ng-model="selectedTask[key]">
+	                  ng-model="selectedTask[key]"
+                    ng-disabled="selectedTable.form_data[key] == 'RO'">
 	                <!-- LongText (probably HTML) -->
 	                <textarea class="form-control" rows="3"
 	                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
                     || getColByName(selectedTable, key).is_ckeditor"
-	                  ng-model="selectedTask[key]" style="font-family: Courier;"></textarea>
+	                  ng-model="selectedTask[key]" style="font-family: Courier;"
+                    ng-disabled="selectedTable.form_data[key] == 'RO'"></textarea>
 	                <!-- TODO: Date -->
 	                <!-- Boolean (tinyint or boolean) -->
 	                <input class="form-control" type="checkbox"
 	                  ng-show="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tinyint') >= 0
                     && !getColByName(selectedTable, key).is_read_only"
-	                  ng-model="selectedTask[key]" style="width: 50px;">
+	                  ng-model="selectedTask[key]"  ng-disabled="selectedTable.form_data[key] == 'RO'"
+                    style="width: 50px;">
 	                <!-- Datatype -->
 	                <!--<div><small class="text-muted">{{ getColByName(selectedTable, key).COLUMN_TYPE }}</small></div>-->
 	              </span>
@@ -183,9 +197,27 @@
         </form>
       </div>
       <div class="modal-footer">
+        <!-- CREATE / CLOSE -->
       	<span ng-if="!createNewEntry">
-        	<button class="btn btn-primary" ng-click="saveEntry()"><i class="fa fa-floppy-o"></i> Save</button>
-        	<button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal"><i class="fa fa-floppy-o"></i> Save &amp; Close</button>
+          <!-- STATE MACHINE -->
+          <span class="pull-left" ng-hide="!selectedTable.se_active || selectedTable.hideSmBtns">
+            <span ng-repeat="state in selectedTable.nextstates">
+              <!-- Recursive State -->
+              <span ng-if="state.id == selectedTask.state_id">
+                <a class="btn btn-primary" ng-click="gotoState(state)">
+                  <i class="fa fa-floppy-o"></i> Save</a>
+                  <small style="margin: 0 .5em;">or goto</small>
+              </span>
+              <!-- Normal state -->
+              <span ng-if="state.id != selectedTask.state_id" class="btn btn-default stateBtn"
+                ng-class="'state'+state.id" ng-click="gotoState(state)">{{state.name}}</span>
+            </span>
+          </span>
+          <!-- If has no StateMachine -->
+          <span ng-if="!selectedTable.se_active">
+        	  <button class="btn btn-primary" ng-click="saveEntry()"><i class="fa fa-floppy-o"></i> Save</button>
+        	  <button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal"><i class="fa fa-floppy-o"></i> Save &amp; Close</button>
+          </span>
         </span>
         <span ng-if="createNewEntry">
         	<button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedTask, table: selectedTable})">
@@ -267,7 +299,7 @@
         <span class="pull-left">
           <span>Goto &rarr; </span>
           <span ng-repeat="state in selectedTable.nextstates">
-            <button type="button" class="btn" ng-class="'state'+state.id" ng-click="gotoState(state)" >{{state.name}}</button>
+            <span class="btn btn-default btn-sm stateBtn" ng-class="'state'+state.id" ng-click="gotoState(state)" >{{state.name}}</span>
           </span>
         </span>
         <button type="button" class="btn btn-default pull-right" data-dismiss="modal">Close</button>

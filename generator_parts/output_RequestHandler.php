@@ -162,6 +162,7 @@
       $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
 
+      //var_dump($query);
       $res = $this->db->query($query);
       // TODO: Check if rows where REALLY updated!
       // Output
@@ -177,10 +178,27 @@
       // Output
       return $res ? "1" : "0";
     }
+    public function getFormData($param) {
+      $tablename = $param["table"];
+      $SM = new StateMachine($this->db, DB_NAME, $tablename);
+      // Check if has state machine ?
+      if ($SM->getID() > 0) {
+        $stateID = $param["row"]["state_id"];
+        $r = $SM->getFormDataByStateID($stateID);
+        if (empty($r)) $r = "1";
+        return $r;
+      } else {
+        // respond true if no statemachine (allow editing)
+        return "1"; 
+      }
+    }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
       // Find right column (Maybe optimize with GUID)
       $row = $param["row"];
+
+      // TODO: Get StateID not from client -> find itself by using [table, ElementID]
+      // {
       $stateID = false;
       foreach ($row as $key => $value) {
         // if column contains *state_id*
@@ -191,6 +209,8 @@
       }
       // Return invalid
       if ($stateID === false) return json_encode(array());
+      // }
+      
       // execute query
       $tablename = $param["table"];
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
@@ -205,7 +225,25 @@
       $tablename = $param["table"];
       // Statemachine
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
-      echo $SE->setState($ElementID, $nextStateID, $pricol);
+      // get ActStateID
+      $actstateObj = $SE->getActState($ElementID, $pricol);
+      if (count($actstateObj) == 0) {
+        echo "Element not found";
+        return false;
+      }
+      $actstateID = $actstateObj[0]["id"];
+      // Try to set State
+      $result = $SE->setState($ElementID, $nextStateID, $pricol, $param);
+      // Check if was a recursive state
+      $r = json_decode($result, true);
+      // Special case [Save] transition
+      if ($nextStateID == $actstateID) {
+        if ($r["allow_transition"]) {
+          $this->update($param); // Update all other rows
+        }
+      }
+      // Return to client
+      echo $result;
     }
     public function getStates($param) {
       $tablename = $param["table"];

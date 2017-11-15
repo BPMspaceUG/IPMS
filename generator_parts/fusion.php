@@ -46,6 +46,18 @@
       $SM = new StateMachine($con, $db_name);
       $SM->createDatabaseStructure();
       $SM_ID = $SM->createBasicStateMachine($tablename);
+
+      // Add Basic Form Data for each state
+      $query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = '$tablename';";
+      $res = $con->query($query);
+      $cols = array();
+      while ($row = $res->fetch_row()) $cols[] = $row[0];
+      $form_data = json_encode($SM->getBasicFormDataByColumns($cols));
+      var_dump($form_data);
+      
+      // TODO: Insert basic form_data
+      //$query = "INSERT INTO `".$db_name."`.`state` (from_data) VALUES ('') WHERE state_id = ;";
+
       unset($SM);
       // ------------ Connection to existing structure !
       // Add new column already existing struct - Does not add if already exists

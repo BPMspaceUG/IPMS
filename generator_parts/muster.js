@@ -1,3 +1,11 @@
+$(document).ready(function() {
+    $("body").popover({ selector: '[data-toggle=popover]' });
+});
+
+function getHTML() {
+  return '<a href="#">Test 1</a><br><a href="#">Test 2</a><br><a href="#">Test 3</a>';
+}
+//-------------------------------------------------- AngularJS
 
 var app = angular.module("genApp", [])
 //--- Controller
@@ -9,29 +17,6 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.FKTbl = []
   $scope.createNewEntry = false
 
-  $scope.saveEntry = function() {
-    // Task is already loaded in memory
-    $scope.send('update')
-  }
-  $scope.editEntry = function(table, row) {
-  	$scope.createNewEntry = false
-  	$scope.loadRow(table, row)
-  }
-  $scope.addEntry = function(table_name) {
-    t = $scope.getTableByName(table_name)
-    // create empty element
-    var newRow = {}
-    t.columns.forEach(function(col){
-      // check if auto_inc
-      if (col.EXTRA != 'auto_increment')
-        newRow[col.COLUMN_NAME] = ''
-    })
-    // load into scope
-    $scope.loadRow(t, newRow)
-    $scope.createNewEntry = true
-    // show modal
-    $('#modal').modal('show')
-  }
   $scope.getColAlias = function(table, col_name) {
   	res = ''
   	table.columns.forEach(function(col){
@@ -55,23 +40,20 @@ app.controller('genCtrl', function ($scope, $http) {
     table.sqlorderby = columnname
     $scope.refresh(table.table_name)
   }
-  $scope.getSortIcon = function(table, colname) {
-    return "fa fa-arrow";
-  }
   $scope.openFK = function(key) {
     table_name = $scope.getColByName($scope.selectedTable, key).foreignKey.table
     console.log("-> FK (", key, ")", table_name)
     // Get the table from foreign key
     $scope.FKTbl = $scope.getTableByName(table_name)
     $scope.FKActCol = key
-    console.log("FK:", $scope.FKTbl)
-    console.log("------FKActCol:", $scope.FKActCol)
+    //console.log("FK:", $scope.FKTbl)
+    //console.log("------FKActCol:", $scope.FKActCol)
     $('#myFKModal').modal('show')
   }
   $scope.selectFK = function(row) {
-    console.log("Selected FK:", row)
-    console.log("Selected Task:", $scope.selectedTask)
-    console.log("FKActCol:", $scope.FKActCol)
+    //console.log("Selected FK:", row)
+    //console.log("Selected Task:", $scope.selectedTask)
+    //console.log("FKActCol:", $scope.FKActCol)
     // 2. Save the value, like (special trick with .id)
     // OLD: $scope.selectedTask[$scope.FKActCol+"________newID"] = row[$scope.FKActCol]
     col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
@@ -122,10 +104,6 @@ app.controller('genCtrl', function ($scope, $http) {
     }
     return pages
   }
-  $scope.loadRow = function(tbl, row) {  	
-    $scope.selectedTask = angular.copy(row)
-    $scope.selectedTable = tbl
-  }
   $scope.gotoPage = function(newIndex, table) {
   	lastPageIndex = Math.ceil(table.count / $scope.PageLimit) - 1
     // Check borders
@@ -135,24 +113,44 @@ app.controller('genCtrl', function ($scope, $http) {
   	table.PageIndex = newIndex
   	$scope.refresh(table.table_name)
   }
-  $scope.openSEPopup = function(tbl, row) {
-    $scope.loadRow(tbl, row) // select current Row
+  $scope.loadRow = function(tbl, row) {   
+    $scope.selectedTask = angular.copy(row)
+    $scope.selectedTable = tbl
+  }
+  $scope.saveEntry = function() {
+    // Task is already loaded in memory
+    $scope.send('update')
+  }
+  $scope.editEntry = function(table, row) {
+    $scope.createNewEntry = false
+    $scope.loadRow(table, row)
     $scope.send("getNextStates")
+    $scope.send("getFormData")
+  }
+  $scope.addEntry = function(table_name) {
+    t = $scope.getTableByName(table_name)
+    // create empty element
+    var newRow = {}
+    t.columns.forEach(function(col){
+      // check if auto_inc
+      if (col.EXTRA != 'auto_increment')
+        newRow[col.COLUMN_NAME] = ''
+    })
+    // load into scope
+    $scope.loadRow(t, newRow)
+    $scope.createNewEntry = true
+    // show modal
+    $('#modal').modal('show')
+  }
+  $scope.openSEPopup = function(tbl, row) {
+    //$scope.loadRow(tbl, row) // select current Row
+    //$scope.send("getNextStates")
+    $('#myModal').modal('show')
+    $scope.draw()
   }
   $scope.gotoState = function(nextstate) {
-    // TODO: Optimize ... check on serverside if possible etc.
-    // Find correct column    
-    res = null
-    for (property in $scope.selectedTask) {
-      if (property.indexOf('state_id') >= 0) {
-        res = property
-      	console.log("-------------- correct column found")
-      }
-    }
-    // Set next state [OLD]
-    $scope.selectedTask[res] = nextstate.id
-    console.log("NEXT STATE ID = ", nextstate.id)
-    //$scope.send('update')
+    $scope.selectedTable.hideSmBtns = true
+    $scope.selectedTask['state_id'] = nextstate.id
     $scope.send('makeTransition')
   }
   $scope.getTableByName = function(tablename) {
@@ -283,8 +281,9 @@ app.controller('genCtrl', function ($scope, $http) {
     document.getElementById("statediagram").innerHTML = Viz(`
     digraph G {
       # global
-      node [style="filled, rounded" shape=box color=gray39 fontcolor=gray39 fontsize=10 fillcolor=white margin=0.05 width=0 height=0];
-      edge [color=gray39 fontsize=10 fontcolor=gray39 fontname=Arial];
+      rankdir=LR;
+      node [style="filled, rounded" shape=box fontsize=10 fillcolor=white margin=0.05 width=0 height=0];
+      edge [color=gray70 fontsize=10 fontcolor=gray70 fontname=Arial];
       start [shape=circle fixedsize=true fillcolor=white color=black fontcolor=black fontsize=10 width=0.35 height=0.35];
       # links
       `+strEP+`
@@ -326,7 +325,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
   // Refresh Function
   $scope.refresh = function(table_name) {
-  	console.log("Started refreshing", table_name)
+  	//console.log("Started refreshing", table_name)
     t = $scope.getTableByName(table_name)
     // Search-Event(set LIMIT Param to 0)
     if (t.sqlwhere != t.sqlwhere_old)
@@ -416,7 +415,7 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.send = function(cud, param){
     if (param) $scope.loadRow(param.table, param.row)
 
-    console.log("-> Send [>>>", cud, "<<<] Params:", param)
+    //console.log("-> Send [>>>", cud, "<<<] Params:", param)
     var body = {cmd: 'cud', paramJS: {}}
     t = $scope.selectedTable
 
@@ -435,8 +434,9 @@ app.controller('genCtrl', function ($scope, $http) {
 
 
     // Assemble data for Create, Update, Delete Functions
-  	if (cud == 'create' || cud == 'delete' || cud == 'update'
+  	if (cud == 'create' || cud == 'delete' || cud == 'update' || cud == 'getFormData'
      || cud == 'getNextStates' || cud == 'getStates' || cud == 'makeTransition') {
+
      		// Confirmation when deleting
         if (cud == 'delete') {
       		IsSure = confirm("Do you really want to delete this entry?")
@@ -449,7 +449,7 @@ app.controller('genCtrl', function ($scope, $http) {
     			table : t.table_name
     		}
         // Filter out foreign keys
-        if (cud == 'update')
+        if (cud == 'update' || cud == 'makeTransition')
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
 
         // Check if state_machine
@@ -466,7 +466,7 @@ app.controller('genCtrl', function ($scope, $http) {
       return
     }
     // ------------------- Finally -> Send request
-    console.log("### POST", "Command:", cud, "Params:", body.paramJS)
+    console.log("===> [POST]", "cmd=", cud, "params=", body.paramJS)
     // Send request to server
     $http({
       url: window.location.pathname,
@@ -479,9 +479,15 @@ app.controller('genCtrl', function ($scope, $http) {
       // Response
       console.log("ResponseData: ", response)
       //-------------------- table data was modified
-      if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {
-        // hide modals
-        //$('#myModal').modal('hide') // Hide stateModal
+      if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create' || cud == 'getFormData')) {
+        
+        // Edit Entry
+        if (cud == 'getFormData') {
+          $scope.getTableByName(body.paramJS.table).form_data = response
+          $scope.selectedTable.hideSmBtns = false
+          $('#modal').modal('show')
+        }
+
         // CREATE - Done
         if (cud == 'create') {
           $('#modal').modal('hide') // Hide create-modal
@@ -493,18 +499,18 @@ app.controller('genCtrl', function ($scope, $http) {
       //---------------------- StateEngine (List Transitions)
       else if (cud == 'getNextStates') {
         $scope.getTableByName(body.paramJS.table).nextstates = response
-        $('#myModal').modal('show')
-        $scope.draw()
+        //$('#myModal').modal('show')
+        //$scope.draw()
       }
       else if (cud == 'makeTransition') {
-        // Show Message?
-        if (response.show_message) {
-          alert(response.message)
-        }
-        $('#myModal').modal('hide')
+        // Show Message
+        if (response.show_message)
+          alert(response.message) // TODO: Make possible HTML Formated Message -> Small modal
+        // Hide all Modals
+        //$('#myModal').modal('hide')
+        $('#modal').modal('hide') // TODO: Window should not close
+        // Refresh Table
         $scope.refresh(body.paramJS.table)
-        //$scope.send("getNextStates")
-        //$scope.draw()
       }
       else {
         alert("An Error occoured while "+cud+" command.\nServer returned:\n\n" + response)

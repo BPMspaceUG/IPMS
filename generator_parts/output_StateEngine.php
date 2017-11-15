@@ -123,6 +123,25 @@
       $this->db->query($query);
       return $ID;
     }
+    // TODO:
+    public function getBasicFormDataByColumns($columns) {
+      // possibilities = [RO, RW, HD]
+      $res = array();
+      // Loop each column
+      for ($i=0;$i<count($columns);$i++) {
+        $res[$columns[$i]] = "RO";
+      }
+      return $res;
+    }
+    public function getFormDataByStateID($StateID) {
+      if (!($this->ID > 0)) return "";
+      settype($StateID, 'integer');
+      $query = "SELECT form_data AS 'fd' FROM $this->db_name.state ".
+        "WHERE statemachine_id = $this->ID AND state_id = $StateID;";
+      $res = $this->db->query($query);
+      $r = $this->getResultArray($res);
+      return $r[0]['fd'];
+    }
     public function getID() {
     	return $this->ID;
     }
@@ -159,7 +178,7 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-    public function setState($ElementID, $stateID, $primaryIDColName) {
+    public function setState($ElementID, $stateID, $primaryIDColName, &$param = null) {
       // get actual state from element
       $actstateObj = $this->getActState($ElementID, $primaryIDColName);
       if (count($actstateObj) == 0) return false;

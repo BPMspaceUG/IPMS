@@ -17,14 +17,6 @@
       </div>
     </div>
   </div>
-  <!-- JS -->
-  <script type="text/javascript" src="../js/viz-lite.js"></script>
-  <script type="text/javascript" src="../js/angular.min.js"></script>
-  <script type="text/javascript" src="../js/angular-sanitize.min.js"></script>
-  <script type="text/javascript" src="../js/jquery-2.1.4.min.js"></script>
-  <script type="text/javascript" src="../js/bootstrap.min.js"></script>
-  <!-- the line below gets replaced with the generated table -->
-  <!-- replaceDBContent -->
   <!-- Angular handling-script -->
   <script type="text/javascript">replaceMusterJS</script>
 </body>

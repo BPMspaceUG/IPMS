@@ -1,72 +1,44 @@
 thead tr {background-color: #eee;}
 .controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}
 /**********************************************************/
-.panel-table .panel-body{ padding:0; }
-.panel-table .panel-body .table-bordered{ border-style: none; margin:0;}
-.panel-table .panel-body .table-bordered > thead > tr > th:last-of-type { text-align:center; width: 100px; }
+.panel-table .panel-body { padding:0; margin:0;}
+.panel-table .panel-body .table-bordered { border-style: none; margin:0;}
 .panel-table .panel-body .table-bordered > thead > tr > th:last-of-type,
-.panel-table .panel-body .table-bordered > tbody > tr > td:last-of-type { border-right: 0px; }
+.panel-table .panel-body .table-bordered > tbody > tr > td:last-of-type { border-right: 0px;}
 .panel-table .panel-body .table-bordered > thead > tr > th:first-of-type,
-.panel-table .panel-body .table-bordered > tbody > tr > td:first-of-type { border-left: 0px; }
-.panel-table .panel-body .table-bordered > tbody > tr:first-of-type > td{ border-bottom: 0px; }
-.panel-table .panel-body .table-bordered > thead > tr:first-of-type > th{ border-top: 0px; }
+.panel-table .panel-body .table-bordered > tbody > tr > td:first-of-type { border-left: 0px; text-align: center; width: 100px; background-color: #eee; }
+.panel-table .panel-body .table-bordered > tbody > tr:first-of-type > td { border-bottom: 0px; }
+.panel-table .panel-body .table-bordered > thead > tr:first-of-type > th { border-top: 0px; }
+
 .panel-table .panel-footer .pagination{ margin:0; }
-/*
-used to vertically center elements, may need modification if you're not using default sizes.
-*/
 .panel-table .panel-footer .col{ line-height: 34px; height: 34px; }
 .panel-table .panel-heading .col h3{ line-height: 30px; height: 30px; }
 .panel-table .panel-body .table-bordered > tbody > tr > td{ line-height: 34px; }
+
+/* Table */
+.tableCont th {cursor: pointer;}
+.tableCont th:hover {background-color: #ddd; color: steelblue;}
+.tableCont th, tr td {white-space: nowrap;}
+
+/*********************************************/
+
 .fKeyLink {}
 .fKeyLink:hover {text-decoration: none;}
 
 [animate-on-change] { transition: all 1s; -webkit-transition: all 1s; }
 [animate-on-change].changed { background-color: #cffda2; transition: none; -webkit-transition: none; }
-/*
-#bpm-liam-header { 
-  margin-top: -20px; 
-  margin-bottom: 10px; 
-  padding-right: 50px;
-}
-#bpm-logo-care { 
-  position:relativ;  
-  z-index: 10;  
-  margin-right: -20px;
-}
-#bpm-logo    { 
-  position:relativ; 
-  margin-bottom: 20px;
-}
-#bpm-menu {
-  margin-right: 20px; 
-  margin-left: 20px; 
-  margin-bottom: 10px;
-}
-#bpm-content {
-  margin-right: 20px; 
-  margin-left: 20px; 
-  margin-bottom: 10px;
-}
-#bpm-footer {
-  margin-right: 10px; 
-  margin-left: 10px; 
-  margin-bottom: 10px;
-}
-*/
-/* Table */
-table th span {cursor: pointer;}
-table th span:hover {color: steelblue;}
-table tr td {white-space: nowrap;}
+
 /* State Engine */
-.state1 {background-color: greenyellow;}
-.state2 {background-color: yellow;}
-.state3 {background-color: red;}
-.state4 {background-color: orange;}
-.state5 {background-color: lightblue;}
-.state6 {background-color: khaki;}
-.state7 {background-color: steelblue;}
-.state8 {background-color: lightyellow;}
-.state9 {background-color: mediumorchid;}
-.state10 {background-color: tan;}
-.state11 {background-color: wheat;}
-.state12 {background-color: darksalmon;}
+.stateBtn {cursor: pointer; font-weight: bold;}
+.state1 {color: darkgreen;}
+.state2 {color: steelblue;}
+.state3 {color: red;}
+.state4 {color: orange;}
+.state5 {color: lightblue;}
+.state6 {color: darkmagenta;}
+.state7 {color: steelblue;}
+.state8 {color: brown;}
+.state9 {color: mediumorchid;}
+.state10 {color: tan;}
+.state11 {color: wheat;}
+.state12 {color: darksalmon;}
