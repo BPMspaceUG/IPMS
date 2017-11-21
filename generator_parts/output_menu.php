@@ -32,7 +32,7 @@
   <!-- NAVIGATION -->
   <ul class="nav nav-tabs" role="tablist" id="myTabs">
     <li ng-repeat="table in tables | orderBy : 'table_alias' track by $index" role="presentation" ng-class="{active: ($index == 0)}">
-      <a href="#{{table.table_name}}" aria-controls="{{table.table_name}}" data-toggle="tab" role="tab" ng-click="changeTab()">
+      <a href="#{{table.table_name}}" aria-controls="{{table.table_name}}" data-toggle="tab" role="tab">
         <i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span>
       </a>
     </li>

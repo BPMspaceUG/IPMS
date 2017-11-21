@@ -113,6 +113,8 @@ app.controller('genCtrl', function ($scope, $http) {
   	table.PageIndex = newIndex
   	$scope.refresh(table.table_name)
   }
+
+
   $scope.loadRow = function(tbl, row) {   
     $scope.selectedTask = angular.copy(row)
     $scope.selectedTable = tbl
@@ -145,8 +147,8 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.openSEPopup = function(tbl, row) {
     //$scope.loadRow(tbl, row) // select current Row
     //$scope.send("getNextStates")
-    $('#myModal').modal('show')
     $scope.draw()
+    $('#myModal').modal('show')
   }
   $scope.gotoState = function(nextstate) {
     $scope.selectedTable.hideSmBtns = true
@@ -191,6 +193,12 @@ app.controller('genCtrl', function ($scope, $http) {
       $scope.tables.forEach(function(t){$scope.refresh(t.table_name);})
       // GUI
       $scope.isLoading = false
+      // Auto click first tab
+      first_tbl_name = $scope.tables[0].table_name
+      $scope.selectedTable = $scope.getTableByName(first_tbl_name)
+      console.log("First table = ", first_tbl_name)
+      $('#'+first_tbl_name).tab('show')
+
   	});	
   }
   $scope.countEntries = function(table_name) {  	
@@ -258,6 +266,16 @@ app.controller('genCtrl', function ($scope, $http) {
       $scope.getTableByName(table_name).statenames = response
   	})
   }
+	
+  function isExitNode(NodeID, links) {
+  	res = true;
+  	links.forEach(function(e){
+  		if (e.from == NodeID)
+  			res = false;
+    })
+    return res
+  }
+
   $scope.drawProcess = function() {
     links = $scope.selectedTable.smLinks
     labels = $scope.selectedTable.smNodes
@@ -265,26 +283,37 @@ app.controller('genCtrl', function ($scope, $http) {
     strLinks = ""
     strLabels = ""
     strEP = ""
-    links.forEach(function(e){ strLinks += "s"+e.from+"->s"+e.to+";\n" })
+    // Links
+    links.forEach(function(e){
+    	strLinks += "s"+e.from+"->s"+e.to+";\n"
+    })
+    // Nodes
     labels.forEach(function(e){
       // EntryPoint
       if (e.entrypoint == 1)
         strEP = "start->s"+e.id+";\n"
-      // Actual State
+      // Check if is exit node
+      extNd = isExitNode(e.id, links)
+      // Actual State      
       strActState = ""
+      /*    
       if (e.id == $scope.selectedTask['state_id'])
-        strActState = " color=blue fontcolor=blue"
+        strActState = ' color=royalblue4 fontcolor=royalblue4 fillcolor="lightblue:lightskyblue"'
+      */
       // Render
-      strLabels += "s"+e.id+" [label=\""+e.name+"\" fontname=Arial"+strActState+"];\n"
+      if (!extNd)
+      	strLabels += 's'+e.id+' [label="'+e.name+'"'+strActState+'];\n'
+     	else
+     		strLabels += 's'+e.id+' [label="\n\n\n\n'+e.name+'" shape=doublecircle color=gray20 fillcolor=gray20 width=0.15 height=0.15];\n'
     })
 
     document.getElementById("statediagram").innerHTML = Viz(`
     digraph G {
       # global
-      rankdir=LR;
-      node [style="filled, rounded" shape=box fontsize=10 fillcolor=white margin=0.05 width=0 height=0];
-      edge [color=gray70 fontsize=10 fontcolor=gray70 fontname=Arial];
-      start [shape=circle fixedsize=true fillcolor=white color=black fontcolor=black fontsize=10 width=0.35 height=0.35];
+      rankdir=LR; outputorder=edgesfirst; pad=0.5;
+      node [style="filled, rounded" color=gray20 fontcolor=gray20 fontname="Helvetica-bold" shape=box fixedsize=true fontsize=9 fillcolor=white width=0.9 height=0.4];
+      edge [fontsize=10 color=gray80 arrowhead=vee];
+      start [label="\n\n\nStart" shape=circle color=gray20 fillcolor=gray20 width=0.15 height=0.15];
       # links
       `+strEP+`
       `+strLinks+`
@@ -327,7 +356,7 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.refresh = function(table_name) {
   	//console.log("Started refreshing", table_name)
     t = $scope.getTableByName(table_name)
-    // Search-Event(set LIMIT Param to 0)
+    // Search-Event (set LIMIT Param to 0)
     if (t.sqlwhere != t.sqlwhere_old)
     	t.PageIndex = 0
     // Get columns from columns
@@ -499,8 +528,6 @@ app.controller('genCtrl', function ($scope, $http) {
       //---------------------- StateEngine (List Transitions)
       else if (cud == 'getNextStates') {
         $scope.getTableByName(body.paramJS.table).nextstates = response
-        //$('#myModal').modal('show')
-        //$scope.draw()
       }
       else if (cud == 'makeTransition') {
         // Show Message

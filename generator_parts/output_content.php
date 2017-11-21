@@ -284,25 +284,21 @@
     </div>
   </div>
 </div>
+
+
 <!-- Modal for StateEngine -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">State-Machine</h4>
+        <h4 class="modal-title" id="myModalLabel">State-Machine for <b>{{selectedTable.table_alias}}</b></h4>
       </div>
       <div class="modal-body">
         <div id="statediagram" style="max-height: 300px; overflow: auto;"></div>
       </div>
       <div class="modal-footer">
-        <span class="pull-left">
-          <span>Goto &rarr; </span>
-          <span ng-repeat="state in selectedTable.nextstates">
-            <span class="btn btn-default btn-sm stateBtn" ng-class="'state'+state.id" ng-click="gotoState(state)" >{{state.name}}</span>
-          </span>
-        </span>
-        <button type="button" class="btn btn-default pull-right" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-default pull-right" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
       </div>
     </div>
   </div>
