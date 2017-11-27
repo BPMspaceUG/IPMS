@@ -1,4 +1,7 @@
 <?php
+  // Header
+  header('Access-Control-Allow-Origin: *');
+  header('Access-Control-Allow-Methods: POST');
   // Includes
   include_once("replaceDBName-config.php");
   // Parameter and inputstream
@@ -23,6 +26,23 @@
       }
       $db->query("SET NAMES utf8");
       $this->db = $db;
+    }
+    private function getPrimaryColByTablename($tablename) {
+      $config = json_decode($this->init(), true);
+      $res = array();
+      // Loop table configuration
+      for ($i=0; $i<count($config); $i++) {
+        if ($config[$i]["table_name"] == $tablename) {
+          $cols = $config[$i]["columns"];
+          break;
+        }
+      }
+      // Find primary columns
+      foreach ($cols as $col) {
+        if ($col["COLUMN_KEY"] == "PRI")
+          $res[] = $col["COLUMN_NAME"];
+      }
+      return $res;
     }
     // Format data for output
     private function parseToJSON($result) {
@@ -58,8 +78,8 @@
       $update = substr($update, 0, -2); // remove last ' ,' (2 chars)
       return $update;
     }
+    // TODO: Rename to loadConfig
     public function init() {
-      // Send data from config file
       global $config_tables_json;
       return $config_tables_json;
     }
@@ -70,28 +90,28 @@
       $rowdata = $param["row"];
       // Split array
       foreach ($rowdata as $key => $value) {        
-        // Check if has StateMachine
+        // Check if has StateMachine // TODO: Optimize
         if ($value == '%!%PLACE_EP_HERE%!%') {
           $SE = new StateMachine($this->db, DB_NAME, $tablename);
           $value = $SE->getEntryPoint();
         }
-        // Append
+        // Append and escape to prevent sqli
         $keys[] = $this->db->real_escape_string($key);
         $vals[] = $this->db->real_escape_string($value);
       }
-      // Operation
-      $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
       // Checking
       if (count($keys) != count($vals)) {
         echo "ERORR while buiding Query! (k=".count($keys).", v=".count($vals).")";
         exit;
       }
+      // Operation
+      $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
       $res = $this->db->query($query);
-      // Output
-      return $res ? "1" : "0";
+      $lastID = $this->db->insert_id;
+      // Output (return last id instead of 1)
+      return $res ? $lastID : "0";
     }
     //================================== READ
-
     public function read($param) {
       // Parameters
       $where = isset($param["where"]) ? $param["where"] : "";
@@ -157,11 +177,13 @@
     }
     //================================== UPDATE
     public function update($param) {
+      // Primary Columns
+      $tablename = $param["table"];
+      $pCols = $this->getPrimaryColByTablename($tablename);
       // SQL
-      $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $param["primary_col"], $param["row"]);
-      $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
+      $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
+      $where = $this->buildSQLWherePart($pCols, $param["row"]);
       $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
-
       //var_dump($query);
       $res = $this->db->query($query);
       // TODO: Check if rows where REALLY updated!
@@ -170,8 +192,11 @@
     }
     //================================== DELETE
     public function delete($param) {
-      /*  DELETE FROM table_name WHERE some_column=some_value AND x=1;  */
-      $where = $this->buildSQLWherePart($param["primary_col"], $param["row"]);
+      // Primary Columns
+      $tablename = $param["table"];
+      $pCols = $this->getPrimaryColByTablename($tablename);
+      /* DELETE FROM table_name WHERE some_column=some_value AND x=1; */
+      $where = $this->buildSQLWherePart($pCols, $param["row"]);
       // Build query
       $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";
       $res = $this->db->query($query);
@@ -185,10 +210,10 @@
       if ($SM->getID() > 0) {
         $stateID = $param["row"]["state_id"];
         $r = $SM->getFormDataByStateID($stateID);
-        if (empty($r)) $r = "1";
+        if (empty($r)) $r = "1"; // default: allow editing (if there are no rules set)
         return $r;
       } else {
-        // respond true if no statemachine (allow editing)
+        // respond true if no statemachine (means: allow editing)
         return "1"; 
       }
     }
@@ -218,11 +243,12 @@
       return json_encode($res);
     }
     public function makeTransition($param) {
-      // Get the correct ID
-      $pricol = $param["primary_col"][0];
-      $ElementID = $param["row"][$pricol];
+      // Get the next ID for the next State
       $nextStateID = $param["row"]["state_id"];
       $tablename = $param["table"];
+      $pricols = $this->getPrimaryColByTablename($tablename);
+      $pricol = $pricols[0]; // Count should always be 1
+      $ElementID = $param["row"][$pricol];
       // Statemachine
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
       // get ActStateID
