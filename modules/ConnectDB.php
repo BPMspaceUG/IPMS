@@ -106,7 +106,8 @@
             "is_in_menu" => true,
             "read_only" => false,
             "is_ckeditor" => false,
-            "foreignKey" => $fk
+            "foreignKey" => $fk,
+            "col_order" => 1 //random_int(1, 10)
           );
           // Filter columns array
           $allowed  = ['COLUMN_NAME', 'DATA_TYPE', 'COLUMN_TYPE', 'COLUMN_KEY', 'EXTRA'];
@@ -117,8 +118,7 @@
           );
           // Merge arrays
           $columns[] = array_merge($filtered, $additional_info);
-        }
-
+        }        
         //------------------------------------------------ Auto Foreign Keys
         $fKeys = array();
         $query = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME ".
@@ -134,7 +134,6 @@
             "colID" => $row["REFERENCED_COLUMN_NAME"]
           );
         }
-
 
         if (count($columns) > 0 && count($fKeys)) {
           // merge keys        

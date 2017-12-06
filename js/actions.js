@@ -16,6 +16,8 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
 
   $scope.loadconfig = function(text){    
     $scope.isLoading = true
+    $scope.isError = false
+
     $http({
       url: 'modules/parseConfig.php',
       method: "POST",
@@ -25,15 +27,10 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     })
     .success(function(data) {
       console.log(data)
-
       $scope.dbNames.model = data.DBName
       $scope.updateTables($scope.dbNames.model)
       // Parse data correctly
       newtable = JSON.parse(data.data)
-      /*
-      console.log(newtable)
-      console.log("tables", $scope.tables)
-      */
       //  Find correct db and replace table var
       $scope.tables = newtable
       $scope.isLoading = false
@@ -45,6 +42,8 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   */
   $scope.connectToDB = function(){
     $scope.isLoading = true
+    $scope.isError = false
+
     console.log('POST an '+$scope.path+':')
     $http({
       url: $scope.path,
@@ -57,10 +56,18 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data, status, headers, config) {
+      //console.log("XXXX")
       console.log(data)
+      if (data.indexOf('mysqli::') >= 0) {
+        // Error
+        $scope.isLoading = false
+        $scope.isError = true
+        return
+      }
+
       $scope.resultData = data
       $scope.dbNames = {model: data[0].database, names : data.map(function(x){return x.database})};
-      $scope.handleresult( data );
+      $scope.handleresult(data);
       $scope.updateTables();
       console.log('"Connect"-Response data: ');
       console.log(data);
