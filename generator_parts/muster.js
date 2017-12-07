@@ -248,14 +248,15 @@ app.controller('genCtrl', function ($scope, $http) {
   function isExitNode(NodeID, links) {
   	var res = true;
   	links.forEach(function(e){
-  		if (e.from == NodeID)
+  		//console.log("#", e.from, "->", e.to)
+  		if (e.from == NodeID && e.from != e.to)
   			res = false;
     })
     return res
   }
   function formatLabel(strLabel) {
   	// insert \n every X char
-  	return strLabel.replace(/(.{10})/g, "$&" + "-\n")
+  	return strLabel.replace(/(.{10})/g, "$&" + "\n")
   }
   $scope.drawProcess = function(tbl) {
     var strLinks = ""

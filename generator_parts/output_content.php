@@ -52,7 +52,7 @@
                   <!-- Control-Column -->
                   <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
                   <!-- Data-Columns -->
-                  <th ng-repeat="col in table.columns | orderBy: 'col_order'"
+                  <th ng-repeat="col in table.columns"
                   		ng-click="sortCol(table, col.COLUMN_NAME)"
                   		ng-if="col.is_in_menu">
                     <span>{{col.column_alias}}
