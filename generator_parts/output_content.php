@@ -68,11 +68,11 @@
                   <!-- Control-Column -->
                   <td class="controllcoulm" ng-hide="table.is_read_only">
                     <!-- Edit Button -->
-                    <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Row">
+                    <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
                       <i class="fa fa-pencil"></i>
                     </button>
                     <!-- Delete Button -->
-                    <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Row">
+                    <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
                       <i class="fa fa-times"></i>
                     </button>
                   </td>
@@ -113,6 +113,7 @@
                     </li>
                     <!-- JUMP to last page -->
                      <li ng-class="{disabled: (table.PageIndex + 1) >= (table.count / PageLimit)}">
+                      <!-- TODO: fix 9999 number, maybe to (-1) -->
                       <a href="" ng-click="gotoPage(999999, table)">»</a>
                     </li>
                   </ul>
@@ -124,19 +125,18 @@
     </div>
   </div>
 </div>
-
 </div>
 
-
-<!-- Modal for Editing DataRows -->
-<div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+<!-- Modal for Create -->
+<div class="modal fade" id="modalCreate" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
         <h4 class="modal-title">
-          <span ng-if="createNewEntry"><i class="fa fa-plus"></i> Create Entry</span>
-          <span ng-if="!createNewEntry"><i class="fa fa-pencil"></i> Edit Entry</span>
+          <i class="fa fa-plus"></i> Create Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
         </h4>
       </div>
       <div class="modal-body">
@@ -145,24 +145,18 @@
           <!-- Add if is in menu -->
           <div class="form-group"
             ng-repeat="(key, value) in selectedRow"
-            ng-if="
-              (getColByName(selectedTable, key).is_in_menu
-          && !(selectedTable.se_active && (key.indexOf('state_id') >= 0))
-          && (selectedTable.form_data[key] != 'HI'))
-          || (createNewEntry
-          && getColByName(selectedTable, key).is_in_menu
-          && !(selectedTable.se_active
-          && (key.indexOf('state_id') >= 0)))
-          ">
+            ng-if="getColByName(selectedTable, key).is_in_menu
+              && !(selectedTable.se_active && (key.indexOf('state_id') >= 0))
+              && (selectedTable.form_data[key] != 'HI')">
             <!-- [LABEL] -->
             <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
             <!-- [VALUE] -->
             <div class="col-sm-9">
               <!-- Foreign Key (FK) -->
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
-              	<a class="btn btn-default"
-                  ng-click="(selectedTable.form_data[key] == 'RO' && !createNewEntry) || openFK(key)"
-                  ng-disabled="selectedTable.form_data[key] == 'RO' && !createNewEntry">
+                <a class="btn btn-default"
+                  ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
                 </a>
               </span>
@@ -173,20 +167,20 @@
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO' && !createNewEntry">
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
                 <!-- Text -->
                 <input class="form-control" type="text"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
                   && !getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO' && !createNewEntry">
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
                 <!-- LongText (probably HTML) -->
                 <textarea class="form-control" rows="3"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
                   || getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]" style="font-family: Courier;"
-                  ng-disabled="selectedTable.form_data[key] == 'RO' && !createNewEntry"></textarea>
+                  ng-disabled="selectedTable.form_data[key] == 'RO'"></textarea>
                 <!-- Boolean (tinyint or boolean) -->
                 <input class="form-control"
                   type="checkbox"
@@ -195,7 +189,7 @@
                   ng-model="selectedRow[key]"
                   ng-true-value="'1'"
                   ng-false-value="'0'"
-                  ng-disabled="selectedTable.form_data[key] == 'RO' && !createNewEntry"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'"
                   style="width: 50px;">
                 <!-- TODO: Date -->
               </span>
@@ -205,39 +199,115 @@
       </div>
       <div class="modal-footer">
         <!-- CREATE / CLOSE -->
-      	<span ng-if="!createNewEntry">
-          <!-- STATE MACHINE -->
-          <span class="pull-left" ng-hide="!selectedTable.se_active || selectedTable.hideSmBtns">
-            <span ng-repeat="state in selectedTable.nextstates">
-              <!-- Recursive State -->
-              <span ng-if="state.id == selectedRow.state_id">
-                <a class="btn btn-primary" ng-click="gotoState(state)">
-                  <i class="fa fa-floppy-o"></i> Save</a>
-              </span>
-              <!-- Normal state -->
-              <span ng-if="state.id != selectedRow.state_id" class="btn btn-default stateBtn"
-                ng-class="'state'+state.id" ng-click="gotoState(state)">{{state.name}}</span>
-            </span>
-          </span>
-          <!-- If has no StateMachine -->
-          <span ng-if="!selectedTable.se_active">
-        	  <button class="btn btn-primary" ng-click="saveEntry()"><i class="fa fa-floppy-o"></i> Save</button>
-        	  <button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal"><i class="fa fa-floppy-o"></i> Save &amp; Close</button>
-          </span>
-        </span>
-        <span ng-if="createNewEntry">
-        	<button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedRow, table: selectedTable})">
-            <i class="fa fa-plus"></i> Create</button>
-        </span>
+        <button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedRow, table: selectedTable})">
+          <i class="fa fa-plus"></i> Create</button>
         &nbsp;
-        <button class="btn btn-default pull-right" type="button" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
+        <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
+          <i class="fa fa-times"></i> Close</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Modal for Edit -->
+<div class="modal fade" id="modalEdit" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">
+          <i class="fa fa-pencil"></i> Edit Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <!-- Content -->
+        <form class="form-horizontal">
+          <!-- Add if is in menu -->
+          <div class="form-group"
+            ng-repeat="(key, value) in selectedRow"
+            ng-if="getColByName(selectedTable, key).is_in_menu
+                && !(selectedTable.se_active && (key.indexOf('state_id') >= 0))
+                && (selectedTable.form_data[key] != 'HI')">
+            <!-- [LABEL] -->
+            <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
+            <!-- [VALUE] -->
+            <div class="col-sm-9">
+              <!-- Foreign Key (FK) -->
+              <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
+              	<a class="btn btn-default"
+                  ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  <i class="fa fa-key"></i> {{value}}
+                </a>
+              </span>
+              <!-- NO FK -->
+              <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
+                <!-- Number  -->
+                <input class="form-control" type="number" string-to-number 
+                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
+                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
+                  ng-model="selectedRow[key]"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                <!-- Text -->
+                <input class="form-control" type="text"
+                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
+                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
+                  && !getColByName(selectedTable, key).is_ckeditor"
+                  ng-model="selectedRow[key]"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                <!-- LongText (probably HTML) -->
+                <textarea class="form-control" rows="3"
+                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
+                  || getColByName(selectedTable, key).is_ckeditor"
+                  ng-model="selectedRow[key]" style="font-family: Courier;"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'"></textarea>
+                <!-- Boolean (tinyint or boolean) -->
+                <input class="form-control"
+                  type="checkbox"
+                  ng-show="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tinyint') >= 0
+                  && !getColByName(selectedTable, key).is_read_only"
+                  ng-model="selectedRow[key]"
+                  ng-true-value="'1'"
+                  ng-false-value="'0'"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'"
+                  style="width: 50px;">
+                <!-- TODO: Date -->
+              </span>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <!-- STATE MACHINE -->
+        <span class="pull-left" ng-hide="!selectedTable.se_active || selectedTable.hideSmBtns">
+          <span ng-repeat="state in selectedTable.nextstates">
+            <!-- Recursive State -->
+            <span ng-if="state.id == selectedRow.state_id">
+              <a class="btn btn-primary" ng-click="gotoState(state)">
+                <i class="fa fa-floppy-o"></i> Save</a>
+            </span>
+            <!-- Normal state -->
+            <span ng-if="state.id != selectedRow.state_id" class="btn btn-default stateBtn"
+              ng-class="'state'+state.id" ng-click="gotoState(state)">{{state.name}}</span>
+          </span>
+        </span>
+        <!-- If has no StateMachine -->
+        <span class="pull-left" ng-if="!selectedTable.se_active">
+          <button class="btn btn-primary" ng-click="saveEntry()">
+            <i class="fa fa-floppy-o"></i> Save</button>
+          <button class="btn btn-primary" ng-click="saveEntry()" data-dismiss="modal">
+            <i class="fa fa-floppy-o"></i> Save &amp; Close</button>
+        </span>
+        <!-- Close Button -->
+        <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
+          <i class="fa fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Modal for ForeignKey -->
-<div class="modal fade" id="myFKModal" tabindex="-1" role="dialog" aria-labelledby="myFKModalLabel">
+<div class="modal fade" id="myFKModal" tabindex="-1" role="dialog"">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -246,7 +316,7 @@
       </div>
       <div class="modal-body">
         <p>Search: <input class="form-control" type="text" autofocus></p>
-        <div>
+        <div style="overflow: auto;">
           <table class="table table-bordered table-striped table-hover table-condensed table-responsive">
             <thead>
               <tr>
@@ -291,14 +361,15 @@
     </div>
   </div>
 </div>
-
 <!-- Modal for StateEngine -->
 <div class="modal fade" id="modalStateMachine" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">State-Machine for <b>{{selectedTable.table_alias}}</b></h4>
+        <h4 class="modal-title">
+          <i class="fa fa-random"></i> State-Machine <small>for <b>{{selectedTable.table_alias}}</b></small>
+        </h4>
       </div>
       <div class="modal-body">
         <div id="statediagram" style="max-height: 300px; overflow: auto;"></div>

@@ -34,6 +34,7 @@
   require_once("output_StateEngine.php");
  
   // Loop each Table with StateMachine checked create a new StateMachine Column
+  var_dump("-------------------- FormData --------------------");
   for ($i=0;$i<count($data);$i++) {
     // Get Data
     $tablename = $data[$i]["table_name"];
@@ -51,13 +52,13 @@
       $query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = '$tablename';";
       $res = $con->query($query);
       $cols = array();
-      while ($row = $res->fetch_row()) $cols[] = $row[0];
+      while ($row = $res->fetch_row())
+        $cols[] = $row[0];
       $form_data = json_encode($SM->getBasicFormDataByColumns($cols));
+      var_dump("--- Table: ".$tablename);
       var_dump($form_data);
-      
       // TODO: Insert basic form_data
       //$query = "INSERT INTO `".$db_name."`.`state` (from_data) VALUES ('') WHERE state_id = ;";
-
       unset($SM);
       // ------------ Connection to existing structure !
       // Add new column already existing struct - Does not add if already exists
@@ -72,6 +73,7 @@
       $con->query($q_se);
     }
   }
+  var_dump("-------------------- /FormData --------------------");
 
   //-------------------------------------------------------
 
@@ -165,5 +167,4 @@
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
     file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
   }
-
 ?>

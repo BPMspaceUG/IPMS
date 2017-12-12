@@ -217,6 +217,19 @@
         return "1"; 
       }
     }
+    public function getFormCreate($param) {
+      $tablename = $param["table"];
+      $SM = new StateMachine($this->db, DB_NAME, $tablename);
+      // Check if has state machine ?
+      if ($SM->getID() > 0) {
+        $r = $SM->getCreateFormByTablename();
+        if (empty($r)) $r = "1"; // default: allow editing (if there are no rules set)
+        return $r;
+      } else {
+        // allow editing if no statemachine
+        return "1"; 
+      }
+    }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
       // Find right column (Maybe optimize with GUID)

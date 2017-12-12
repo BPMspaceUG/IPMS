@@ -46,6 +46,19 @@
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
+      // Add Form_data column if not exists
+      $query = "SHOW COLUMNS FROM  `$db_name`.`state_machines`;";
+      $res = $this->db->query($query);
+      $rows = $this->getResultArray($res);
+      // Build one string with all columnnames
+      $columnstr = "";
+      foreach ($rows as $row) $columnstr .= $row["Field"];
+      // Column does not yet exist
+      if (strpos($columnstr, "form_data") === FALSE) {
+        //var_dump("Column 'form_data' was not existing -> Create Column...");
+        $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `form_data` LONGTEXT NULL AFTER `tablename`;";
+        $res = $this->db->query($query);
+      }
 		  // Create Table 'state'
 		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state` (
 			  `state_id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -138,6 +151,15 @@
       settype($StateID, 'integer');
       $query = "SELECT form_data AS 'fd' FROM $this->db_name.state ".
         "WHERE statemachine_id = $this->ID AND state_id = $StateID;";
+      $res = $this->db->query($query);
+      $r = $this->getResultArray($res);
+      return $r[0]['fd'];
+    }
+    public function getCreateFormByTablename() {
+      if (!($this->ID > 0)) return "";
+      settype($StateID, 'integer');
+      $query = "SELECT form_data AS 'fd' FROM $this->db_name.`state_machines` ".
+        "WHERE id = $this->ID;";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
       return $r[0]['fd'];

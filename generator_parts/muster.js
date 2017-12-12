@@ -1,9 +1,9 @@
 var app = angular.module("genApp", [])
 //--- Controller
 app.controller('genCtrl', function ($scope, $http) {
+  // Variables
   $scope.tables = []
   $scope.isLoading = true
-  $scope.createNewEntry = false
   $scope.PageLimit = 10 // default = 10
   $scope.selectedRow = []
   $scope.FKTbl = []
@@ -39,8 +39,19 @@ app.controller('genCtrl', function ($scope, $http) {
     // Show Modal
     $('#myFKModal').modal('show')
   }
+  $scope.substituteFKColsWithIDs = function(row) {
+    var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
+    $scope.selectedRow[$scope.FKActCol+"________newID"] = row[col]
+    var substcol = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_subst
+    var keys = Object.keys($scope.selectedRow)
+    for (var i=0;i<keys.length;i++) {
+      if (keys[i] == $scope.FKActCol)
+        $scope.selectedRow[$scope.FKActCol] = row[substcol]
+    }
+  }
   $scope.selectFK = function(row) {
     // Save the value, like (special trick with .id)
+    /*
     var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
     $scope.selectedRow[$scope.FKActCol+"________newID"] = row[col]
     // Save the substituted value in the model
@@ -55,6 +66,8 @@ app.controller('genCtrl', function ($scope, $http) {
         $scope.selectedRow[$scope.FKActCol] = row[substcol]
       }
     }
+    */
+    $scope.substituteFKColsWithIDs(row)
     // Close modal
     $('#myFKModal').modal('hide')
   }
@@ -96,7 +109,8 @@ app.controller('genCtrl', function ($scope, $http) {
   	$scope.refresh(table.table_name)
   }
   $scope.getNrOfPages = function(table) {
-    if (table) return Math.ceil(table.count / $scope.PageLimit)
+    if (table)
+      return Math.ceil(table.count / $scope.PageLimit)
   }
 
   $scope.loadRow = function(tbl, row) {
@@ -111,7 +125,6 @@ app.controller('genCtrl', function ($scope, $http) {
   	console.log("[Edit] Button clicked")
     $scope.loadRow(table, row)
     $scope.send("getFormData")
-    $scope.createNewEntry = false
     $scope.hideSmBtns = true
   }
   $scope.deleteEntry = function(table, row) {
@@ -121,7 +134,6 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.addEntry = function(table_name) {
   	console.log("[Create] Button clicked")
-    $scope.createNewEntry = true
     var t = $scope.getTableByName(table_name)
     // create an empty element
     var newRow = {}
@@ -130,10 +142,8 @@ app.controller('genCtrl', function ($scope, $http) {
       if (col.EXTRA != 'auto_increment')
       	newRow[col.COLUMN_NAME] = ''   
     })
-    // load into scope
     $scope.loadRow(t, newRow)
-    // show modal
-    $('#modal').modal('show')
+    $scope.send("getFormCreate")
   }
   $scope.gotoState = function(nextstate) {
     $scope.selectedTable.hideSmBtns = true
@@ -180,7 +190,8 @@ app.controller('genCtrl', function ($scope, $http) {
       // GUI
       $scope.isLoading = false
       // Auto click first tab
-      var first_tbl_name = $scope.tables[0].table_name
+      var tbls = $scope.tables.sort()
+      var first_tbl_name = tbls[0].table_name
       $scope.selectedTable = $scope.getTableByName(first_tbl_name)
       $('#'+first_tbl_name).tab('show')
   	});	
@@ -248,7 +259,6 @@ app.controller('genCtrl', function ($scope, $http) {
   function isExitNode(NodeID, links) {
   	var res = true;
   	links.forEach(function(e){
-  		//console.log("#", e.from, "->", e.to)
   		if (e.from == NodeID && e.from != e.to)
   			res = false;
     })
@@ -380,11 +390,15 @@ app.controller('genCtrl', function ($scope, $http) {
       tmpCol = $scope.getColByName(table, col)
       if (tmpCol) {
         if (tmpCol.foreignKey.table == "") {
+          // No Foreign-Key present
           result[col] = row[col]
         } else {
-        	// Exchange ID
+        	// Foreign-Key present -> Exchange ID
           newID = $scope.selectedRow[col+"________newID"]
-          result[col] = newID
+          if (newID)
+            result[col] = newID // Only set when exists            
+          //else
+            //result[col] = row[col]
           // Remove object key
           delete $scope.selectedRow[col+"________newID"]
         }
@@ -403,25 +417,25 @@ app.controller('genCtrl', function ($scope, $http) {
 
     //------------------- Assemble Data
   	if (cud == 'create' || cud == 'delete' ||	cud == 'update' ||
-  			cud == 'getFormData' ||
-  			cud == 'getNextStates' ||
-  			cud == 'getStates' ||
-  			cud == 'makeTransition') {
+  			cud == 'getFormData' || cud == 'getFormCreate' ||
+  			cud == 'getNextStates' ||	cud == 'getStates' ||	cud == 'makeTransition') {
 
      		// Confirmation when deleting
         if (cud == 'delete') {
       		IsSure = confirm("Do you really want to delete this entry?")
       		if (!IsSure) return
         }
-  		  // if Sure -> continue
+        // Prepare Data
   		  body.paramJS = {
     			row : $scope.selectedRow,
     			table : t.table_name
     		}
         // Filter out foreign keys
-        if (cud == 'update' || cud == 'makeTransition')
+        if (cud == 'update' || cud == 'makeTransition') {
+          //console.log(body.paramJS.row)
+          //$scope.substituteFKColsWithIDs(body.paramJS.row)
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
-
+        }
         // Check if state_machine at create
         if (cud == 'create') {
           // StateEngine for entrypoints
@@ -429,14 +443,13 @@ app.controller('genCtrl', function ($scope, $http) {
           // Also select an Entrypoint if there are more than 1
           // also possible for different processes for each element
           if (t.se_active) body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
-
           // check Foreign keys
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
         }
     }
 
     // ------------------- Send request
-    console.log("===> POST *", cud, "* params=", body.paramJS)
+    console.log("===> POST ---", cud, "--- params=", body.paramJS)
     // Request
     $http({
       url: window.location.pathname,
@@ -451,20 +464,23 @@ app.controller('genCtrl', function ($scope, $http) {
       var table = $scope.getTableByName(body.paramJS.table)
 
       //-------------------- table data was modified
-      if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {        
+      if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {  
+        // Created
 				if (cud == 'create') {
           console.log("New Element with ID", response, "created.")
-          $('#modal').modal('hide') // Hide create-modal
+          $('#modalCreate').modal('hide') // Hide create-modal
           // TODO: Maybe jump to entry which was created
         }
-        // Refresh table
         $scope.refresh(body.paramJS.table)
       }
       else if (cud == 'getFormData') {
+        $scope.send("getNextStates") // get next States
         table.form_data = response
-        $scope.send("getNextStates")
-        // Show modal
-        $('#modal').modal('show')
+        $('#modalEdit').modal('show')
+      }
+      else if (cud == 'getFormCreate') {
+        table.form_data = response
+        $('#modalCreate').modal('show')
       }
       //---------------------- StateEngine (List Transitions)
       else if (cud == 'getNextStates') {
@@ -483,7 +499,7 @@ app.controller('genCtrl', function ($scope, $http) {
       }
       else {
         // Error from server
-        alert("An Error occoured at the ["+cud+"] command.\nThe server returned:\n" + response)
+        alert("Error at ["+cud+"] command.\nThe server returned:\n" + response)
       }
     })
   }
