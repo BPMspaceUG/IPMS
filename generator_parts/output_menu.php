@@ -30,6 +30,7 @@
     </div>
   </div>
   <!-- NAVIGATION -->
+  <!--
   <ul class="nav nav-tabs" role="tablist" id="myTabs">
     <li ng-repeat="table in tables" role="presentation" ng-class="{active: (selectedTable.table_name == table.table_name)}">
       <a href="#{{table.table_name}}" aria-controls="{{table.table_name}}" data-toggle="tab" role="tab">
@@ -37,4 +38,5 @@
       </a>
     </li>
   </ul> 
+-->
 </div>

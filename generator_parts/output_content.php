@@ -4,124 +4,136 @@
     <p><i class="fa fa-cog fa-spin"></i> Loading ...</p>
   </div>
 </div>
+
 <!-- body content starts here  -->
-<div class="container" id="content">
-
+<div class="container" id="content" ng-hide="isLoading">
   <div class="row">
-    <div class="col-xs-12 tab-content">
+    <div class="col-xs-12">
 
-      <div ng-repeat="table in tables track by $index" class="tab-pane" ng-class="{active: ($index == 0)}" id="{{table.table_name}}">
-        <div class="panel panel-primary panel-table" disabled>
-          <div class="panel-heading">
-            <h3 class="panel-title">
-              <div class="pull-left" style="margin-top: .4em; font-weight: bold;">
-                <i class="{{table.table_icon}}"></i>&nbsp;<span ng-bind="table.table_alias"></span>
-              </div>
-              <!-- Where filter -->
-              <form class="form-inline pull-right">
-                <div class="form-group">
-                  <!-- PROCESS -->
-                  <button class="btn btn-default" title="Show Process" ng-hide="!table.se_active" type="button"
-                    ng-click="openSEPopup(table.table_name)"><i class="fa fa-random"></i></button>
-                  <!-- ADD -->
-                  <button class="btn btn-success" title="Add new entry" ng-hide="table.is_read_only" type="button"
-                  	ng-click="addEntry(table.table_name)"><i class="fa fa-plus"></i></button>
-                  <!-- SEARCH -->
-                  <input type="text" class="form-control" style="width:200px;" placeholder="Search..."
-                    ng-model="table.sqlwhere"/>
-                  <!-- REFRESH -->
-                  <button class="btn btn-default" title="Refresh table" 
-                  	ng-click="refresh(table.table_name);"><i class="fa fa-refresh"></i></button>                  
-                </div>
-              </form>
-              <div class="clearfix"></div>
-            </h3>
+      <div class="panel panel-default panel-table">
+        <!-- Panel Header -->
+        <div class="panel-heading">
+          <!-- Tabs-->
+          <div class="pull-left">
+            <ul class="nav nav-tabs">
+              <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}">
+                <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
+                  <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
+                </a>
+              </li>
+            </ul>
           </div>
-          <div class="panel-body table-responsive">
-          	<!-- Display user info No Entries found -->
-          	<table class="table table-bordered table-striped table-hover table-condensed" ng-if="table.count <= 0">
-          		<thead>
-          			<tr><th style="padding: 3em 0; font-weight: normal;">No entries found</th></tr>
-          		</thead>          		
-          	</table>
-            <!-- Dispay real content -->
-            <table class="table table-bordered table-striped table-hover table-condensed tableCont" ng-if="table.count > 0">
-              <!-- ============= COLUMN HEADERS ============= -->
-              <thead>
-                <tr>
-                  <!-- Control-Column -->
-                  <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
-                  <!-- Data-Columns -->
-                  <th ng-repeat="col in table.columns"
-                  		ng-click="sortCol(table, col.COLUMN_NAME)"
-                  		ng-if="col.is_in_menu">
-                    <span>{{col.column_alias}}
-                      <i class="fa fa-caret-down" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'desc'"></i>
-                      <i class="fa fa-caret-up" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'asc'"></i>
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <!-- ============= CONTENT ============= -->
-              <tbody>
-                <tr ng-repeat="row in table.rows">
-                  <!-- Control-Column -->
-                  <td class="controllcoulm" ng-hide="table.is_read_only">
-                    <!-- Edit Button -->
-                    <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
-                      <i class="fa fa-pencil"></i>
-                    </button>
-                    <!-- Delete Button -->
-                    <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
-                      <i class="fa fa-times"></i>
-                    </button>
-                  </td>
-                  <!-- DATA ROWS -->
-                  <td ng-repeat="(key, value) in row"
-                  		ng-if="getColByName(table, key).is_in_menu">
-                    <!-- Substitue State Machine -->
-                    <div ng-if="(( key.indexOf('state') >= 0) && table.se_active)">
-                      <b ng-class="'state'+ value">{{substituteSE(table.table_name, value)}}</b>
-                    </div>
-                    <!-- Cell -->
-                    <span ng-if="!(( key.indexOf('state') >= 0) && table.se_active)">
-                   		{{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
-                   	</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Where filter -->
+          <form class="form-inline pull-right">
+            <div class="form-group">
+              <!-- PROCESS -->
+              <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
+                ng-click="openSEPopup(selectedTable.table_name)"><i class="fa fa-random"></i></button>
+              <!-- ADD -->
+              <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
+              	ng-click="addEntry(selectedTable.table_name)"><i class="fa fa-plus"></i></button>
+              <!-- SEARCH -->
+              <input type="text" class="form-control" style="width:150px;" placeholder="Search..."
+                ng-model="selectedTable.sqlwhere"/>
+              <!-- REFRESH -->
+              <button class="btn btn-default" title="Refresh" 
+              	ng-click="refresh(selectedTable.table_name);"><i class="fa fa-refresh"></i></button>                  
+            </div>
+          </form>
+          <!--Clear -->
+          <div class="clearfix"></div>
+        </div>
+        <!-- Panel Body -->
+        <div class="panel-body">
+          <div class="tab-content" style="overflow: auto;">
+            <div ng-repeat="table in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
+            	<!-- No Entries -->
+            	<table class="table table-bordered table-condensed" ng-if="table.count <= 0">
+            		<thead>
+            			<tr><th style="padding: 3em 0; font-weight: normal;">No entries found</th></tr>
+            		</thead>          		
+            	</table>
+              <!-- Data content -->
+              <table class="table table-bordered table-striped table-hover table-condensed tableCont" ng-if="table.count > 0">
+                <!-- ============= COLUMN HEADERS ============= -->
+                <thead>
+                  <tr>
+                    <!-- Control-Column -->
+                    <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
+                    <!-- Data-Columns -->
+                    <th ng-repeat="col in table.columns"
+                    		ng-click="sortCol(table, col.COLUMN_NAME)"
+                    		ng-if="col.is_in_menu">
+                      <span>{{col.column_alias}}
+                        <i class="fa fa-caret-down" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'desc'"></i>
+                        <i class="fa fa-caret-up" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'asc'"></i>
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <!-- ============= CONTENT ============= -->
+                <tbody>
+                  <tr ng-repeat="row in table.rows">
+                    <!-- Control-Column -->
+                    <td class="controllcoulm" ng-hide="table.is_read_only">
+                      <!-- Edit Button -->
+                      <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
+                        <i class="fa fa-pencil"></i>
+                      </button>
+                      <!-- Delete Button -->
+                      <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
+                        <i class="fa fa-times"></i>
+                      </button>
+                    </td>
+                    <!-- DATA ROWS -->
+                    <td ng-repeat="(key, value) in row"
+                    		ng-if="getColByName(table, key).is_in_menu">
+                      <!-- Substitue State Machine -->
+                      <div ng-if="(( key.indexOf('state') >= 0) && table.se_active)">
+                        <b ng-class="'state'+ value">{{substituteSE(table.table_name, value)}}</b>
+                      </div>
+                      <!-- Cell -->
+                      <span ng-if="!(( key.indexOf('state') >= 0) && table.se_active)">
+                     		{{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
+                     	</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="panel-footer">
-              <div class="row">
-                <div class="col col-xs-6">
-                  <span class="text-primary">
-                    <span>{{table.count}} Entries total</span>
-                    <span ng-if="getNrOfPages(table) > 0"> - Page {{table.PageIndex + 1}} of {{ getNrOfPages(table) }}</span>
-                  </span>
-                </div>
-                <div class="col col-xs-6">
-                  <ul class="pagination pull-right"><!-- visible-xs -->
-                    <!-- JUMP to first page -->
-                    <li ng-class="{disabled: table.PageIndex <= 0}">
-                      <a href="" ng-click="gotoPage(0, table)">«</a>
-                    </li>          
-                    <!-- Page Buttons -->
-                    <li ng-repeat="btn in getPageination(table.table_name)"
-                      ng-class="{disabled: btn + table.PageIndex == table.PageIndex}">
-                      <a href="" ng-click="gotoPage(btn + table.PageIndex, table)">{{btn + table.PageIndex + 1}}</a>
-                    </li>
-                    <!-- JUMP to last page -->
-                     <li ng-class="{disabled: (table.PageIndex + 1) >= (table.count / PageLimit)}">
-                      <!-- TODO: fix 9999 number, maybe to (-1) -->
-                      <a href="" ng-click="gotoPage(999999, table)">»</a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+        </div>
+        <!-- Panel Footer -->
+        <div class="panel-footer">
+          <div class="row">
+            <div class="col col-xs-6">
+              <span class="text-primary">
+                <span>{{selectedTable.count}} Entries total</span>
+                <span ng-if="getNrOfPages(selectedTable) > 0"> - Page {{selectedTable.PageIndex + 1}} of {{ getNrOfPages(selectedTable) }}</span>
+              </span>
+            </div>
+            <div class="col col-xs-6">
+              <ul class="pagination pull-right"><!-- visible-xs -->
+                <!-- JUMP to first page -->
+                <li ng-class="{disabled: selectedTable.PageIndex <= 0}">
+                  <a href="" ng-click="gotoPage(0, selectedTable)">«</a>
+                </li>          
+                <!-- Page Buttons -->
+                <li ng-repeat="btn in getPageination(selectedTable.table_name)"
+                  ng-class="{disabled: btn + selectedTable.PageIndex == selectedTable.PageIndex}">
+                  <a href="" ng-click="gotoPage(btn + selectedTable.PageIndex, selectedTable)">{{btn + selectedTable.PageIndex + 1}}</a>
+                </li>
+                <!-- JUMP to last page -->
+                 <li ng-class="{disabled: (selectedTable.PageIndex + 1) >= (selectedTable.count / PageLimit)}">
+                  <!-- TODO: fix 9999 number, maybe to (-1) -->
+                  <a href="" ng-click="gotoPage(999999, selectedTable)">»</a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -306,6 +318,7 @@
     </div>
   </div>
 </div>
+
 <!-- Modal for ForeignKey -->
 <div class="modal fade" id="myFKModal" tabindex="-1" role="dialog"">
   <div class="modal-dialog modal-lg" role="document">
@@ -315,7 +328,16 @@
         <h4 class="modal-title" id="myFKModalLabel"><i class="fa fa-key"></i> Select a Foreign Key</h4>
       </div>
       <div class="modal-body">
-        <p>Search: <input class="form-control" type="text" autofocus></p>
+      <!-- Search form -->
+        <form class="form-inline">
+          <div class="form-group">
+            <label for="searchtext">Search:</label>
+            <input type="text" class="form-control" id="searchtext" placeholder="Seachword" ng-model="FKTbl.sqlwhere" autofocus>
+          </div>
+          <button type="submit" class="btn btn-default" ng-click="refresh(FKTbl.table_name)"><i class="fa fa-search"></i> Search</button>
+        </form>
+        <br>
+        <!-- Table Content -->
         <div style="overflow: auto;">
           <table class="table table-bordered table-striped table-hover table-condensed table-responsive">
             <thead>
@@ -361,6 +383,7 @@
     </div>
   </div>
 </div>
+
 <!-- Modal for StateEngine -->
 <div class="modal fade" id="modalStateMachine" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">

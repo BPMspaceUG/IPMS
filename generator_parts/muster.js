@@ -50,23 +50,6 @@ app.controller('genCtrl', function ($scope, $http) {
     }
   }
   $scope.selectFK = function(row) {
-    // Save the value, like (special trick with .id)
-    /*
-    var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
-    $scope.selectedRow[$scope.FKActCol+"________newID"] = row[col]
-    // Save the substituted value in the model
-    // Get the foreign column
-    // Substitute
-    var substcol = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_subst
-    var keys = Object.keys($scope.selectedRow)
-    for (var i=0;i<keys.length;i++) {
-      // check columns
-      if (keys[i] == $scope.FKActCol) {
-        // subsitute column
-        $scope.selectedRow[$scope.FKActCol] = row[substcol]
-      }
-    }
-    */
     $scope.substituteFKColsWithIDs(row)
     // Close modal
     $('#myFKModal').modal('hide')
@@ -76,7 +59,6 @@ app.controller('genCtrl', function ($scope, $http) {
     var t = $scope.getTableByName(table_name)
     if (!t) return
     NrOfPages = $scope.getNrOfPages(t)
-
     // [x] Case 1: Pages are less then NrOfBtns => display all
     if (NrOfPages <= MaxNrOfButtons) {
       pages = new Array(NrOfPages)
@@ -112,7 +94,9 @@ app.controller('genCtrl', function ($scope, $http) {
     if (table)
       return Math.ceil(table.count / $scope.PageLimit)
   }
-
+  $scope.changeTab = function(table_name) {
+    $scope.selectedTable = $scope.getTableByName(table_name)
+  }
   $scope.loadRow = function(tbl, row) {
     $scope.selectedRow = angular.copy(row)
     $scope.selectedTable = tbl
@@ -513,3 +497,8 @@ app.directive('stringToNumber', function() {
     }
   }
 })
+// Every time a modal is shown, if it has an autofocus element, focus on it.
+$('#myFKModal').on('shown.bs.modal', function() {
+  console.log("SWAG")
+  $(this).find('[autofocus]').focus()
+});
