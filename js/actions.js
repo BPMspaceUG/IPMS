@@ -26,13 +26,16 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data) {
-      console.log(data)
+      // Select correct DB
       $scope.dbNames.model = data.DBName
       $scope.updateTables($scope.dbNames.model)
-      // Parse data correctly
-      newtable = JSON.parse(data.data)
-      //  Find correct db and replace table var
-      $scope.tables = newtable
+      // Parse data
+      var newtable = JSON.parse(data.data)
+      // Replace data with parsed
+      var dst = {}
+      var result = angular.merge(dst, $scope.tables, newtable)
+      $scope.tables = result
+
       $scope.isLoading = false
     })
   }

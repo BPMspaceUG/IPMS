@@ -498,7 +498,6 @@ app.directive('stringToNumber', function() {
   }
 })
 // Every time a modal is shown, if it has an autofocus element, focus on it.
-$('#myFKModal').on('shown.bs.modal', function() {
-  console.log("SWAG")
-  $(this).find('[autofocus]').focus()
-});
+$('#myFKModal').on('shown.bs.modal', function() { $(this).find('[autofocus]').focus() });
+$('#modalCreate').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });
+$('#modalEdit').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });

@@ -168,7 +168,7 @@
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
                 <a class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
                 </a>
               </span>
@@ -179,20 +179,20 @@
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- Text -->
                 <input class="form-control" type="text"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
                   && !getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
                 <textarea class="form-control" rows="3"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
                   || getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]" style="font-family: Courier;"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'"></textarea>
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus></textarea>
                 <!-- Boolean (tinyint or boolean) -->
                 <input class="form-control"
                   type="checkbox"
@@ -201,8 +201,9 @@
                   ng-model="selectedRow[key]"
                   ng-true-value="'1'"
                   ng-false-value="'0'"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'"
-                  style="width: 50px;">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  style="width: 50px;"
+                  autofocus>
                 <!-- TODO: Date -->
               </span>
             </div>
@@ -249,7 +250,7 @@
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
               	<a class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
                 </a>
               </span>
@@ -260,20 +261,20 @@
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- Text -->
                 <input class="form-control" type="text"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
                   && !getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
                 <textarea class="form-control" rows="3"
                   ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
                   || getColByName(selectedTable, key).is_ckeditor"
                   ng-model="selectedRow[key]" style="font-family: Courier;"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'"></textarea>
+                  ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus></textarea>
                 <!-- Boolean (tinyint or boolean) -->
                 <input class="form-control"
                   type="checkbox"
@@ -282,8 +283,9 @@
                   ng-model="selectedRow[key]"
                   ng-true-value="'1'"
                   ng-false-value="'0'"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'"
-                  style="width: 50px;">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  style="width: 50px;"
+                  autofocus>
                 <!-- TODO: Date -->
               </span>
             </div>
