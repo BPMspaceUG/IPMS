@@ -59,9 +59,11 @@
                 <thead>
                   <tr>
                     <!-- Control-Column -->
-                    <th ng-hide="table.is_read_only"><em class="fa fa-cog"></em></th>
+                    <th ng-hide="table.is_read_only">
+                      <em class="fa fa-cog"></em>
+                    </th>
                     <!-- Data-Columns -->
-                    <th ng-repeat="col in table.columns"
+                    <th ng-repeat="col in table.columns | orderBy: 'col_order'"
                     		ng-click="sortCol(table, col.COLUMN_NAME)"
                     		ng-if="col.is_in_menu">
                       <span>{{col.column_alias}}
@@ -73,7 +75,7 @@
                 </thead>
                 <!-- ============= CONTENT ============= -->
                 <tbody>
-                  <tr ng-repeat="row in table.rows">
+                  <tr ng-repeat="row in table.rows" ng-class="getRowCSS(row)">
                     <!-- Control-Column -->
                     <td class="controllcoulm" ng-hide="table.is_read_only">
                       <!-- Edit Button -->
@@ -86,15 +88,16 @@
                       </button>
                     </td>
                     <!-- DATA ROWS -->
-                    <td ng-repeat="(key, value) in row"
-                    		ng-if="getColByName(table, key).is_in_menu">
+                    <td ng-repeat="cell in row track by $index" 
+                    		ng-if="getColByName(table, table.row_order[$index]).is_in_menu">
                       <!-- Substitue State Machine -->
-                      <div ng-if="(( key.indexOf('state') >= 0) && table.se_active)">
-                        <b ng-class="'state'+ value">{{substituteSE(table.table_name, value)}}</b>
+                      <!-- TODO: Use ForeignKeys for this function -->
+                      <div ng-if="(table.row_order[$index] == 'state_id' && table.se_active)">
+                        <b ng-class="'state'+ row[table.row_order[$index]]">{{substituteSE(table.table_name, row[table.row_order[$index]])}}</b>
                       </div>
                       <!-- Cell -->
-                      <span ng-if="!(( key.indexOf('state') >= 0) && table.se_active)">
-                     		{{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
+                      <span ng-if="!(table.row_order[$index] == 'state_id' && table.se_active)">
+                        {{ row[table.row_order[$index]] | limitTo: 40 }}{{ row[table.row_order[$index]].length > 40 ? '...' : ''}}
                      	</span>
                     </td>
                   </tr>
@@ -405,4 +408,5 @@
     </div>
   </div>
 </div>
+
 <!-- content ends here -->

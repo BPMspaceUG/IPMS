@@ -6,20 +6,41 @@
   }
   $params = $_POST;
 
+  //============================ Parse by Content
 	// Param
-	$data = htmlspecialchars($params['config_data']);
+	$data = @htmlspecialchars($params['config_data']);
 	$data = trim($data);
 	$data = html_entity_decode($data);
+	// check
+	if ($data != "") {
+		// Write config to file
+		file_put_contents("tmp.php", $data);
+		include_once("tmp.php");
+		// get data
+		$prjname = DB_NAME;
+		$jsvar = $config_tables_json;
+		// delete file
+		unlink("tmp.php");
+		// Return result
+		echo json_encode(array("DBName" => $prjname, "data" => $jsvar));
+		exit();
+	}
 
-	if ($data == "") return;
-	// Write config to file
-	file_put_contents("tmp.php", $data);
-	include_once("tmp.php");
-	// get data
-	$prjname = DB_NAME;
-	$jsvar = $config_tables_json;
-	// delete file
-	unlink("tmp.php");
-
-	echo json_encode(array("DBName" => $prjname, "data" => $jsvar));
+	//============================ Parse by Filename
+	// Param
+	$data = @htmlspecialchars($params['file_name']);
+	$data = trim($data);
+	$data = html_entity_decode($data);
+	// check
+	if ($data != "") {
+		// get data
+		$fname = __DIR__ . "/../../IPMS_test/".$data."-config.php";
+		if (file_exists($fname)) {
+			include_once($fname);
+			$prjname = DB_NAME;
+			$jsvar = $config_tables_json;
+			echo json_encode(array("DBName" => $prjname, "data" => $jsvar));
+		}
+		exit();
+	}
 ?>

@@ -53,10 +53,14 @@
       // Build one string with all columnnames
       $columnstr = "";
       foreach ($rows as $row) $columnstr .= $row["Field"];
-      // Column does not yet exist
+      // Column [form_data] does not yet exist
       if (strpos($columnstr, "form_data") === FALSE) {
-        //var_dump("Column 'form_data' was not existing -> Create Column...");
         $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `form_data` LONGTEXT NULL AFTER `tablename`;";
+        $res = $this->db->query($query);
+      }
+      // Column [form_data] does not yet exist
+      if (strpos($columnstr, "transition_script") === FALSE) {
+        $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
         $res = $this->db->query($query);
       }
 		  // Create Table 'state'

@@ -85,9 +85,6 @@ thead tr {background-color: #eee;}
 .fKeyLink {}
 .fKeyLink:hover {text-decoration: none;}
 
-[animate-on-change] { transition: all 1s; -webkit-transition: all 1s; }
-[animate-on-change].changed { background-color: #cffda2; transition: none; -webkit-transition: none; }
-
 /* State Engine */
 .stateBtn {cursor: pointer; font-weight: bold;}
 .state1 {color: darkgreen;}

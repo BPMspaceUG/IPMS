@@ -12,7 +12,47 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.username = 'root'
   $scope.isLoading = false
   $scope.configtext = ''
+  $scope.configFileWasNotFound = false
+  $scope.configFileWasFound = false
 
+
+  $scope.refreshConfig = function(data) {
+      // Select correct DB
+      $scope.dbNames.model = data.DBName
+      $scope.updateTables($scope.dbNames.model)
+      // Parse data
+      var newtable = JSON.parse(data.data)
+      // Replace data with parsed
+      var dst = {}
+      var result = angular.merge(dst, $scope.tables, newtable)
+      $scope.tables = result
+  }
+
+  $scope.loadConfigByName = function() {
+    $scope.isLoading = true
+    var db = $scope.dbNames.model
+    console.log("Load config from file '", db, "'")
+    // Request
+    $http({
+      url: 'modules/parseConfig.php',
+      method: "POST",
+      data: {
+        file_name: db
+      }
+    })
+    .success(function(data) {
+      console.log("---->", data)
+      if (data) {
+        $scope.configFileWasFound = true
+        $scope.configFileWasNotFound = false
+        $scope.refreshConfig(data)
+      } else {
+        $scope.configFileWasFound = false
+        $scope.configFileWasNotFound = true
+      }
+      $scope.isLoading = false
+    })
+  }
 
   $scope.loadconfig = function(text){    
     $scope.isLoading = true
@@ -26,16 +66,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data) {
-      // Select correct DB
-      $scope.dbNames.model = data.DBName
-      $scope.updateTables($scope.dbNames.model)
-      // Parse data
-      var newtable = JSON.parse(data.data)
-      // Replace data with parsed
-      var dst = {}
-      var result = angular.merge(dst, $scope.tables, newtable)
-      $scope.tables = result
-
+      $scope.refreshConfig(data)
       $scope.isLoading = false
     })
   }
@@ -59,7 +90,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data, status, headers, config) {
-      //console.log("XXXX")
       console.log(data)
       if (data.indexOf('mysqli::') >= 0) {
         // Error
@@ -88,6 +118,12 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     window.open(url + $scope.dbNames.model + ".php")
   }
 
+  $scope.changeSelection = function() {
+    $scope.configFileWasFound = false
+    $scope.configFileWasNotFound = false
+    $scope.updateTables($scope.dbNames.model)
+  }
+
   $scope.toggle_kids = function(tbl) {
     if (!tbl.showKids) {
       tbl.showKids = true
@@ -112,16 +148,20 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.tbl_toggle_sel_all = function() {
     $scope.tables.forEach(function(t){
       t.is_in_menu = !t.is_in_menu;
-    });
+    })
   }
 
   /*
   (re)define recent selected database
   */
   $scope.updateTables = function(param){
+  	console.log("UPDATE TABLES", param)
     var param = param || $scope.dbNames.model
     $scope.db = $scope.resultData.find(function(db){ return db.database == param })  
-    $scope.tables = $scope.db.tables.map(function(tbl){tbl.table_icon = getRandomicon(); return tbl})
+    $scope.tables = $scope.db.tables.map(function(tbl){
+      tbl.table_icon = getRandomicon()
+      return tbl
+    })
   }
 
   /*
@@ -158,9 +198,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
 
 });/*End Controller*/
 
-/*
-get a random Icon from the List
-*/
+/* get a random Icon from the List */
 var iconlist = ['address-book','address-book-o','address-card','address-card-o','adjust',
 'american-sign-language-interpreting','anchor','archive','area-chart','arrows','arrows-h',
 'arrows-v','asl-interpreting','assistive-listening-systems','asterisk','at','audio-description',
@@ -223,13 +261,11 @@ var iconlist = ['address-book','address-book-o','address-card','address-card-o',
 
 function getRandomicon(){
   var index = Math.floor( Math.random()*iconlist.length )
-  return 'fa fa-square';
+  return 'fa fa-square'; // default symbol
   //return 'fa fa-'+iconlist[index]
 }
 
-/*
- set green checked icon for success 
-*/
+/* set green checked icon for success */
 function scsSignal(bool){
   if (bool) {
     $('.fa-minus-circle').css({ display: 'none' });

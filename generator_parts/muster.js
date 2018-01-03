@@ -1,12 +1,15 @@
+/************************** ANGULAR START *************************/ 
 var app = angular.module("genApp", [])
 //--- Controller
 app.controller('genCtrl', function ($scope, $http) {
   // Variables
   $scope.tables = []
   $scope.isLoading = true
-  $scope.PageLimit = 10 // default = 10
-  $scope.selectedRow = []
+  $scope.PageLimit = 15 // default = 10
+  $scope.selectedRow = {}
+  $scope.selectedRowOrig = {}
   $scope.FKTbl = []
+  $scope.pendingState = false
 
   $scope.getColAlias = function(table, col_name) {
   	var res = ''
@@ -129,6 +132,12 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.loadRow(t, newRow)
     $scope.send("getFormCreate")
   }
+  $scope.getRowCSS = function(row) {
+    if (angular.equals(row, $scope.selectedRow) && $scope.pendingState) {
+      return "info"
+    }
+    return ""
+  }
   $scope.gotoState = function(nextstate) {
     $scope.selectedTable.hideSmBtns = true
     $scope.selectedRow['state_id'] = nextstate.id
@@ -169,15 +178,32 @@ app.controller('genCtrl', function ($scope, $http) {
       // Refresh each table
       $scope.tables.forEach(function(t){
         console.log("Init Table", t)
+
+        // Sort Columns
+        var cols = []
+        t.columns.forEach(function(col){
+          cols.push(col.COLUMN_NAME)
+        })
+        cols.sort(function(a, b) {
+          var a1 = $scope.getColByName(t, a).col_order
+          var b1 = $scope.getColByName(t, b).col_order
+          return a1 - b1
+        })
+        t.row_order = cols
+
+        // Refresh Table
         $scope.refresh(t.table_name)
       })
       // GUI
       $scope.isLoading = false
+
       // Auto click first tab
+      // TODO: Remove?
       var tbls = $scope.tables.sort()
       var first_tbl_name = tbls[0].table_name
       $scope.selectedTable = $scope.getTableByName(first_tbl_name)
       $('#'+first_tbl_name).tab('show')
+
   	});	
   }
   $scope.countEntries = function(table_name) {  	
@@ -345,8 +371,11 @@ app.controller('genCtrl', function ($scope, $http) {
     		}
   	  }
   	}).success(function(response){ 
-      t.rows = response // Save cells in tablevar
+
+      data = response
+      t.rows = data // Save cells in tablevar
       t.sqlwhere_old = t.sqlwhere
+
       // Refresh Counter (changes when delete or create happens) => countrequest if nr of entries >= PageLimit
       if (response.length >= $scope.PageLimit)      	
         $scope.countEntries(table_name)
@@ -404,6 +433,8 @@ app.controller('genCtrl', function ($scope, $http) {
   			cud == 'getFormData' || cud == 'getFormCreate' ||
   			cud == 'getNextStates' ||	cud == 'getStates' ||	cud == 'makeTransition') {
 
+        $scope.pendingState = true
+
      		// Confirmation when deleting
         if (cud == 'delete') {
       		IsSure = confirm("Do you really want to delete this entry?")
@@ -416,8 +447,7 @@ app.controller('genCtrl', function ($scope, $http) {
     		}
         // Filter out foreign keys
         if (cud == 'update' || cud == 'makeTransition') {
-          //console.log(body.paramJS.row)
-          //$scope.substituteFKColsWithIDs(body.paramJS.row)
+          // Filter foreign keys
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
         }
         // Check if state_machine at create
@@ -445,8 +475,8 @@ app.controller('genCtrl', function ($scope, $http) {
     }).success(function(response) {
       // Response
       console.log("<= ResponseData: ", response)
+      $scope.pendingState = false
       var table = $scope.getTableByName(body.paramJS.table)
-
       //-------------------- table data was modified
       if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {  
         // Created
@@ -497,6 +527,8 @@ app.directive('stringToNumber', function() {
     }
   }
 })
+/************************** ANGULAR END *************************/ 
+
 // Every time a modal is shown, if it has an autofocus element, focus on it.
 $('#myFKModal').on('shown.bs.modal', function() { $(this).find('[autofocus]').focus() });
 $('#modalCreate').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });

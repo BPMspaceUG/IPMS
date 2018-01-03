@@ -3,6 +3,7 @@
 <!-- Content -->
 <div ng-app="IPMS">
   <div ng-controller="IPMScontrol">
+
     <!-- CONNECT Part -->
 		<div class="container" style="padding-top: 30px">
 			<form class="bpm-server-connect" action="modules/ConnectDB.php">
@@ -49,8 +50,10 @@
 		  </div>
 			</form>
 		</div>
+
     <!-- CONTENT -->
     <div class="container">
+
       <!-- Loading -->
       <div class="alert alert-info" ng-show="isLoading">
         <p><i class="fa fa-cog fa-spin"></i> Loading...</p>
@@ -59,31 +62,58 @@
       <div class="alert alert-danger" ng-show="isError">
         <p><i class="fa fa-exclamation"></i> <strong>Error:</strong> Login data is not correct.</p>
       </div>
+
       <!-- DB Configuration -->
 		  <div ng-if="dbNames">
+
+        <!-- Database -->
+        <div class="row">
+          <div class="panel panel-default">
+            <div class="panel-body">
+              <form class="form-inline">
+                <div class="form-group">
+                  <label for="sqlDatabases"><span class="label label-success">1</span> Select a Database&nbsp;&nbsp;&nbsp;</label>
+                  <select class="form-control" name="repeatSelect" id="repeatSelect" ng-model="dbNames.model" ng-change="changeSelection()">
+                    <option ng-repeat="name in dbNames.names" value="{{name}}">{{name}}</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
 		    <!-- Load Config -->
-		    <div class="row">&nbsp;</div>
 		    <div class="row">
-		      <label class="col-sm-2"><span class="label label-warning">Optional</span> Load config</label>
-		      <div>
-		        <p>Paste the content of the configuration file here:</p>
-		        <textarea class="form-control configtxt" ng-model="configtext"></textarea>
-		        <br>
-		        <button class="btn btn-default" ng-click="loadconfig(configtext)">
-		        	<i class="fa fa-arrow-right"></i> Parse and Load configuration file</button>
+		      <label><span class="label label-warning">Optional</span> Load config</label>
+		      <div class="panel panel-default">
+            <div class="panel-body">
+              <br>
+              <!-- Automatically load config -->
+              <h6>Automatically load config</h6>
+              <button class="btn btn-default" ng-click="loadConfigByName()"><i class="fa fa-search"></i> Look for last config</button>
+              <br>
+              <br>
+              <p class="text-danger" ng-show="configFileWasNotFound">No configuration file found</p>
+              <p class="text-success" ng-show="configFileWasFound">Configuration file found and loaded</p>
+
+              <hr ng-hide="configFileWasFound">
+              <!-- Manually load config -->
+              <div ng-hide="configFileWasFound">
+                <h6>Manually load config</h6>
+    		        <p>Paste the contents of the configuration file here:</p>
+    		        <textarea class="form-control configtxt" ng-model="configtext"></textarea>
+    		        <br>
+    		        <button class="btn btn-default" ng-click="loadconfig(configtext)">
+                  <i class="fa fa-arrow-right"></i> Parse and Load configuration file
+                </button>
+              </div>
+            </div>
 		      </div>
 		    </div>
-		    <hr>
+
         <!-- Content of Databases -->        
         <div class="row">
-          <!-- Database -->
-          <div class="row form-group">
-            <label for="sqlDatabases" class="col-sm-2">
-              <span class="label label-success">1</span> Select Database</label>
-            <select class="form-control" name="repeatSelect" id="repeatSelect" ng-model="dbNames.model" ng-change="updateTables(dbNames.model)" style="display: inline-block; max-width: 400px;">
-              <option ng-repeat="name in dbNames.names" value="{{name}}" >{{name}}</option>
-            </select>
-          </div> 
+
           <!-- Tables -->
           <div class="row">
             <label for="sqlTables" class="col-sm-2">
@@ -95,12 +125,12 @@
               <thead>
                 <tr>
                   <th width="10px"></th>
-                  <th width="15%">TABLENAME</th>
+                  <th width="25%">TABLENAME</th>
                   <th width="20%">ALIAS</th>
                   <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
                   <th width="5%">STATE-ENGINE</th>
                   <th width="5%">RO (View)</th>
-                  <th width="40%">ICON</th>
+                  <th width="30%">ICON</th>
                 </tr>
               </thead>
               <tbody ng-repeat="tbl in tables track by $index">
@@ -125,7 +155,7 @@
                         <i class="{{tbl.table_icon}}" style="cursor: pointer;"></i>
                       </div>
                       <div class="col-xs-9">
-                        <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/> 
+                        <input type="text" class="form-control" rows="1" cols="{{tbl.table_icon.length + 2}}" ng-model="tbl.table_icon"/>
                       </div>
                     </div>
                   </td>
@@ -150,6 +180,7 @@
               </tbody>
             </table>
           </div>
+
           <!-- Create Button -->
           <div class="row">&nbsp;</div>
           <div class="row">
@@ -166,6 +197,7 @@
                 <i class="fa fa-folder-open"></i> Open Test-Directory</a>
             </div>
           </div>
+
           <!-- File String -->
           <div class="row">
             <div class="col-md-12" id="code">
@@ -177,10 +209,11 @@
                 </div>
             </div>
           </div>
-
         </div>
+
       </div>
     </div>
+
     <!-- Load Modal -->
     <div class="modal fade" id="loadDb">
         <div class="modal-dialog">
@@ -211,6 +244,7 @@
           </div>
         </div>
     </div>
+
   </div>
 </div>
 <!-- Footer -->
