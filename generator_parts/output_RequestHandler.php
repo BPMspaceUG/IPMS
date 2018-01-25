@@ -83,17 +83,21 @@
       global $config_tables_json;
       return $config_tables_json;
     }
+
     //================================== CREATE
     public function create($param) {
       // Inputs
       $tablename = $param["table"];
-      $rowdata = $param["row"];
+      // New State Machine
+      $SM = new StateMachine($this->db, DB_NAME, $tablename);
       // Split array
-      foreach ($rowdata as $key => $value) {        
+      // TODO: Better put this into a function => DRY
+      $keys = array();
+      $vals = array();
+      foreach ($param["row"] as $key => $value) { 
         // Check if has StateMachine // TODO: Optimize
         if ($value == '%!%PLACE_EP_HERE%!%') {
-          $SE = new StateMachine($this->db, DB_NAME, $tablename);
-          $value = $SE->getEntryPoint();
+          $value = $SM->getEntryPoint();
         }
         // Append and escape to prevent sqli
         $keys[] = $this->db->real_escape_string($key);
@@ -104,12 +108,58 @@
         echo "ERORR while buiding Query! (k=".count($keys).", v=".count($vals).")";
         exit;
       }
-      // Operation
-      $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
-      $res = $this->db->query($query);
-      $lastID = $this->db->insert_id;
-      // Output (return last id instead of 1)
-      return $res ? $lastID : "0";
+      // Rebuild Object
+      for ($i=0;$i<count($param["row"]);$i++) {
+        $param["row"][$keys[$i]] = $vals[$i];
+      }
+
+      // Execute transition script
+      if ($SM->getID() > 0) {
+        // Has StateMachine
+        $script = $SM->getTransitionScriptCreate();
+        // Execute Script
+        eval($script["transition_script"]);
+        // -----------> Standard Result
+        if (empty($script_result)) {
+          $script_result = array(
+            "allow_transition" => true,
+            "show_message" => false,
+            "message" => ""
+          );
+        }
+      } else {
+        // NO StateMachine
+        $script_result = array("allow_transition" => true);
+      }
+
+      // If allow transition then Create
+      if (@$script_result["allow_transition"] == true) {
+
+      	// Reload row, because maybe the TransitionScript has changed some params
+      	// TODO: Better put this into a function => DRY
+        $keys = array();
+        $vals = array();
+	      foreach ($param["row"] as $key => $value) { 
+	        // Check if has StateMachine // TODO: Optimize
+	        if ($value == '%!%PLACE_EP_HERE%!%') {
+	          $value = $SM->getEntryPoint();
+	        }
+	        // Append and escape to prevent sqli
+	        $keys[] = $this->db->real_escape_string($key);
+	        $vals[] = $this->db->real_escape_string($value);
+	      }
+        // --- Operation CREATE
+        $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
+        $res = $this->db->query($query);
+        $lastID = $this->db->insert_id;
+        $script_result["element_id"] = $lastID; // Special Case
+
+      }
+
+      // Output (OLD: return last id instead of 1)
+      // NEW: return transition script AND last_id
+      return json_encode($script_result);
+      //return $res ? $lastID : "0";
     }
     //================================== READ
     public function read($param) {
@@ -275,12 +325,12 @@
       $result = $SE->setState($ElementID, $nextStateID, $pricol, $param);
       // Check if was a recursive state
       $r = json_decode($result, true);
-      // Special case [Save] transition
-      if ($nextStateID == $actstateID) {
+      // Not only at save, also when going to another state - Special case [Save] transition
+      //if ($nextStateID == $actstateID) {
         if ($r["allow_transition"]) {
           $this->update($param); // Update all other rows
         }
-      }
+      //}
       // Return to client
       echo $result;
     }

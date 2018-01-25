@@ -262,7 +262,7 @@ app.controller('genCtrl', function ($scope, $http) {
   			cmd: 'getStates',
   			paramJS: {table: table_name}
   	}
-  	}).success(function(response){
+  	}).success(function(response) {
       t.statenames = response
   	})
   }
@@ -481,8 +481,14 @@ app.controller('genCtrl', function ($scope, $http) {
       if (response != 0 && (cud == 'delete' || cud == 'update' || cud == 'create')) {  
         // Created
 				if (cud == 'create') {
-          console.log("New Element with ID", response, "created.")
-          $('#modalCreate').modal('hide') // Hide create-modal
+          //console.log("New Element with ID", response, "created.")
+          //console.log(response)
+          // TODO: Make possible HTML Formated Message -> Small modal
+        	if (response.show_message)
+          	alert(response.message)
+          // Hide create-modal
+          if (response.element_id)
+          	$('#modalCreate').modal('hide')
           // TODO: Maybe jump to entry which was created
         }
         $scope.refresh(body.paramJS.table)

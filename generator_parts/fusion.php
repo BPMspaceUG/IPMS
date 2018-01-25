@@ -32,9 +32,10 @@
   /* ------------------------------------- Statemachine ------------------------------------- */
 
   require_once("output_StateEngine.php");
- 
-  // Loop each Table with StateMachine checked create a new StateMachine Column
-  var_dump("-------------------- FormData --------------------");
+   // Loop each Table with StateMachine checked create a new StateMachine Column
+
+  // -------------------- FormData --------------------
+
   for ($i=0;$i<count($data);$i++) {
     // Get Data
     $tablename = $data[$i]["table_name"];
@@ -49,23 +50,31 @@
       $SM_ID = $SM->createBasicStateMachine($tablename);
 
       // Add Basic Form Data for each state
+      //   Get all columns
       $query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = '$tablename';";
       $res = $con->query($query);
       $cols = array();
       while ($row = $res->fetch_row())
         $cols[] = $row[0];
+      // construct the Form data
       $form_data = json_encode($SM->getBasicFormDataByColumns($cols));
-      var_dump("--- Table: ".$tablename);
-      var_dump($form_data);
-      // TODO: Insert basic form_data
-      //$query = "INSERT INTO `".$db_name."`.`state` (from_data) VALUES ('') WHERE state_id = ;";
+      // write the formdata into the column if empty      
+      $query = "UPDATE $db_name.state_machines SET form_data = '$form_data' WHERE ".
+               "tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL;";
+      $con->query($query);      
+      $query = "UPDATE $db_name.state SET form_data = '$form_data' WHERE ".
+               "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
+      $con->query($query);
+      // Clean up
       unset($SM);
       // ------------ Connection to existing structure !
-      // Add new column already existing struct - Does not add if already exists
+
+      // Set the default Entrypoint for the Table (when creating an entry the Process starts here)
       $SM = new StateMachine($con, $db_name, $tablename); // Load correct Machine
       $EP_ID = $SM->getEntryPoint();
       $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT $EP_ID;";
       $con->query($q_se);
+
       // Add UNIQUE named foreign Key
       $uid = substr(md5($tablename), 0, 8);
       $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD CONSTRAINT `state_id_".$uid."` FOREIGN KEY (`state_id`) ".
@@ -73,7 +82,6 @@
       $con->query($q_se);
     }
   }
-  var_dump("-------------------- /FormData --------------------");
 
   //-------------------------------------------------------
 

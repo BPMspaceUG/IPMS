@@ -160,9 +160,7 @@
           <!-- Add if is in menu -->
           <div class="form-group"
             ng-repeat="(key, value) in selectedRow"
-            ng-if="getColByName(selectedTable, key).is_in_menu
-              && !(selectedTable.se_active && (key.indexOf('state_id') >= 0))
-              && (selectedTable.form_data[key] != 'HI')">
+            ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
             <!-- [LABEL] -->
             <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
             <!-- [VALUE] -->
@@ -171,7 +169,8 @@
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
                 <a class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
-                  ng-readonly="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
                 </a>
               </span>
@@ -215,7 +214,7 @@
       </div>
       <div class="modal-footer">
         <!-- CREATE / CLOSE -->
-        <button class="btn btn-success" data-dismiss="modal" ng-click="send('create', {row: selectedRow, table: selectedTable})">
+        <button class="btn btn-success" ng-click="send('create', {row: selectedRow, table: selectedTable})">
           <i class="fa fa-plus"></i> Create</button>
         &nbsp;
         <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
@@ -242,9 +241,7 @@
           <!-- Add if is in menu -->
           <div class="form-group"
             ng-repeat="(key, value) in selectedRow"
-            ng-if="getColByName(selectedTable, key).is_in_menu
-                && !(selectedTable.se_active && (key.indexOf('state_id') >= 0))
-                && (selectedTable.form_data[key] != 'HI')">
+            ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
             <!-- [LABEL] -->
             <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
             <!-- [VALUE] -->
@@ -253,7 +250,9 @@
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
               	<a class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
-                  ng-readonly="selectedTable.form_data[key] == 'RO'">
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  ng-disabled="selectedTable.form_data[key] == 'RO'"
+                  >
                   <i class="fa fa-key"></i> {{value}}
                 </a>
               </span>

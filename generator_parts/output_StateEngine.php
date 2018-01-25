@@ -13,7 +13,6 @@
       if ($this->table != "")
       	$this->ID = $this->getSMIDByTablename($tablename);
     }
-
     private function getResultArray($rowObj) {
       $res = array();
       if (!$rowObj) return $res; // exit if query failed
@@ -35,7 +34,6 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
-
     public function createDatabaseStructure() {
     	$db_name = $this->db_name;
     	// ------------------------------- T A B L E S
@@ -140,13 +138,16 @@
       $this->db->query($query);
       return $ID;
     }
-    // TODO:
     public function getBasicFormDataByColumns($columns) {
       // possibilities = [RO, RW, HD]
       $res = array();
       // Loop each column
       for ($i=0;$i<count($columns);$i++) {
-        $res[$columns[$i]] = "RO";
+      	// if coumn is state_id then Hide it
+      	if ($columns[$i] == 'state_id')
+					$res[$columns[$i]] = "HI";
+      	else      		
+        	$res[$columns[$i]] = "RO"; // default: Read write
       }
       return $res;
     }
@@ -246,6 +247,7 @@
       $cnt = $res->num_rows;
       return ($cnt > 0);
     }
+
     public function getTransitionScripts($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
@@ -256,5 +258,13 @@
       $return = $this->getResultArray($res);
       return $return;
     }
+    public function getTransitionScriptCreate() {
+      if (!($this->ID > 0)) return ""; // check for valid state machine
+      $query = "SELECT transition_script FROM $this->db_name.state_machines WHERE id = $this->ID;";
+      $res = $this->db->query($query);
+      $script = $this->getResultArray($res);
+      return $script[0];
+    }
+
   }
 ?>
