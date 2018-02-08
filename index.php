@@ -167,7 +167,7 @@
                   <td><input type="text" ng-model="col.column_alias"></td>
                   <td colspan="4">
                     <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
-                    <input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;
+                    <!--<input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;-->
                     <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
                     <input type="text" style="width: 40px" ng-model="col.col_order" placeholder="0">
                     &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;<b>FK:</b>

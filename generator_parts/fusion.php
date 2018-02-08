@@ -141,6 +141,7 @@
   .$output_footer
   ;
 
+  echo "Generating-Time: ".date("Y-m-d H:i:s")."\n\n";
   echo $output_all;
 
   // ------------------------------------ Generate Config File

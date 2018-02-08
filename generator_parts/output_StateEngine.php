@@ -158,7 +158,10 @@
         "WHERE statemachine_id = $this->ID AND state_id = $StateID;";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
-      return $r[0]['fd'];
+      if ($r)
+        return $r[0]['fd'];
+      else
+        return '';
     }
     public function getCreateFormByTablename() {
       if (!($this->ID > 0)) return "";
@@ -167,7 +170,10 @@
         "WHERE id = $this->ID;";
       $res = $this->db->query($query);
       $r = $this->getResultArray($res);
-      return $r[0]['fd'];
+      if ($r)
+        return $r[0]['fd'];
+      else
+        return '';
     }
     public function getID() {
     	return $this->ID;

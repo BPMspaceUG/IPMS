@@ -1,7 +1,9 @@
 <?php
-  // Header
+  // Header for testing
+  /*
   header('Access-Control-Allow-Origin: *');
   header('Access-Control-Allow-Methods: POST');
+  */
   // Includes
   include_once("replaceDBName-config.php");
   // Parameter and inputstream
@@ -83,36 +85,35 @@
       global $config_tables_json;
       return $config_tables_json;
     }
-
+    private function splitQuery($row) {
+      $res = array();
+      foreach ($row as $key => $value) { 
+        // Escape to prevent sqli or harmful parameters
+        $k = $this->db->real_escape_string($key);
+        $v = $this->db->real_escape_string($value);
+        $res[] = array("key" => $k, "value" => $v);
+      }
+      return $res;
+    }
     //================================== CREATE
     public function create($param) {
       // Inputs
       $tablename = $param["table"];
       // New State Machine
       $SM = new StateMachine($this->db, DB_NAME, $tablename);
-      // Split array
-      // TODO: Better put this into a function => DRY
-      $keys = array();
-      $vals = array();
-      foreach ($param["row"] as $key => $value) { 
-        // Check if has StateMachine // TODO: Optimize
-        if ($value == '%!%PLACE_EP_HERE%!%') {
-          $value = $SM->getEntryPoint();
-        }
-        // Append and escape to prevent sqli
-        $keys[] = $this->db->real_escape_string($key);
-        $vals[] = $this->db->real_escape_string($value);
-      }
-      // Checking
-      if (count($keys) != count($vals)) {
-        echo "ERORR while buiding Query! (k=".count($keys).", v=".count($vals).")";
-        exit;
+      // Check Query
+      $x = $this->splitQuery($param["row"]);
+      // Substitute Value for EntryPoint of Statemachine
+      for ($i=0;$i<count($x);$i++) {
+        // TODO: Make this better
+        // (EP from client, and then check if correct in server)
+        if ($x[$i]["value"] == '%!%PLACE_EP_HERE%!%')
+          $x[$i]["value"] = $SM->getEntryPoint();
       }
       // Rebuild Object
       for ($i=0;$i<count($param["row"]);$i++) {
-        $param["row"][$keys[$i]] = $vals[$i];
+        $param["row"][$x[$i]["key"]] = $x[$i]["value"];
       }
-
       // Execute transition script
       if ($SM->getID() > 0) {
         // Has StateMachine
@@ -133,33 +134,23 @@
       }
 
       // If allow transition then Create
-      if (@$script_result["allow_transition"] == true) {
-
+      if (@$script_result["allow_transition"] == true) {        
       	// Reload row, because maybe the TransitionScript has changed some params
-      	// TODO: Better put this into a function => DRY
         $keys = array();
         $vals = array();
-	      foreach ($param["row"] as $key => $value) { 
-	        // Check if has StateMachine // TODO: Optimize
-	        if ($value == '%!%PLACE_EP_HERE%!%') {
-	          $value = $SM->getEntryPoint();
-	        }
-	        // Append and escape to prevent sqli
-	        $keys[] = $this->db->real_escape_string($key);
-	        $vals[] = $this->db->real_escape_string($value);
-	      }
+        $x = $this->splitQuery($param["row"]);
+        foreach ($x as $el) {
+          $keys[] = $el["key"];
+          $vals[] = $el["value"];
+        }
         // --- Operation CREATE
         $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
         $res = $this->db->query($query);
         $lastID = $this->db->insert_id;
         $script_result["element_id"] = $lastID; // Special Case
-
       }
-
-      // Output (OLD: return last id instead of 1)
-      // NEW: return transition script AND last_id
+      // Return
       return json_encode($script_result);
-      //return $res ? $lastID : "0";
     }
     //================================== READ
     public function read($param) {
@@ -253,6 +244,7 @@
       // Output
       return $res ? "1" : "0";
     }
+    //----------------------------------
     public function getFormData($param) {
       $tablename = $param["table"];
       $SM = new StateMachine($this->db, DB_NAME, $tablename);
@@ -282,36 +274,33 @@
     }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
-      // Find right column (Maybe optimize with GUID)
+      // Inputs
       $row = $param["row"];
-
-      // TODO: Get StateID not from client -> find itself by using [table, ElementID]
-      // {
-      $stateID = false;
-      foreach ($row as $key => $value) {
-        // if column contains *state_id*
-        if (strpos($key, 'state') !== false) {
-          $stateID = $value;
-          break;
-        }
-      }
-      // Return invalid
-      if ($stateID === false) return json_encode(array());
-      // }
-      
-      // execute query
       $tablename = $param["table"];
+
+      // Find correct state_id with the inputs
+      $pCols = $this->getPrimaryColByTablename($tablename);
+      $where = $this->buildSQLWherePart($pCols, $param["row"]);
+
+      // get StateID from the Element itself
+      $query = "SELECT state_id FROM ".DB_NAME.".$tablename WHERE ".$where.";";
+      $res = $this->db->query($query);
+      $r = $res->fetch_array();
+      $stateID = (int)$r[0];
+
+      // execute query
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
     public function makeTransition($param) {
+      // INPUT [table, ElementID, (next)state_id]
       // Get the next ID for the next State
-      $nextStateID = $param["row"]["state_id"];
-      $tablename = $param["table"];
-      $pricols = $this->getPrimaryColByTablename($tablename);
-      $pricol = $pricols[0]; // Count should always be 1
-      $ElementID = $param["row"][$pricol];
+      @$nextStateID = $param["row"]["state_id"];
+      @$tablename = $param["table"];
+      @$pricols = $this->getPrimaryColByTablename($tablename);
+      @$pricol = $pricols[0]; // Should always be 1 (Only one column for Identification)
+      @$ElementID = $param["row"][$pricol];
       // Statemachine
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
       // get ActStateID

@@ -13,35 +13,39 @@
       <div class="panel panel-default panel-table">
         <!-- Panel Header -->
         <div class="panel-heading">
-          <!-- Tabs-->
-          <div class="pull-left">
-            <ul class="nav nav-tabs">
-              <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}">
-                <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
-                  <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
-                </a>
-              </li>
-            </ul>
-          </div>
-          <!-- Where filter -->
-          <form class="form-inline pull-right">
-            <div class="form-group">
-              <!-- PROCESS -->
-              <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
-                ng-click="openSEPopup(selectedTable.table_name)"><i class="fa fa-random"></i></button>
-              <!-- ADD -->
-              <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
-              	ng-click="addEntry(selectedTable.table_name)"><i class="fa fa-plus"></i></button>
-              <!-- SEARCH -->
-              <input type="text" class="form-control" style="width:150px;" placeholder="Search..."
-                ng-model="selectedTable.sqlwhere"/>
-              <!-- REFRESH -->
-              <button class="btn btn-default" title="Refresh" 
-              	ng-click="refresh(selectedTable.table_name);"><i class="fa fa-refresh"></i></button>                  
+          <div class="row">
+            <div class="col-sm-8 col-xs-12">
+              <!-- Tabs-->
+              <ul class="nav nav-tabs">
+                <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}">
+                  <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
+                    <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
+                  </a>
+                </li>
+              </ul>
             </div>
-          </form>
-          <!--Clear -->
-          <div class="clearfix"></div>
+            <!-- Where filter -->
+            <div class="col-sm-4 col-xs-12">
+              <form class="form-inline pull-right">
+                <div class="form-group" style="white-space: nowrap; /*Prevents Wrapping*/">
+                  <!-- PROCESS -->
+                  <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
+                    ng-click="openSEPopup(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-random"></i></button>
+                  <!-- ADD -->
+                  <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
+                  	ng-click="addEntry(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-plus"></i></button>
+                  <!-- SEARCH -->
+                  <input type="text" class="form-control" placeholder="Search..."
+                    ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px"/>
+                  <!-- REFRESH -->
+                  <button class="btn btn-default" title="Refresh" 
+                  	ng-click="refresh(selectedTable.table_name);" style="display: inline-block;"><i class="fa fa-refresh"></i></button>                  
+                </div>
+              </form>
+            </div>
+            <!--Clear -->
+            <div class="clearfix"></div>
+          </div>
         </div>
         <!-- Panel Body -->
         <div class="panel-body">
@@ -91,7 +95,7 @@
                     <td ng-repeat="cell in row track by $index" 
                     		ng-if="getColByName(table, table.row_order[$index]).is_in_menu">
                       <!-- Substitue State Machine -->
-                      <!-- TODO: Use ForeignKeys for this function -->
+                      <!-- TODO: Use maybe ForeignKeys for this function -->
                       <div ng-if="(table.row_order[$index] == 'state_id' && table.se_active)">
                         <b ng-class="'state'+ row[table.row_order[$index]]">{{substituteSE(table.table_name, row[table.row_order[$index]])}}</b>
                       </div>
@@ -159,7 +163,7 @@
         <form class="form-horizontal">
           <!-- Add if is in menu -->
           <div class="form-group"
-            ng-repeat="(key, value) in selectedRow"
+            ng-repeat="(key, value) in selectedRow track by $index"
             ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
             <!-- [LABEL] -->
             <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
@@ -167,12 +171,12 @@
             <div class="col-sm-9">
               <!-- Foreign Key (FK) -->
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
-                <a class="btn btn-default"
+                <button class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   ng-disabled="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
-                </a>
+                </button>
               </span>
               <!-- NO FK -->
               <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
@@ -240,7 +244,7 @@
         <form class="form-horizontal">
           <!-- Add if is in menu -->
           <div class="form-group"
-            ng-repeat="(key, value) in selectedRow"
+            ng-repeat="(key, value) in selectedRow track by $index"
             ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
             <!-- [LABEL] -->
             <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
@@ -248,19 +252,25 @@
             <div class="col-sm-9">
               <!-- Foreign Key (FK) -->
               <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
-              	<a class="btn btn-default"
+              	<button class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   ng-disabled="selectedTable.form_data[key] == 'RO'"
                   >
                   <i class="fa fa-key"></i> {{value}}
-                </a>
+                </button>
               </span>
               <!-- NO FK -->
               <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
                 <!-- Number  -->
+                <p class="form-control-static" ng-if="key == 'state_id'">
+                  <b ng-class="'state'+ selectedRow[key]">
+                  {{substituteSE(selectedTable.table_name, selectedRow[key])}}
+                </b>
+                </p>
+                <!-- Number  -->
                 <input class="form-control" type="number" string-to-number 
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
+                  ng-if="key != 'state_id' && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
                   && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
@@ -295,8 +305,12 @@
         </form>
       </div>
       <div class="modal-footer">
+        <!--
+        <pre>{{selectedRow}}</pre>
+        -->
         <!-- STATE MACHINE -->
         <span class="pull-left" ng-hide="!selectedTable.se_active || selectedTable.hideSmBtns">
+          <p class="form-control-static pull-left"><i class="fa fa-floppy-o"></i> Save and goto&nbsp;</p>
           <span ng-repeat="state in selectedTable.nextstates">
             <!-- Recursive State -->
             <span ng-if="state.id == selectedRow.state_id">
@@ -332,7 +346,7 @@
         <h4 class="modal-title" id="myFKModalLabel"><i class="fa fa-key"></i> Select a Foreign Key</h4>
       </div>
       <div class="modal-body">
-      <!-- Search form -->
+        <!-- Search form -->
         <form class="form-inline">
           <div class="form-group">
             <label for="searchtext">Search:</label>

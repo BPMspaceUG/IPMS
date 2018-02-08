@@ -109,18 +109,18 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.send('update')
   }
   $scope.editEntry = function(table, row) {
-  	console.log("[Edit] Button clicked")
+  	//console.log("[Edit] Button clicked")
     $scope.loadRow(table, row)
     $scope.send("getFormData")
     $scope.hideSmBtns = true
   }
   $scope.deleteEntry = function(table, row) {
-    console.log("[Delete] Button clicked")
+    //console.log("[Delete] Button clicked")
     $scope.loadRow(table, row)
     $scope.send('delete')
   }
   $scope.addEntry = function(table_name) {
-  	console.log("[Create] Button clicked")
+  	//console.log("[Create] Button clicked")
     var t = $scope.getTableByName(table_name)
     // create an empty element
     var newRow = {}
@@ -140,6 +140,7 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.gotoState = function(nextstate) {
     $scope.selectedTable.hideSmBtns = true
+    //console.log("Trying to transit to stateID " + nextstate.id)
     $scope.selectedRow['state_id'] = nextstate.id
     $scope.send('makeTransition')
   }
@@ -177,7 +178,7 @@ app.controller('genCtrl', function ($scope, $http) {
       })
       // Refresh each table
       $scope.tables.forEach(function(t){
-        console.log("Init Table", t)
+        //console.log("Init Table", t)
 
         // Sort Columns
         var cols = []
@@ -240,7 +241,9 @@ app.controller('genCtrl', function ($scope, $http) {
 
   //------------------------------------------------------- Statemachine functions
 
+  // TODO: Remove this function
   $scope.substituteSE = function(tablename, stateID) {
+    //console.log("===> ", tablename, "---", stateID)
     t = $scope.getTableByName(tablename)
     if (!t.se_active) return
     // Converts stateID -> Statename
@@ -413,7 +416,7 @@ app.controller('genCtrl', function ($scope, $http) {
           //else
             //result[col] = row[col]
           // Remove object key
-          delete $scope.selectedRow[col+"________newID"]
+          //delete $scope.selectedRow[col+"________newID"]
         }
       }
     }

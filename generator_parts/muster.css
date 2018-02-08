@@ -86,7 +86,9 @@ thead tr {background-color: #eee;}
 .fKeyLink:hover {text-decoration: none;}
 
 /* State Engine */
+/* TODO: Optimize... not every stateID is that low value */
 .stateBtn {cursor: pointer; font-weight: bold;}
+
 .state1 {color: darkgreen;}
 .state2 {color: steelblue;}
 .state3 {color: red;}
@@ -99,3 +101,12 @@ thead tr {background-color: #eee;}
 .state10 {color: tan;}
 .state11 {color: wheat;}
 .state12 {color: darksalmon;}
+.state13 {color: orange;}
+.state14 {color: darkgreen;}
+.state15 {color: brown;}
+.state16 {color: mediumorchid;}
+.state17 {color: steelblue;}
+.state18 {color: darkmagenta;}
+.state19 {color: tan;}
+.state20 {color: red;}
+.state21 {color: wheat;}
