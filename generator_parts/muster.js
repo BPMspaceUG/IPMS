@@ -7,9 +7,10 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.isLoading = true
   $scope.PageLimit = 15 // default = 10
   $scope.selectedRow = {}
-  $scope.selectedRowOrig = {}
   $scope.FKTbl = []
   $scope.pendingState = false
+  $scope.actStateID = 0
+
 
   $scope.getColAlias = function(table, col_name) {
   	var res = ''
@@ -53,9 +54,8 @@ app.controller('genCtrl', function ($scope, $http) {
     }
   }
   $scope.selectFK = function(row) {
-    $scope.substituteFKColsWithIDs(row)
-    // Close modal
-    $('#myFKModal').modal('hide')
+    $scope.substituteFKColsWithIDs(row)    
+    $('#myFKModal').modal('hide') // Close modal when selected
   }
   $scope.getPageination = function(table_name) {
     var MaxNrOfButtons = 5
@@ -99,6 +99,7 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.changeTab = function(table_name) {
     $scope.selectedTable = $scope.getTableByName(table_name)
+    $(".searchfield").focus();
   }
   $scope.loadRow = function(tbl, row) {
     $scope.selectedRow = angular.copy(row)
@@ -109,13 +110,11 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.send('update')
   }
   $scope.editEntry = function(table, row) {
-  	//console.log("[Edit] Button clicked")
     $scope.loadRow(table, row)
     $scope.send("getFormData")
     $scope.hideSmBtns = true
   }
   $scope.deleteEntry = function(table, row) {
-    //console.log("[Delete] Button clicked")
     $scope.loadRow(table, row)
     $scope.send('delete')
   }
@@ -140,8 +139,8 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.gotoState = function(nextstate) {
     $scope.selectedTable.hideSmBtns = true
-    //console.log("Trying to transit to stateID " + nextstate.id)
-    $scope.selectedRow['state_id'] = nextstate.id
+    $scope.actStateID = $scope.selectedRow['state_id'] // save actual stateID
+    $scope.selectedRow['state_id'] = nextstate.id // set next stateID
     $scope.send('makeTransition')
   }
   $scope.getTableByName = function(table_name) {
@@ -178,8 +177,6 @@ app.controller('genCtrl', function ($scope, $http) {
       })
       // Refresh each table
       $scope.tables.forEach(function(t){
-        //console.log("Init Table", t)
-
         // Sort Columns
         var cols = []
         t.columns.forEach(function(col){
@@ -197,9 +194,7 @@ app.controller('genCtrl', function ($scope, $http) {
       })
       // GUI
       $scope.isLoading = false
-
       // Auto click first tab
-      // TODO: Remove?
       var tbls = $scope.tables.sort()
       var first_tbl_name = tbls[0].table_name
       $scope.selectedTable = $scope.getTableByName(first_tbl_name)
@@ -235,13 +230,15 @@ app.controller('genCtrl', function ($scope, $http) {
         }
       }
     }).success(function(response){
-      t.count = response[0].cnt
+    	//console.log(response)
+    	if (response.length > 0)
+      	t.count = response[0].cnt
     });
   }
 
   //------------------------------------------------------- Statemachine functions
 
-  // TODO: Remove this function
+  // TODO: Remove this function and use ForeignKeys (Problem: function filterFK)
   $scope.substituteSE = function(tablename, stateID) {
     //console.log("===> ", tablename, "---", stateID)
     t = $scope.getTableByName(tablename)
@@ -279,7 +276,8 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   function formatLabel(strLabel) {
   	// insert \n every X char
-  	return strLabel.replace(/(.{10})/g, "$&" + "\n")
+  	newstr = strLabel.replace(" ", "\n")
+  	return newstr //strLabel.replace(/(.{10})/g, "$&" + "\n")
   }
   $scope.drawProcess = function(tbl) {
     var strLinks = ""
@@ -298,15 +296,15 @@ app.controller('genCtrl', function ($scope, $http) {
       if (!extNd) // no Exit Node
       	strLabels += 's'+e.id+' [label="'+formatLabel(e.name)+'"'+strActState+'];\n'
      	else // Exit Node
-     		strLabels += 's'+e.id+' [label="\n\n\n\n'+e.name+'" shape=doublecircle color=gray20 fillcolor=gray20 width=0.15 height=0.15];\n'
+     		strLabels += 's'+e.id+' [label="\n\n\n\n'+formatLabel(e.name)+'" shape=doublecircle color=gray20 fillcolor=gray20 width=0.15 height=0.15];\n'
     })
     // Render SVG
     document.getElementById("statediagram").innerHTML = Viz(`
     digraph G {
       # global
-      rankdir=LR; outputorder=edgesfirst; pad=0.5;
+      rankdir=LR; outputorder=edgesfirst; pad=0.5; splines=ortho; nodesep=0.75;
       node [style="filled, rounded" color=gray20 fontcolor=gray20 fontname="Helvetica-bold" shape=box fixedsize=true fontsize=9 fillcolor=white width=0.9 height=0.4];
-      edge [fontsize=10 color=gray80 arrowhead=vee];
+      edge [fontsize=10 color=gray80 arrowhead=open];
       start [label="\n\n\nStart" shape=circle color=gray20 fillcolor=gray20 width=0.15 height=0.15];
       # links
       `+strEP+`
@@ -314,6 +312,8 @@ app.controller('genCtrl', function ($scope, $http) {
       # nodes
       `+strLabels+`
     }`);
+    // Draw Tokens
+    drawTokens(tbl)
   }
   $scope.openSEPopup = function(table_name) {
   	var t = $scope.getTableByName(table_name)
@@ -377,16 +377,20 @@ app.controller('genCtrl', function ($scope, $http) {
 
       data = response
       t.rows = data // Save cells in tablevar
+
+      console.log("Rows Count: ", data.length)
+      console.log("Rows: ", data)
+
       t.sqlwhere_old = t.sqlwhere
 
       // Refresh Counter (changes when delete or create happens) => countrequest if nr of entries >= PageLimit
-      if (response.length >= $scope.PageLimit)      	
+      if (response.length >= $scope.PageLimit)
         $scope.countEntries(table_name)
       else {
         if (t.PageIndex == 0) t.count = response.length
       }
       // Get the states from table
-      // TODO: ...? obsolete? maybe only refresh at init, then alsway getNextstates
+      // TODO: ...? obsolete? maybe only refresh at init, then always getNextstates
       $scope.getStatemachine(table_name)
   	})
   }
@@ -413,10 +417,6 @@ app.controller('genCtrl', function ($scope, $http) {
           newID = $scope.selectedRow[col+"________newID"]
           if (newID)
             result[col] = newID // Only set when exists            
-          //else
-            //result[col] = row[col]
-          // Remove object key
-          //delete $scope.selectedRow[col+"________newID"]
         }
       }
     }
@@ -427,7 +427,9 @@ app.controller('genCtrl', function ($scope, $http) {
 
   $scope.send = function(cud, param) {
 
+  	// if params are given load params
     if (param) $scope.loadRow(param.table, param.row)
+
     var body = {cmd: 'cud', paramJS: {}}
     var t = $scope.selectedTable
 
@@ -497,8 +499,10 @@ app.controller('genCtrl', function ($scope, $http) {
         $scope.refresh(body.paramJS.table)
       }
       else if (cud == 'getFormData') {
-        $scope.send("getNextStates") // get next States
-        table.form_data = response
+      	if (response != "1") {
+        	$scope.send("getNextStates") // get next States
+        	table.form_data = response
+        }
         $('#modalEdit').modal('show')
       }
       else if (cud == 'getFormCreate') {
@@ -511,14 +515,19 @@ app.controller('genCtrl', function ($scope, $http) {
         table.nextstates = response
         $scope.selectedTable.hideSmBtns = false
       }
-      else if (cud == 'makeTransition') {      	
-        // Show Transition Message
-        // TODO: Make possible HTML Formated Message -> Small modal
-        if (response.show_message)
-          alert(response.message)
+      else if (cud == 'makeTransition') {
+        var rsp = response
+        for (var i=0; i<rsp.length; i++) {
+          // Message
+          if (rsp[i].show_message)
+            alert(rsp[i].message)
+          // Set Back to orig. State
+          if (!rsp[i].allow_transition)
+            $scope.selectedRow['state_id'] = $scope.actStateID;
+        }
         // Refresh Table
-        $scope.refresh(body.paramJS.table)
-        $scope.send("getFormData")
+       	$scope.refresh(body.paramJS.table)
+       	$scope.send("getFormData")
       }
       else {
         // Error from server
@@ -542,3 +551,34 @@ app.directive('stringToNumber', function() {
 $('#myFKModal').on('shown.bs.modal', function() { $(this).find('[autofocus]').focus() });
 $('#modalCreate').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });
 $('#modalEdit').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });
+
+
+
+function drawTokens(tbl) {
+  // Clear all Tokens
+  $(".token").remove()
+  // Add Tokens
+  tbl.smNodes.forEach(function(e){
+  	if (e.NrOfTokens > 0)
+  		drawTokenToNode(e.id, e.NrOfTokens)
+  })
+}
+ 
+function drawTokenToNode(state_id, text) {
+	// Get Position of Node
+	var pos = $("title").filter(function(){
+		return $(this).text() === 's'+state_id;
+	}).parents(".node")
+	// Find Text
+	txt = pos.find("text")
+	var x = parseFloat(txt.attr("x"))
+	var y = parseFloat(txt.attr("y"))
+	y = y + 19
+	// Add Badge
+  var existingContent = pos.html()
+ 	//x = x - 5 // (text.toString().length * 3) // center
+ 	text = text.toString()
+  var toInsert = '<g class="token"><circle class="token_bg" cx="'+x+'" cy="'+y+'" fill="#5599dd" r="8"></circle>'+
+  	'<text class="token_txt" x="'+(x - (2.5 * text.length))+'" y="'+(y+3.5)+'" fill="white" font-size="8px">'+text+'</text></g>'
+  pos.html(existingContent + toInsert)
+}

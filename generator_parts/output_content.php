@@ -6,7 +6,7 @@
 </div>
 
 <!-- body content starts here  -->
-<div class="container" id="content" ng-hide="isLoading">
+<div class="container" id="content" ng-hide="isLoading" style="width: 100%">
   <div class="row">
     <div class="col-xs-12">
 
@@ -35,8 +35,8 @@
                   <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
                   	ng-click="addEntry(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-plus"></i></button>
                   <!-- SEARCH -->
-                  <input type="text" class="form-control" placeholder="Search..."
-                    ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px"/>
+                  <input type="text" class="form-control searchfield" placeholder="Search..."
+                    ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px" autofocus>
                   <!-- REFRESH -->
                   <button class="btn btn-default" title="Refresh" 
                   	ng-click="refresh(selectedTable.table_name);" style="display: inline-block;"><i class="fa fa-refresh"></i></button>                  
@@ -48,7 +48,7 @@
           </div>
         </div>
         <!-- Panel Body -->
-        <div class="panel-body">
+        <div class="panel-body" ng-class="{'text-primary': (selectedTable.sqlwhere_old.length != 0)}">
           <div class="tab-content" style="overflow: auto;">
             <div ng-repeat="table in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
             	<!-- No Entries -->
@@ -83,16 +83,18 @@
                     <!-- Control-Column -->
                     <td class="controllcoulm" ng-hide="table.is_read_only">
                       <!-- Edit Button -->
+                      <!--
                       <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
                         <i class="fa fa-pencil"></i>
                       </button>
+                    	-->
                       <!-- Delete Button -->
                       <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
                         <i class="fa fa-times"></i>
                       </button>
                     </td>
                     <!-- DATA ROWS -->
-                    <td ng-repeat="cell in row track by $index" 
+                    <td ng-repeat="cell in row track by $index" ng-click="editEntry(table, row)"
                     		ng-if="getColByName(table, table.row_order[$index]).is_in_menu">
                       <!-- Substitue State Machine -->
                       <!-- TODO: Use maybe ForeignKeys for this function -->
@@ -264,9 +266,9 @@
               <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
                 <!-- Number  -->
                 <p class="form-control-static" ng-if="key == 'state_id'">
-                  <b ng-class="'state'+ selectedRow[key]">
-                  {{substituteSE(selectedTable.table_name, selectedRow[key])}}
-                </b>
+                  <b ng-if="!pendingState" ng-class="'state'+ selectedRow[key]">
+                    {{substituteSE(selectedTable.table_name, selectedRow[key])}}</b>
+                  <b ng-if="pendingState"><i class="fa fa-cog fa-spin"></i> Loading...</b>
                 </p>
                 <!-- Number  -->
                 <input class="form-control" type="number" string-to-number 
@@ -305,12 +307,11 @@
         </form>
       </div>
       <div class="modal-footer">
-        <!--
-        <pre>{{selectedRow}}</pre>
-        -->
         <!-- STATE MACHINE -->
         <span class="pull-left" ng-hide="!selectedTable.se_active || selectedTable.hideSmBtns">
-          <p class="form-control-static pull-left"><i class="fa fa-floppy-o"></i> Save and goto&nbsp;</p>
+          <span ng-hide="selectedTable.nextstates.length == 0">
+            <p class="form-control-static pull-left"><i class="fa fa-floppy-o"></i> Save and goto&nbsp;</p>
+          </span>
           <span ng-repeat="state in selectedTable.nextstates">
             <!-- Recursive State -->
             <span ng-if="state.id == selectedRow.state_id">
@@ -413,9 +414,11 @@
         </h4>
       </div>
       <div class="modal-body">
-        <div id="statediagram" style="max-height: 300px; overflow: auto;"></div>
+        <div id="statediagram" style="max-height: 600px; overflow: auto;"></div>
       </div>
       <div class="modal-footer">
+      	<button type="button" class="btn btn-warning" id="test" ng-click="openSEPopup(selectedTable.table_name)">
+          <i class="fa fa-refresh"></i> Refresh</button>
         <button type="button" class="btn btn-default pull-right" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
       </div>
     </div>

@@ -68,7 +68,6 @@
       $update = "";
       // Convert everything to lowercase      
       $primarycols = array_map('strtolower', $primarycols);
-      //$cols = array_map('strtolower', $cols);
       // Loop every element
       foreach ($cols as $col) {
         // update only when no primary column
@@ -88,10 +87,7 @@
     private function splitQuery($row) {
       $res = array();
       foreach ($row as $key => $value) { 
-        // Escape to prevent sqli or harmful parameters
-        $k = $this->db->real_escape_string($key);
-        $v = $this->db->real_escape_string($value);
-        $res[] = array("key" => $k, "value" => $v);
+        $res[] = array("key" => $key, "value" => $value);
       }
       return $res;
     }
@@ -114,40 +110,43 @@
       for ($i=0;$i<count($param["row"]);$i++) {
         $param["row"][$x[$i]["key"]] = $x[$i]["value"];
       }
-      // Execute transition script
+      // Has StateMachine? then execute Scripts
       if ($SM->getID() > 0) {
-        // Has StateMachine
+        // Transition Script
         $script = $SM->getTransitionScriptCreate();
-        // Execute Script
-        eval($script["transition_script"]);
-        // -----------> Standard Result
-        if (empty($script_result)) {
-          $script_result = array(
-            "allow_transition" => true,
-            "show_message" => false,
-            "message" => ""
-          );
-        }
+        $script_result = $SM->executeScript($script, $param);
       } else {
         // NO StateMachine
         $script_result = array("allow_transition" => true);
       }
-
       // If allow transition then Create
-      if (@$script_result["allow_transition"] == true) {        
+      if (@$script_result["allow_transition"] == true) {
+
       	// Reload row, because maybe the TransitionScript has changed some params
         $keys = array();
         $vals = array();
         $x = $this->splitQuery($param["row"]);
         foreach ($x as $el) {
-          $keys[] = $el["key"];
-          $vals[] = $el["value"];
+          $keys[] = $this->db->real_escape_string($el["key"]);
+          $vals[] = $this->db->real_escape_string($el["value"]);
         }
+
         // --- Operation CREATE
         $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
         $res = $this->db->query($query);
-        $lastID = $this->db->insert_id;
-        $script_result["element_id"] = $lastID; // Special Case
+        $newElementID = $this->db->insert_id;
+
+        // Execute IN-Script
+        if ($SM->getID() > 0) {
+          $script = $SM->getINScript($SM->getEntryPoint());
+          // Refresh row (add ID)
+          $pri_cols = $this->getPrimaryColByTablename($tablename);
+          $param["row"][$pri_cols[0]] = (string)$newElementID;
+          // Script
+          $script_result = $SM->executeScript($script, $param);
+        }
+        // Append the ID from new Element        
+        $script_result["element_id"] = $newElementID; 
       }
       // Return
       return json_encode($script_result);
@@ -181,7 +180,7 @@
       if (count($joins) > 0) {
         // Multi-join
         for ($i=0;$i<count($joins);$i++) {
-          $join_from .= " JOIN ".$joins[$i]["table"]." AS t$i ON ".
+          $join_from .= " LEFT JOIN ".$joins[$i]["table"]." AS t$i ON ".
                         "t$i.".$joins[$i]["col_id"]."= a.".$joins[$i]["replace"];
           $sel[] = "t$i.".$joins[$i]["col_subst"]." AS '".$joins[$i]["replace"]."'";
           $sel_raw[] = "t$i.".$joins[$i]["col_subst"];
@@ -221,28 +220,35 @@
       // Primary Columns
       $tablename = $param["table"];
       $pCols = $this->getPrimaryColByTablename($tablename);
-      // SQL
+      // Build query
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
       $where = $this->buildSQLWherePart($pCols, $param["row"]);
-      $query = "UPDATE ".$param["table"]." SET ".$update." WHERE ".$where.";";
-      //var_dump($query);
+      $query = "UPDATE ".$tablename." SET ".$update." WHERE ".$where.";";
       $res = $this->db->query($query);
-      // TODO: Check if rows where REALLY updated!
+      // Check if rows where updated
+      $success = false;
+      if($this->db->affected_rows >= 0){
+      	$success = true;
+      }
       // Output
-      return $res ? "1" : "0";
+      return $success ? "1" : "0";
     }
     //================================== DELETE
     public function delete($param) {
       // Primary Columns
       $tablename = $param["table"];
       $pCols = $this->getPrimaryColByTablename($tablename);
-      /* DELETE FROM table_name WHERE some_column=some_value AND x=1; */
-      $where = $this->buildSQLWherePart($pCols, $param["row"]);
       // Build query
-      $query = "DELETE FROM ".$param["table"]." WHERE ".$where.";";
+      $where = $this->buildSQLWherePart($pCols, $param["row"]);
+      $query = "DELETE FROM ".$tablename." WHERE ".$where.";";
       $res = $this->db->query($query);
+      // Check if rows where updated
+      $success = false;
+      if($this->db->affected_rows >= 0){
+      	$success = true;
+      }
       // Output
-      return $res ? "1" : "0";
+      return $success ? "1" : "0";
     }
     //----------------------------------
     public function getFormData($param) {
@@ -299,12 +305,21 @@
       @$nextStateID = $param["row"]["state_id"];
       @$tablename = $param["table"];
       @$pricols = $this->getPrimaryColByTablename($tablename);
-      @$pricol = $pricols[0]; // Should always be 1 (Only one column for Identification)
+      @$pricol = $pricols[0]; // there should always be only 1 primary column for the identification of element
       @$ElementID = $param["row"][$pricol];
+
+      // TODO: read out all params from DB
+      //$query = "SELECT * FROM $tablename WHERE $pricol = $ElementID;";
+      //$res = $this->db->query($query);
+      //$param["row"] = $res->fetch_assoc();
+      //var_dump($r);
+      //$param["row"] = $this->parseToJSON($res);
+      
       // Statemachine
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
-      // get ActStateID
+      // get ActStateID by Element ID
       $actstateObj = $SE->getActState($ElementID, $pricol);
+      // No Element found in Database
       if (count($actstateObj) == 0) {
         echo "Element not found";
         return false;
@@ -312,16 +327,19 @@
       $actstateID = $actstateObj[0]["id"];
       // Try to set State
       $result = $SE->setState($ElementID, $nextStateID, $pricol, $param);
-      // Check if was a recursive state
+      // Check if it was a recursive state
       $r = json_decode($result, true);
-      // Not only at save, also when going to another state - Special case [Save] transition
-      //if ($nextStateID == $actstateID) {
-        if ($r["allow_transition"]) {
-          $this->update($param); // Update all other rows
-        }
-      //}
+      // After successful transition, update entry
+      // SAVE EVERY TIME, Not only at recursion, also when going to another state
+      $allow_trans = true;
+      for ($i=0;$i<count($r);$i++) {
+      	$allow_trans = $allow_trans && $r[$i]["allow_transition"];
+      }
+      if ($allow_trans) {
+        $this->update($param); // Update all other rows
+      }
       // Return to client
-      echo $result;
+      echo $result; // TODO: Do not echo, use return
     }
     public function getStates($param) {
       $tablename = $param["table"];

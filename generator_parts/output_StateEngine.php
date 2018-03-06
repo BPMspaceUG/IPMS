@@ -37,14 +37,15 @@
     public function createDatabaseStructure() {
     	$db_name = $this->db_name;
     	// ------------------------------- T A B L E S
-    	// Create Table 'state_machines'
+    	//---- Create Table 'state_machines'
 		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_machines` (
 			  `id` bigint(20) NOT NULL AUTO_INCREMENT,
 			  `tablename` varchar(45) DEFAULT NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
-      // Add Form_data column if not exists
+
+      // Add Form_data column to state_machines if not exists
       $query = "SHOW COLUMNS FROM  `$db_name`.`state_machines`;";
       $res = $this->db->query($query);
       $rows = $this->getResultArray($res);
@@ -61,16 +62,38 @@
         $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
         $res = $this->db->query($query);
       }
-		  // Create Table 'state'
+
+		  //---- Create Table 'state'
 		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state` (
 			  `state_id` bigint(20) NOT NULL AUTO_INCREMENT,
 			  `name` varchar(45) DEFAULT NULL,
 			  `form_data` longtext,
 			  `entrypoint` tinyint(1) NOT NULL DEFAULT '0',
 			  `statemachine_id` bigint(20) NOT NULL DEFAULT '1',
+        `script_IN` longtext,
+        `script_OUT` longtext,
 			  PRIMARY KEY (`state_id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
+
+      // Add columns script_IN and script_OUT
+      $query = "SHOW COLUMNS FROM  `$db_name`.`state`;";
+      $res = $this->db->query($query);
+      $rows = $this->getResultArray($res);
+      // Build one string with all columnnames
+      $columnstr = "";
+      foreach ($rows as $row) $columnstr .= $row["Field"];
+      // Column [script_IN] does not yet exist
+      if (strpos($columnstr, "script_IN") === FALSE) {
+        $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_IN` LONGTEXT NULL AFTER `statemachine_id`;";
+        $res = $this->db->query($query);
+      }
+      // Column [script_OUT] does not yet exist
+      if (strpos($columnstr, "script_OUT") === FALSE) {
+        $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_OUT` LONGTEXT NULL AFTER `script_IN`;";
+        $res = $this->db->query($query);
+      }
+
 		  // Create Table 'state_rules'
 		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_rules` (
 			  `state_rules_id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -93,8 +116,7 @@
 		  	"REFERENCES `$db_name`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
 		  $this->db->query($query);
 		  // 'state'
-		  $query = "ALTER TABLE `$db_name`.`state` ".
-		  	"ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
+		  $query = "ALTER TABLE `$db_name`.`state` ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
 		  $this->db->query($query);
 		  $query = "ALTER TABLE `$db_name`.`state` ".
 		  	"ADD CONSTRAINT `state_machine_id_fk` FOREIGN KEY (`statemachine_id`) ".
@@ -179,7 +201,9 @@
     	return $this->ID;
     }
     public function getStates() {
-      $query = "SELECT state_id AS 'id', name, entrypoint FROM $this->db_name.state WHERE statemachine_id = $this->ID;";
+      $query = "SELECT s.state_id AS 'id', s.name, s.entrypoint, (".
+        "SELECT COUNT(*) FROM $this->db_name.$this->table AS x WHERE x.state_id = s.state_id) as 'NrOfTokens'".
+        "FROM $this->db_name.state AS s WHERE s.statemachine_id = $this->ID;";
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
@@ -211,39 +235,66 @@
       $res = $this->db->query($query);
       return $this->getResultArray($res);
     }
+    public function executeScript($script, &$param = null) {
+      // standard result
+      $std_res = array("allow_transition" => true, "show_message" => false, "message" => "");
+      // Check if script is not empty
+      if (!empty($script)) {
+        // Execute Script (WARNING -> eval = evil)
+        eval($script);
+        // check results, if no result => standard result
+        if (empty($script_result))
+          return $std_res;
+        else
+          return $script_result;
+      }
+      return $std_res;
+    }
     public function setState($ElementID, $stateID, $primaryIDColName, &$param = null) {
       // get actual state from element
       $actstateObj = $this->getActState($ElementID, $primaryIDColName);
       if (count($actstateObj) == 0) return false;
       $actstateID = $actstateObj[0]["id"];
-      // check transition, if allowed
+      // check transition (TODO: also check if allowed)
       $trans = $this->checkTransition($actstateID, $stateID);
-      // check if transition is possible
+      // if transition is possible
       if ($trans) {
         $newstateObj = $this->getStateAsObject($stateID);
-        $scripts = $this->getTransitionScripts($actstateID, $stateID);        
-        // Execute all scripts from database at transistion
-        foreach ($scripts as $script) {
-          // --- ! Execute Script (eval = evil) ! ---
-          eval($script["transition_script"]);
-          // -----------> Standard Result
-          if (empty($script_result)) {
-            $script_result = array(
-              "allow_transition" => true,
-              "show_message" => false,
-              "message" => ""
-            );
-          }
-          // update state in DB, when plugin says yes
-          if (@$script_result["allow_transition"] == true) {
-            $query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
-            $res = $this->db->query($query);
-          }
-          // Return
-          return json_encode($script_result);
-        }        
+
+        $result = array();
+
+        // [1]- Execute [OUT] Script (Inverted Moore)
+        $out_script = $this->getOUTScript($actstateID); // from source state
+        $res = $this->executeScript($out_script, $param);
+        if (!$res['allow_transition']) 
+          return json_encode($res);
+        else
+          $result[] = $res;
+        
+        // [2]- Execute [Transition] Script (Mealy)
+        $tr_script = $this->getTransitionScript($actstateID, $stateID);
+        $res = $this->executeScript($tr_script, $param);
+        if (!$res["allow_transition"])
+          return json_encode($res);
+        else
+          $result[] = $res;
+
+        // If all Scripts where successful, update row
+        if ($res['allow_transition']){
+          $query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
+          $this->db->query($query);
+
+          // [3]- Execute IN Script (Moore)
+          $in_script = $this->getINScript($stateID); // from target state
+          $res = $this->executeScript($in_script, $param);
+          $res["allow_transition"] = true;
+          $result[] = $res;
+        }
+
+        return json_encode($result);
+
       }
-      return false;
+      return false; // transition is not possible, because not wired in DB
     }
     public function checkTransition($fromID, $toID) {
       settype($fromID, 'integer');
@@ -254,22 +305,35 @@
       return ($cnt > 0);
     }
 
-    public function getTransitionScripts($fromID, $toID) {
+    public function getTransitionScript($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
-      $query = "SELECT transition_script FROM $this->db_name.state_rules WHERE ".
+      $query = "SELECT transition_script AS script FROM $this->db_name.state_rules WHERE ".
       "state_id_FROM = $fromID AND state_id_TO = $toID;";
-      $return = array();
       $res = $this->db->query($query);
-      $return = $this->getResultArray($res);
-      return $return;
+      $script = $this->getResultArray($res);
+      return $script[0]['script'];
     }
     public function getTransitionScriptCreate() {
       if (!($this->ID > 0)) return ""; // check for valid state machine
-      $query = "SELECT transition_script FROM $this->db_name.state_machines WHERE id = $this->ID;";
+      $query = "SELECT transition_script AS script FROM $this->db_name.state_machines WHERE id = $this->ID;";
       $res = $this->db->query($query);
       $script = $this->getResultArray($res);
-      return $script[0];
+      return $script[0]['script'];
+    }
+    public function getINScript($StateID) {
+      if (!($this->ID > 0)) return ""; // check for valid state machine
+      $query = "SELECT script_IN AS script FROM $this->db_name.state WHERE state_id = $StateID;";
+      $res = $this->db->query($query);
+      $script = $this->getResultArray($res);
+      return $script[0]['script'];
+    }
+    private function getOUTScript($StateID) {
+      if (!($this->ID > 0)) return ""; // check for valid state machine
+      $query = "SELECT script_OUT AS script FROM $this->db_name.state WHERE state_id = $StateID;";
+      $res = $this->db->query($query);
+      $script = $this->getResultArray($res);
+      return $script[0]['script'];
     }
 
   }
