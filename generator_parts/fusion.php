@@ -24,10 +24,12 @@
     die('Unable to connect to database [' . $db->connect_error . ']');
   }
   // Create an array with all table names
+  /*
   $all_table_names = array();
-  for ($i=0;$i<count($data);$i++) {
-    array_push($all_table_names, $data[$i]["table_name"]);
+  foreach ($data as $table) {
+    array_push($all_table_names, $table);
   }
+  */
 
   /* ------------------------------------- Statemachine ------------------------------------- */
 
@@ -36,10 +38,10 @@
 
   // -------------------- FormData --------------------
 
-  for ($i=0;$i<count($data);$i++) {
+  foreach ($data as $table) {
     // Get Data
-    $tablename = $data[$i]["table_name"];
-    @$se_active = (bool)$data[$i]["se_active"];
+    $tablename = $table["table_name"];
+    @$se_active = (bool)$table["se_active"];
 
     // TODO: Check if the "table" is no view
 
@@ -65,8 +67,11 @@
       $query = "UPDATE $db_name.state SET form_data = '$form_data' WHERE ".
                "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
       $con->query($query);
+      
+      $queries1 = $SM->getQueryLog();
       // Clean up
       unset($SM);
+
       // ------------ Connection to existing structure !
 
       // Set the default Entrypoint for the Table (when creating an entry the Process starts here)
@@ -142,6 +147,7 @@
   ;
 
   echo "Generating-Time: ".date("Y-m-d H:i:s")."\n\n";
+  echo $queries1;
   echo $output_all;
 
   // ------------------------------------ Generate Config File
@@ -164,16 +170,11 @@
 
   // Structure Configuration Data
   $config_tables_json = \''.$json.'\';
-
-  // Executed the following SQL Queries:
-  /*
-'.$db_changes.'
-  */
 ?>';
 
   // ----> Write to file
   if (is_dir('../../IPMS_test')) {
     file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    file_put_contents("../../IPMS_test/".$db_name."-config.php", $output_config);
+    file_put_contents("../../IPMS_test/".$db_name."-config.inc.php", $output_config);
   }
 ?>

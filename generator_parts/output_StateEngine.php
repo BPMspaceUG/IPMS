@@ -5,6 +5,7 @@
     private $ID = -1;
     private $db_name = "";
     private $table = "";
+    private $query_log = "";
 
     public function __construct($db, $db_name, $tablename = "") {
       $this->db = $db;
@@ -12,6 +13,12 @@
       $this->table = $tablename;
       if ($this->table != "")
       	$this->ID = $this->getSMIDByTablename($tablename);
+    }
+    private function log($text) {
+      $this->query_log .= $text."\n\n";
+    }
+    public function getQueryLog() {
+      return $this->query_log;
     }
     private function getResultArray($rowObj) {
       $res = array();
@@ -44,6 +51,7 @@
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
+      //$this->log($query); 
 
       // Add Form_data column to state_machines if not exists
       $query = "SHOW COLUMNS FROM  `$db_name`.`state_machines`;";
@@ -56,11 +64,13 @@
       if (strpos($columnstr, "form_data") === FALSE) {
         $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `form_data` LONGTEXT NULL AFTER `tablename`;";
         $res = $this->db->query($query);
+        //$this->log($query);
       }
       // Column [form_data] does not yet exist
       if (strpos($columnstr, "transition_script") === FALSE) {
         $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
         $res = $this->db->query($query);
+        //$this->log($query);
       }
 
 		  //---- Create Table 'state'
@@ -75,6 +85,7 @@
 			  PRIMARY KEY (`state_id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
+      //$this->log($query); 
 
       // Add columns script_IN and script_OUT
       $query = "SHOW COLUMNS FROM  `$db_name`.`state`;";
@@ -87,11 +98,13 @@
       if (strpos($columnstr, "script_IN") === FALSE) {
         $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_IN` LONGTEXT NULL AFTER `statemachine_id`;";
         $res = $this->db->query($query);
+        //$this->log($query); 
       }
       // Column [script_OUT] does not yet exist
       if (strpos($columnstr, "script_OUT") === FALSE) {
         $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_OUT` LONGTEXT NULL AFTER `script_IN`;";
         $res = $this->db->query($query);
+        //$this->log($query); 
       }
 
 		  // Create Table 'state_rules'
@@ -103,25 +116,31 @@
 			  PRIMARY KEY (`state_rules_id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
+      //$this->log($query); 
 			// ------------------------------- F O R E I G N - K E Y S
 		  // 'state_rules'
 		  $query = "ALTER TABLE `$db_name`.`state_rules` ".
 		    "ADD INDEX `state_id_fk1_idx` (`state_id_FROM` ASC), ".
 		    "ADD INDEX `state_id_fk_to_idx` (`state_id_TO` ASC);";
 		  $this->db->query($query);
+      //$this->log($query); 
 		  $query = "ALTER TABLE `$db_name`.`state_rules` ".
 		  	"ADD CONSTRAINT `state_id_fk_from` FOREIGN KEY (`state_id_FROM`) ".
 		  	"REFERENCES `$db_name`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION, ".
 		  	"ADD CONSTRAINT `state_id_fk_to` FOREIGN KEY (`state_id_TO`) ".
 		  	"REFERENCES `$db_name`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
 		  $this->db->query($query);
+      //$this->log($query); 
 		  // 'state'
 		  $query = "ALTER TABLE `$db_name`.`state` ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
 		  $this->db->query($query);
+      //$this->log($query); 
+
 		  $query = "ALTER TABLE `$db_name`.`state` ".
 		  	"ADD CONSTRAINT `state_machine_id_fk` FOREIGN KEY (`statemachine_id`) ".
 		  	"REFERENCES `$db_name`.`state_machines` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
 		  $this->db->query($query);
+      //$this->log($query); 
 		  // TODO: Foreign Key for [state <-> state_machines]
     }    
     private function createNewState($statename, $isEP) {
@@ -131,6 +150,14 @@
     	$query = "INSERT INTO `$db_name`.`state` (`name`, `form_data`, `statemachine_id`, `entrypoint`) ".
       	"VALUES ('$statename', '', $SMID, $isEP);";
       $this->db->query($query);
+      $this->log($query); 
+      return $this->db->insert_id;
+    }
+    private function createTransition($from, $to) {
+      $db_name = $this->db_name;
+      $query = "INSERT INTO $db_name.state_rules (state_id_FROM, state_id_TO) VALUES ($from, $to);";
+      $this->db->query($query);
+      $this->log($query);
       return $this->db->insert_id;
     }
     public function createBasicStateMachine($tablename) {
@@ -138,30 +165,36 @@
       // check if a statemachine already exists for this table
       $ID = $this->getSMIDByTablename($tablename);
       if ($ID > 0) return $ID; // SM already exists
+
+      $this->log("-- [Start] Creating a Basic StateMachine for Table '$tablename'"); 
+
       // Insert new statemachine for a table
       $query = "INSERT INTO `$db_name`.`state_machines` (`tablename`) VALUES ('$tablename');";
       $this->db->query($query);
+      $this->log($query); 
       $ID = $this->db->insert_id; // returns the ID for the created SM
       $this->ID = $ID;
+
       // Insert states (new, active, inactive)
-      $ID_new = $this->createNewState('new', 1);
+      $ID_new = $this->createNewState('new ('.$tablename.')', 1);
       $ID_active = $this->createNewState('active', 0);
+      $ID_update = $this->createNewState('update', 0);
       $ID_inactive = $this->createNewState('inactive', 0);
+
       // Insert rules (new -> active, active -> inactive)
-      $query = "INSERT INTO `$db_name`.`state_rules` ".
-        "(`state_id_FROM`, `state_id_TO`, `transition_script`) VALUES ".
-        "($ID_new, $ID_new, ''), ".
-        "($ID_active, $ID_active, ''), ".
-        "($ID_inactive, $ID_inactive, ''), ".
-        "($ID_new, $ID_active, ''), ".
-        "($ID_active, $ID_new, ''), ".
-        "($ID_active, $ID_inactive, ''), ".
-        "($ID_inactive, $ID_active, '')";
-      $this->db->query($query);
+      $this->createTransition($ID_new, $ID_new);
+      $this->createTransition($ID_active, $ID_active);
+      $this->createTransition($ID_update, $ID_update);
+      $this->createTransition($ID_new, $ID_active);
+      $this->createTransition($ID_active, $ID_update);
+      $this->createTransition($ID_update, $ID_active);
+      $this->createTransition($ID_active, $ID_inactive);
+
+      $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
     public function getBasicFormDataByColumns($columns) {
-      // possibilities = [RO, RW, HD]
+      // possibilities = [RO, RW, HI]
       $res = array();
       // Loop each column
       for ($i=0;$i<count($columns);$i++) {
@@ -169,7 +202,7 @@
       	if ($columns[$i] == 'state_id')
 					$res[$columns[$i]] = "HI";
       	else      		
-        	$res[$columns[$i]] = "RO"; // default: Read write
+        	$res[$columns[$i]] = "RW"; // default: Read write
       }
       return $res;
     }

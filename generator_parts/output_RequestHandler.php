@@ -1,16 +1,12 @@
 <?php
-  // Header for testing
-  /*
-  header('Access-Control-Allow-Origin: *');
-  header('Access-Control-Allow-Methods: POST');
-  */
   // Includes
-  include_once("replaceDBName-config.php");
+  include_once("replaceDBName-config.inc.php");
+
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
   $command = $params["cmd"];
   
-
+  
   replaceClassStateEngine
 
 
@@ -32,13 +28,8 @@
     private function getPrimaryColByTablename($tablename) {
       $config = json_decode($this->init(), true);
       $res = array();
-      // Loop table configuration
-      for ($i=0; $i<count($config); $i++) {
-        if ($config[$i]["table_name"] == $tablename) {
-          $cols = $config[$i]["columns"];
-          break;
-        }
-      }
+      
+      $cols = $config[$tablename]["columns"];
       // Find primary columns
       foreach ($cols as $col) {
         if ($col["COLUMN_KEY"] == "PRI")

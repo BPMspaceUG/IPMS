@@ -4,6 +4,8 @@
 <div ng-app="IPMS">
   <div ng-controller="IPMScontrol">
 
+    <button class="btn btn-primary btn-xl" ng-click="test()">TEST</button>
+
     <!-- CONNECT Part -->
 		<div class="container" style="padding-top: 30px">
 			<form class="bpm-server-connect" action="modules/ConnectDB.php">
@@ -133,16 +135,26 @@
                   <th width="30%">ICON</th>
                 </tr>
               </thead>
-              <tbody ng-repeat="tbl in tables track by $index">
+              <tbody ng-repeat="(name, tbl) in tables">
                 <!-- Table START -->
                 <tr>
-                  <td><a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings"><i class="fa fa-plus-square"></i></a></td>
-                  <td><p><b>{{tbl.table_name}}</b></p></td>
+                  <td>
+                    <!-- Expand / Collapse -->
+                    <a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings">
+                      <i class="fa fa-plus-square"></i>
+                    </a>
+                  </td>
+                  <td>
+                    <!-- Tablename -->
+                    <p><b>{{name}}</b></p>
+                  </td>
                   <td>
                     <input type="text" class="form-control" rows="1" cols="{{tbl.table_alias.length}}" 
                     ng-blur="checkSpell(tbl.table_alias)" ng-model="tbl.table_alias"/>
                   </td>
-                  <td><input type="checkbox" class="form-control" ng-model="tbl.is_in_menu"></td>
+                  <td>
+                    <input type="checkbox" class="form-control" ng-model="tbl.is_in_menu">
+                  </td>
                   <td>
                     <input type="checkbox" class="form-control"
                       ng-model="tbl.se_active"

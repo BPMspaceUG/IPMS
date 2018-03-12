@@ -62,7 +62,7 @@
             $con->close();
             header('Location: ../');
         } else {
-    //        header('Content-Type: application/json');
+            // header('Content-Type: application/json');
 
             $con = new mysqli(DB_HOST, DB_USER, DB_PSWD, DB_NAME);
             if ($con->connect_error) {
@@ -95,7 +95,6 @@
      * */
     function prepareLocalDbAndTables()
     {
-
         $con = new mysqli(DB_HOST, DB_USER, DB_PSWD);
         if ($con->connect_error) {
             echo("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);

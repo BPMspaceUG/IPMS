@@ -76,7 +76,9 @@ thead tr {background-color: #eee;}
 /* Table */
 .tableCont th {cursor: pointer;}
 .tableCont th:hover {background-color: #ddd; color: steelblue;}
+.tableCont th:first-of-type:hover {color: #333; background-color: none; cursor: auto;}
 .tableCont th, tr td {white-space: nowrap;}
+.sorted {background-color: #ddd; color: steelblue;}
 
 .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
   background-color: #ddd;
@@ -89,9 +91,8 @@ thead tr {background-color: #eee;}
 .fKeyLink:hover {text-decoration: none;}
 
 /* State Engine */
-/* TODO: Optimize... not every stateID is that low value */
 .stateBtn {cursor: pointer; font-weight: bold;}
-
+/* TODO: Optimize... not every stateID is that low value */
 .state1 {color: darkgreen;}
 .state2 {color: steelblue;}
 .state3 {color: red;}
@@ -116,4 +117,4 @@ thead tr {background-color: #eee;}
 
 /* Token functions */
 .token:hover {cursor: pointer;}
-.token:hover circle {fill: #f44; r: 10;}
+.token:hover circle {fill: #f44;}

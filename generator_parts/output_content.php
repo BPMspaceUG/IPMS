@@ -39,7 +39,7 @@
                     ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px" autofocus>
                   <!-- REFRESH -->
                   <button class="btn btn-default" title="Refresh" 
-                  	ng-click="refresh(selectedTable.table_name);" style="display: inline-block;"><i class="fa fa-refresh"></i></button>                  
+                  	ng-click="refresh(selectedTable.table_name);" style="display: inline-block;"><i class="fa fa-refresh"></i></button>
                 </div>
               </form>
             </div>
@@ -50,7 +50,7 @@
         <!-- Panel Body -->
         <div class="panel-body" ng-class="{'text-primary': (selectedTable.sqlwhere_old.length != 0)}">
           <div class="tab-content" style="overflow: auto;">
-            <div ng-repeat="table in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
+            <div ng-repeat="(name, table) in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
             	<!-- No Entries -->
             	<table class="table table-bordered table-condensed" ng-if="table.count <= 0">
             		<thead>
@@ -67,8 +67,9 @@
                       <em class="fa fa-cog"></em>
                     </th>
                     <!-- Data-Columns -->
-                    <th ng-repeat="col in table.columns | orderBy: 'col_order'"
+                    <th ng-repeat="col in table.columns | orderObjectBy:'col_order':false"
                     		ng-click="sortCol(table, col.COLUMN_NAME)"
+                        ng-class="{sorted: table.sqlorderby == col.COLUMN_NAME}"
                     		ng-if="col.is_in_menu">
                       <span>{{col.column_alias}}
                         <i class="fa fa-caret-down" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'desc'"></i>
@@ -79,31 +80,29 @@
                 </thead>
                 <!-- ============= CONTENT ============= -->
                 <tbody>
+                  <!-- Rows -->
                   <tr ng-repeat="row in table.rows" ng-class="getRowCSS(row)">
                     <!-- Control-Column -->
                     <td class="controllcoulm" ng-hide="table.is_read_only">
-                      <!-- Edit Button -->
-                      <!--
-                      <button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
+                      <!--<button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
                         <i class="fa fa-pencil"></i>
-                      </button>
-                    	-->
-                      <!-- Delete Button -->
+                      </button>-->
                       <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
                         <i class="fa fa-times"></i>
                       </button>
                     </td>
-                    <!-- DATA ROWS -->
-                    <td ng-repeat="cell in row track by $index" ng-click="editEntry(table, row)"
-                    		ng-if="getColByName(table, table.row_order[$index]).is_in_menu">
-                      <!-- Substitue State Machine -->
+                    <!-- Cells -->
+                    <td ng-repeat="col in table.columns | orderObjectBy:'col_order':false"
+                      ng-click="editEntry(table, row)"
+                    	ng-if="col.is_in_menu">
+                      <!-- Substitue StateMachine -->
                       <!-- TODO: Use maybe ForeignKeys for this function -->
-                      <div ng-if="(table.row_order[$index] == 'state_id' && table.se_active)">
-                        <b ng-class="'state'+ row[table.row_order[$index]]">{{substituteSE(table.table_name, row[table.row_order[$index]])}}</b>
+                      <div ng-if="(col.COLUMN_NAME == 'state_id' && table.se_active)">
+                        <b ng-class="'state'+ row[col.COLUMN_NAME]">{{substituteSE(table.table_name, row[col.COLUMN_NAME])}}</b>
                       </div>
                       <!-- Cell -->
-                      <span ng-if="!(table.row_order[$index] == 'state_id' && table.se_active)">
-                        {{ row[table.row_order[$index]] | limitTo: 40 }}{{ row[table.row_order[$index]].length > 40 ? '...' : ''}}
+                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active)">
+                        {{ row[col.COLUMN_NAME] | limitTo: 40 }}{{ row[col.COLUMN_NAME].length > 40 ? '...' : ''}}
                      	</span>
                     </td>
                   </tr>

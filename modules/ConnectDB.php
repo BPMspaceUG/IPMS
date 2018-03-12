@@ -107,7 +107,7 @@
             "read_only" => false,
             "is_ckeditor" => false,
             "foreignKey" => $fk,
-            "col_order" => 1 //random_int(1, 10)
+            "col_order" => 3 //random_int(1, 10)
           );
           // Filter columns array
           $allowed  = ['COLUMN_NAME', 'DATA_TYPE', 'COLUMN_TYPE', 'COLUMN_KEY', 'EXTRA'];
@@ -116,8 +116,12 @@
             function ($key) use ($allowed) { return in_array($key, $allowed); },
             ARRAY_FILTER_USE_KEY
           );
+
           // Merge arrays
-          $columns[] = array_merge($filtered, $additional_info);
+          $merged = array_merge($filtered, $additional_info);
+
+          $colname = $merged['COLUMN_NAME'];
+          $columns[$colname] = $merged;
         }        
         //------------------------------------------------ Auto Foreign Keys
         $fKeys = array();
@@ -135,15 +139,16 @@
           );
         }
 
+        // Columns and Foreign Keys exist
         if (count($columns) > 0 && count($fKeys)) {
-          // merge keys        
-          for ($i=0;$i<count($columns);$i++) {
-            $colname = $columns[$i]["COLUMN_NAME"];
+          // make associative
+          foreach ($columns as $colname => $col) {
             // check if entry exists
             if (array_key_exists($colname, $fKeys)) {
-              $columns[$i]["foreignKey"]["table"] = $fKeys[$colname]["refeTable"];
-              $columns[$i]["foreignKey"]["col_id"] = $fKeys[$colname]["colID"];
-              $columns[$i]["foreignKey"]["col_subst"] = $fKeys[$colname]["colID"];
+              // Save Foreign Keys in existing Array
+              $columns[$colname]["foreignKey"]["table"] = $fKeys[$colname]["refeTable"];
+              $columns[$colname]["foreignKey"]["col_id"] = $fKeys[$colname]["colID"];
+              $columns[$colname]["foreignKey"]["col_subst"] = $fKeys[$colname]["colID"];
             }
           }
         }
@@ -158,7 +163,7 @@
       /*------------------------------
               T A B L E S
       ------------------------------*/
-      $res[] = array(
+      $res[$table] = array(
         "table_name" => $table,
         "table_alias" => $table_alias,
         "is_in_menu" => true,

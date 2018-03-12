@@ -16,17 +16,59 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.configFileWasFound = false
 
 
+  $scope.test = function() {
+    console.log("---------Test---------")
+  }
+
   $scope.refreshConfig = function(data) {
       // Select correct DB
       $scope.dbNames.model = data.DBName
       $scope.updateTables($scope.dbNames.model)
+
       // Parse data
-      var newtable = JSON.parse(data.data)
-      // Replace data with parsed
-      var dst = {}
-      var result = angular.merge(dst, $scope.tables, newtable)
+      var oldConfig = JSON.parse(data.data)
+      var newConfig = $scope.tables
+
+      // The new Config has always a higher priority
+      
+      console.log("Comparison NEW, OLD")
+      console.log("NEW:", newConfig)
+      console.log("OLD:", oldConfig)
+
+      // LOOP New Tables
+      function rec_test(obj, b) {
+        var keys = Object.keys(obj);
+        keys.forEach(function(key) {
+
+          var value = obj[key];
+          var valueNEW = b[key];
+
+          console.log(key, typeof value, value, ">>" + valueNEW + "<<")
+
+          if (b.hasOwnProperty(key)) {
+            // Convert
+            if (typeof value === 'object') {
+              rec_test(obj[key], b[key]);
+            }
+            else {
+              obj[key] = b[key];
+            }
+
+          }
+
+        });
+      }
+      rec_test(newConfig, oldConfig)
+
+      var result = newConfig
+
+      //var result = angular.extend(dst, newConfig, oldConfig)
+      //var dst = {}
+      //var result = angular.merge(dst, newConfig, oldConfig)
+
       $scope.tables = result
   }
+
 
   $scope.loadConfigByName = function() {
     $scope.isLoading = true
@@ -41,7 +83,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data) {
-      console.log("---->", data)
+      //console.log("---->", data)
       if (data) {
         $scope.configFileWasFound = true
         $scope.configFileWasNotFound = false
@@ -78,7 +120,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     $scope.isLoading = true
     $scope.isError = false
 
-    console.log('POST an '+$scope.path+':')
+    //console.log('POST an '+$scope.path+':')
     $http({
       url: $scope.path,
       method: "POST",
@@ -90,20 +132,27 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data, status, headers, config) {
-      console.log(data)
+
+      // Error
       if (data.indexOf('mysqli::') >= 0) {
-        // Error
         $scope.isLoading = false
         $scope.isError = true
         return
       }
 
+      console.log("Response:", data)
+
       $scope.resultData = data
-      $scope.dbNames = {model: data[0].database, names : data.map(function(x){return x.database})};
-      $scope.handleresult(data);
-      $scope.updateTables();
-      console.log('"Connect"-Response data: ');
-      console.log(data);
+      $scope.dbNames = {
+        model: data[0].database,
+        names : data.map(function(x){
+          return x.database
+        })
+      }
+      $scope.handleresult(data)
+      $scope.updateTables()
+      //console.log('"Connect"-Response data: ');
+      //console.log(data);
       $scope.isLoading = false
     })
     .error(function(data, status, headers, config) {
@@ -114,6 +163,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   }
 
   $scope.openProject = function(){
+    // Build new URL and execute in new Tab
     url = document.URL.replace("IPMS", "IPMS_test")
     window.open(url + $scope.dbNames.model + ".php")
   }
@@ -156,11 +206,15 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   */
   $scope.updateTables = function(param){
   	console.log("UPDATE TABLES", param)
-    var param = param || $scope.dbNames.model
-    $scope.db = $scope.resultData.find(function(db){ return db.database == param })  
-    $scope.tables = $scope.db.tables.map(function(tbl){
-      tbl.table_icon = getRandomicon()
-      return tbl
+    var param = param || $scope.dbNames.model  
+
+    $scope.db = $scope.resultData.find(function(db){
+      return db.database == param
+    })
+
+    $scope.tables = $scope.db.tables
+    Object.keys($scope.tables).forEach(function(tbl){
+      $scope.tables[tbl].table_icon = getRandomicon()
     })
   }
 
@@ -183,7 +237,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       data: data
     })
     .success(function(data, status, headers, config) {
-      console.log('\nScript generated success.'); 
+      //console.log('\nScript generated success.'); 
       // console.log(data);
       $('#bpm-code').empty();
       $('#bpm-code').html('<pre></pre>');

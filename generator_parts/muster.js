@@ -12,31 +12,34 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.actStateID = 0
 
 
+
+  // THIS Functions are obsolete!!!
+
   $scope.getColAlias = function(table, col_name) {
-  	var res = ''
-  	table.columns.forEach(function(col){
-  		// Compare names
-  		if (col.COLUMN_NAME == col_name)
-  			res = col.column_alias
-  	})
-  	if (res == '') return col_name; else return res;
+    return table.columns[col_name].column_alias
   }
   $scope.getColByName = function(table, col_name) {
-    var res = null // empty object
-    table.columns.forEach(function(col){
-      // Compare names
-      if (col.COLUMN_NAME == col_name)
-        res = col
-    })
-    if (res === null) return null; else return res;
+    return table.columns[col_name]
   }
+  $scope.getTableByName = function(table_name) {    
+    if (typeof table_name != "string") return
+    return $scope.tables.find(function(t){
+      return t.table_name == table_name;
+    })
+  }
+
+
+
+
+
+
   $scope.sortCol = function(table, columnname) {
     table.sqlascdesc = (table.sqlascdesc == "desc") ? "asc" : "desc"
     table.sqlorderby = columnname
     $scope.refresh(table.table_name)
   }
-  $scope.openFK = function(key) {
-    var table_name = $scope.getColByName($scope.selectedTable, key).foreignKey.table
+  $scope.openFK = function(key) {    
+    var table_name = $scope.selectedTable.columns[key].foreignKey.table
     // Get the table from foreign key
     $scope.FKTbl = $scope.getTableByName(table_name)
     $scope.FKActCol = key
@@ -44,7 +47,11 @@ app.controller('genCtrl', function ($scope, $http) {
     $('#myFKModal').modal('show')
   }
   $scope.substituteFKColsWithIDs = function(row) {
-    var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
+
+		var col = $scope.selectedTable.columns[$scope.FKActCol].foreignKey.col_id
+		console.log(col)
+    //var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
+
     $scope.selectedRow[$scope.FKActCol+"________newID"] = row[col]
     var substcol = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_subst
     var keys = Object.keys($scope.selectedRow)
@@ -52,6 +59,7 @@ app.controller('genCtrl', function ($scope, $http) {
       if (keys[i] == $scope.FKActCol)
         $scope.selectedRow[$scope.FKActCol] = row[substcol]
     }
+
   }
   $scope.selectFK = function(row) {
     $scope.substituteFKColsWithIDs(row)    
@@ -121,13 +129,14 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.addEntry = function(table_name) {
   	//console.log("[Create] Button clicked")
     var t = $scope.getTableByName(table_name)
+
     // create an empty element
-    var newRow = {}
-    t.columns.forEach(function(col){
-      // check if not auto_inc
-      if (col.EXTRA != 'auto_increment')
-      	newRow[col.COLUMN_NAME] = ''   
+    var newRow = {}    
+    Object.keys(t.columns).forEach(function(col){      
+      if (t.columns[col].EXTRA != 'auto_increment') // check if not auto_inc
+      	newRow[t.columns[col].COLUMN_NAME] = ''
     })
+    // load empty Element
     $scope.loadRow(t, newRow)
     $scope.send("getFormCreate")
   }
@@ -143,12 +152,8 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.selectedRow['state_id'] = nextstate.id // set next stateID
     $scope.send('makeTransition')
   }
-  $scope.getTableByName = function(table_name) {
-    if (typeof table_name != "string") return
-    return $scope.tables.find(function(t){
-      return t.table_name == table_name;
-    })
-  }
+
+  // TODO: Also change this function
   $scope.initTables = function() {
     // Request data from config file
   	$http({
@@ -159,27 +164,34 @@ app.controller('genCtrl', function ($scope, $http) {
         paramJS: ''
       }
   	}).success(function(resp){
+
+
       // Init each table
-  		resp.forEach(function(t){
+  		Object.keys(resp).forEach(function(t){
+        //console.log(resp[t])
         // If table is in menu
-        if (t.is_in_menu) {
+        if (resp[t].is_in_menu) {
           // Add where, sqlwhere, order
-          t.sqlwhere = ''
-          t.sqlwhere_old = ''
-          t.sqlorderby = ''
-          t.sqlascdesc = ''
-          t.nextstates = []
-          t.statenames = []
-          t.PageIndex = 0
+          resp[t].sqlwhere = ''
+          resp[t].sqlwhere_old = ''
+          resp[t].sqlorderby = ''
+          resp[t].sqlascdesc = ''
+          resp[t].nextstates = []
+          resp[t].statenames = []
+          resp[t].PageIndex = 0
           // Push into angular scope
-          $scope.tables.push(t)
+          $scope.tables.push(resp[t])
         }
       })
+      //console.log($scope.tables)
+
       // Refresh each table
       $scope.tables.forEach(function(t){
+        console.log(t.table_name, t)
+        /*
         // Sort Columns
         var cols = []
-        t.columns.forEach(function(col){
+        Object.keys(t.columns).forEach(function(col){
           cols.push(col.COLUMN_NAME)
         })
         cols.sort(function(a, b) {
@@ -188,15 +200,19 @@ app.controller('genCtrl', function ($scope, $http) {
           return a1 - b1
         })
         t.row_order = cols
-
+        */
         // Refresh Table
         $scope.refresh(t.table_name)
       })
+
+
       // GUI
       $scope.isLoading = false
+
       // Auto click first tab
       var tbls = $scope.tables.sort()
-      var first_tbl_name = tbls[0].table_name
+      var first_tbl_name = $scope.tables[0].table_name
+      console.log("first Tab:", first_tbl_name)
       $scope.selectedTable = $scope.getTableByName(first_tbl_name)
       $('#'+first_tbl_name).tab('show')
 
@@ -204,14 +220,17 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.countEntries = function(table_name) {  	
     var t = $scope.getTableByName(table_name)
-    // Get columns from columns
+
+    // Get FKs from columns
+    // TODO: Improve
     var joins = []
-    t.columns.forEach(function(col) {
-      if (col.foreignKey.table != "") { // Check if there is a substitute for the column
-        col.foreignKey.replace = col.COLUMN_NAME
-        joins.push(col.foreignKey)
+    Object.keys(t.columns).forEach(function(col) {
+      if (t.columns[col].foreignKey.table != "") { // Check if there is a substitute for the column
+        t.columns[col].foreignKey.replace = t.columns[col].COLUMN_NAME
+        joins.push(t.columns[col].foreignKey)
       }
     })
+
     // Request
     $http({
       method: 'post',
@@ -346,15 +365,20 @@ app.controller('genCtrl', function ($scope, $http) {
     // Get columns from columns
     var sel = []
     var joins = []
-    t.columns.forEach(function(col) {
+
+    Object.keys(t.columns).forEach(function(col) {
+    	//console.log("---", col)
       // TODO: -> better on server side
-      if (col.foreignKey.table != "") { // Check if there is a substitute for the column
-        col.foreignKey.replace = col.COLUMN_NAME
-        joins.push(col.foreignKey)
+      if (t.columns[col].foreignKey.table != "") { // Check if there is a substitute for the column
+      	console.log("---", col, t.columns)
+        t.columns[col].foreignKey.replace = col
+        joins.push(t.columns[col].foreignKey)
       } else 
-        sel.push("a."+col.COLUMN_NAME)
+        sel.push("a."+col)
     })
     str_sel = sel.join(",")
+
+    console.log("FKKKKK", str_sel)
 
   	// Request from server
   	$http({
@@ -378,8 +402,8 @@ app.controller('genCtrl', function ($scope, $http) {
       data = response
       t.rows = data // Save cells in tablevar
 
-      console.log("Rows Count: ", data.length)
-      console.log("Rows: ", data)
+      //console.log("Rows Count: ", data.length)
+      //console.log("Rows: ", data)
 
       t.sqlwhere_old = t.sqlwhere
 
@@ -545,6 +569,19 @@ app.directive('stringToNumber', function() {
     }
   }
 })
+app.filter('orderObjectBy', function() {
+  return function(items, field, reverse) {
+    var filtered = [];
+    angular.forEach(items, function(item) {
+      filtered.push(item);
+    });
+    filtered.sort(function (a, b) {
+      return (a[field] > b[field] ? 1 : -1);
+    });
+    if(reverse) filtered.reverse();
+    return filtered;
+  };
+});
 /************************** ANGULAR END *************************/ 
 
 // Every time a modal is shown, if it has an autofocus element, focus on it.
