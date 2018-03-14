@@ -172,9 +172,31 @@
   $config_tables_json = \''.$json.'\';
 ?>';
 
-  // ----> Write to file
-  if (is_dir('../../IPMS_test')) {
-    file_put_contents("../../IPMS_test/".$db_name.".php", $output_all);
-    file_put_contents("../../IPMS_test/".$db_name."-config.inc.php", $output_config);
+  // ----> Write to filesystem
+	//$Path_IPMS_test = '../../IPMS_test';
+  $Path_IPMS_test = __DIR__ . "/../../IPMS_test"; //.$data."-config.php";
+
+	// check if IPMS test exists
+  if (is_dir($Path_IPMS_test)) {
+  	// Path for Project
+  	$project_dir = $Path_IPMS_test; // .'/'.$db_name;
+  	// Create Project directory
+  	//if (!is_dir($project_dir)) 
+      //mkdir($project_dir, 0755, true);
+    // Folder structure
+    /*
+			Project
+			 -css
+				 prj.css
+			 -js
+			   prj.js
+			 prj-config.inc.php
+			 prj.php
+			 index.php
+    */
+    // Put Files
+    file_put_contents($project_dir."/".$db_name.".php", $output_all);
+    file_put_contents($project_dir."/".$db_name."-config.inc.php", $output_config);
+    /*file_put_contents($project_dir."/index.php", '<?php Header("Location: '.$db_name.'.php"); exit(); ?>'); */
   }
 ?>

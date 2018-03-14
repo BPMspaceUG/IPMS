@@ -170,7 +170,7 @@ app.controller('genCtrl', function ($scope, $http) {
   		Object.keys(resp).forEach(function(t){
         //console.log(resp[t])
         // If table is in menu
-        if (resp[t].is_in_menu) {
+        if (resp[t]) { //.is_in_menu) {
           // Add where, sqlwhere, order
           resp[t].sqlwhere = ''
           resp[t].sqlwhere_old = ''

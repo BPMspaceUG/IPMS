@@ -202,6 +202,9 @@
       // Concat final query
       $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
+
+      //var_dump($query);
+
       $res = $this->db->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);

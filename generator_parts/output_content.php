@@ -17,7 +17,7 @@
             <div class="col-sm-8 col-xs-12">
               <!-- Tabs-->
               <ul class="nav nav-tabs">
-                <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}">
+                <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}" ng-if="t.is_in_menu">
                   <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
                     <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
                   </a>
@@ -159,7 +159,7 @@
           <i class="fa fa-plus"></i> Create Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
         </h4>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
         <!-- Content -->
         <form class="form-horizontal">
           <!-- Add if is in menu -->
@@ -240,7 +240,7 @@
           <i class="fa fa-pencil"></i> Edit Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
         </h4>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
         <!-- Content -->
         <form class="form-horizontal">
           <!-- Add if is in menu -->
