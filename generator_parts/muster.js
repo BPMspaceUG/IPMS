@@ -12,27 +12,17 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.actStateID = 0
 
 
-
+  // TODO: Remove this function
   // THIS Functions are obsolete!!!
-
-  $scope.getColAlias = function(table, col_name) {
-    return table.columns[col_name].column_alias
-  }
-  $scope.getColByName = function(table, col_name) {
-    return table.columns[col_name]
-  }
   $scope.getTableByName = function(table_name) {    
     if (typeof table_name != "string") return
-    return $scope.tables.find(function(t){
-      return t.table_name == table_name;
-    })
+    return $scope.tables[table_name]
   }
 
 
-
-
-
-
+  $scope.parseDate = function(date_string) {
+  	return new Date(date_string)
+  }
   $scope.sortCol = function(table, columnname) {
     table.sqlascdesc = (table.sqlascdesc == "desc") ? "asc" : "desc"
     table.sqlorderby = columnname
@@ -47,13 +37,10 @@ app.controller('genCtrl', function ($scope, $http) {
     $('#myFKModal').modal('show')
   }
   $scope.substituteFKColsWithIDs = function(row) {
-
 		var col = $scope.selectedTable.columns[$scope.FKActCol].foreignKey.col_id
-		console.log(col)
-    //var col = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_id
-
+		//console.log(col)
     $scope.selectedRow[$scope.FKActCol+"________newID"] = row[col]
-    var substcol = $scope.getColByName($scope.selectedTable, $scope.FKActCol).foreignKey.col_subst
+    var substcol = $scope.selectedTable.columns[$scope.FKActCol].foreignKey.col_subst
     var keys = Object.keys($scope.selectedRow)
     for (var i=0;i<keys.length;i++) {
       if (keys[i] == $scope.FKActCol)
@@ -107,7 +94,7 @@ app.controller('genCtrl', function ($scope, $http) {
   }
   $scope.changeTab = function(table_name) {
     $scope.selectedTable = $scope.getTableByName(table_name)
-    $(".searchfield").focus();
+    $(".searchfield").focus()
   }
   $scope.loadRow = function(tbl, row) {
     $scope.selectedRow = angular.copy(row)
@@ -118,7 +105,28 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.send('update')
   }
   $scope.editEntry = function(table, row) {
+  	// Check if there is a Date field
+
+  	console.log("---------------------------LOAD")
+
+		for (var key in row) {
+		  if (row.hasOwnProperty(key)) {
+		    console.log(key + " -> " + row[key]);
+		  	if (table.columns[key]) {
+		  		if (table.columns[key].DATA_TYPE == 'date') {
+		  			row[key] = new Date(row[key])
+		  			console.log("#########################################")
+		  		}
+		  	}
+		  }
+		}
+
+		console.log(row)
+		console.log("---------------------------/LOAD")
+
     $scope.loadRow(table, row)
+
+    // TODO: Remove and get at Init
     $scope.send("getFormData")
     $scope.hideSmBtns = true
   }
@@ -127,18 +135,22 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.send('delete')
   }
   $scope.addEntry = function(table_name) {
-  	//console.log("[Create] Button clicked")
+  	console.log("[Create] Button clicked")
     var t = $scope.getTableByName(table_name)
-
+  	console.log(t)
     // create an empty element
     var newRow = {}    
-    Object.keys(t.columns).forEach(function(col){      
-      if (t.columns[col].EXTRA != 'auto_increment') // check if not auto_inc
-      	newRow[t.columns[col].COLUMN_NAME] = ''
-    })
+    Object.keys(t.columns).forEach(function(col){
+      newRow[col] = ''
+		})
     // load empty Element
     $scope.loadRow(t, newRow)
-    $scope.send("getFormCreate")
+    // if there is a create form loaded then open dialog
+    if (Object.keys(t.CreateForm).length > 0) {
+      t.form_data = t.CreateForm
+      console.log("Show create window")
+      $('#modalCreate').modal('show')
+    }
   }
   $scope.getRowCSS = function(row) {
     if (angular.equals(row, $scope.selectedRow) && $scope.pendingState) {
@@ -153,8 +165,13 @@ app.controller('genCtrl', function ($scope, $http) {
     $scope.send('makeTransition')
   }
 
+
+
   // TODO: Also change this function
   $scope.initTables = function() {
+
+    console.log("Loading configuration...")
+
     // Request data from config file
   	$http({
   		url: window.location.pathname,
@@ -165,6 +182,7 @@ app.controller('genCtrl', function ($scope, $http) {
       }
   	}).success(function(resp){
 
+      console.log("Config loaded.", resp)
 
       // Init each table
   		Object.keys(resp).forEach(function(t){
@@ -179,48 +197,39 @@ app.controller('genCtrl', function ($scope, $http) {
           resp[t].nextstates = []
           resp[t].statenames = []
           resp[t].PageIndex = 0
-          // Push into angular scope
-          $scope.tables.push(resp[t])
+          resp[t].CreateForm = {}
+          // OLD: $scope.tables.push(resp[t])
         }
       })
-      //console.log($scope.tables)
+      // save in tables var
+      $scope.tables = resp
+      console.log($scope.tables)
 
       // Refresh each table
-      $scope.tables.forEach(function(t){
-        console.log(t.table_name, t)
-        /*
-        // Sort Columns
-        var cols = []
-        Object.keys(t.columns).forEach(function(col){
-          cols.push(col.COLUMN_NAME)
-        })
-        cols.sort(function(a, b) {
-          var a1 = $scope.getColByName(t, a).col_order
-          var b1 = $scope.getColByName(t, b).col_order
-          return a1 - b1
-        })
-        t.row_order = cols
-        */
+      Object.keys($scope.tables).forEach(function(tbl_name){
         // Refresh Table
-        $scope.refresh(t.table_name)
+        $scope.refresh(tbl_name)
+        // Load Create Form
+        $scope.selectedTable = $scope.getTableByName(tbl_name)
+        $scope.send("getFormCreate")
+        // Load StateMachine
+        $scope.getStatemachine(tbl_name)
       })
-
 
       // GUI
       $scope.isLoading = false
 
       // Auto click first tab
-      var tbls = $scope.tables.sort()
-      var first_tbl_name = $scope.tables[0].table_name
-      console.log("first Tab:", first_tbl_name)
+      var res = Object.keys($scope.tables).filter(function(t){
+        return $scope.tables[t].is_in_menu
+      })
+      var first_tbl_name = res[0]
       $scope.selectedTable = $scope.getTableByName(first_tbl_name)
       $('#'+first_tbl_name).tab('show')
-
   	});	
   }
   $scope.countEntries = function(table_name) {  	
     var t = $scope.getTableByName(table_name)
-
     // Get FKs from columns
     // TODO: Improve
     var joins = []
@@ -230,8 +239,8 @@ app.controller('genCtrl', function ($scope, $http) {
         joins.push(t.columns[col].foreignKey)
       }
     })
-
     // Request
+    console.log("Counting entries...")
     $http({
       method: 'post',
       url: window.location.pathname,
@@ -273,6 +282,7 @@ app.controller('genCtrl', function ($scope, $http) {
   $scope.getStatemachine = function(table_name) {
     var t = $scope.getTableByName(table_name)
     if (!t.se_active) return
+    console.log("HTTP: get Statemachine")
     // Request
   	$http({
   		url: window.location.pathname,
@@ -358,6 +368,7 @@ app.controller('genCtrl', function ($scope, $http) {
 
   // Refresh Function
   $scope.refresh = function(table_name) {
+
     var t = $scope.getTableByName(table_name)
     // Search-Event (set LIMIT Param to 0)
     if (t.sqlwhere != t.sqlwhere_old)
@@ -367,10 +378,9 @@ app.controller('genCtrl', function ($scope, $http) {
     var joins = []
 
     Object.keys(t.columns).forEach(function(col) {
-    	//console.log("---", col)
       // TODO: -> better on server side
-      if (t.columns[col].foreignKey.table != "") { // Check if there is a substitute for the column
-      	console.log("---", col, t.columns)
+      if (t.columns[col].foreignKey.table != "") {
+      // Check if there is a substitute for the column
         t.columns[col].foreignKey.replace = col
         joins.push(t.columns[col].foreignKey)
       } else 
@@ -378,9 +388,9 @@ app.controller('genCtrl', function ($scope, $http) {
     })
     str_sel = sel.join(",")
 
-    console.log("FKKKKK", str_sel)
-
   	// Request from server
+  	console.log("HTTP Refresh ", table_name)
+
   	$http({
   		url: window.location.pathname,
   		method: 'post',
@@ -397,25 +407,21 @@ app.controller('genCtrl', function ($scope, $http) {
           join: joins
     		}
   	  }
-  	}).success(function(response){ 
+  	}).success(function(response){
 
-      data = response
-      t.rows = data // Save cells in tablevar
-
-      //console.log("Rows Count: ", data.length)
-      //console.log("Rows: ", data)
+      t.rows = response // Save cells in tablevar
 
       t.sqlwhere_old = t.sqlwhere
-
       // Refresh Counter (changes when delete or create happens) => countrequest if nr of entries >= PageLimit
       if (response.length >= $scope.PageLimit)
         $scope.countEntries(table_name)
       else {
-        if (t.PageIndex == 0) t.count = response.length
+        if (t.PageIndex == 0)
+        	t.count = response.length
       }
       // Get the states from table
       // TODO: ...? obsolete? maybe only refresh at init, then always getNextstates
-      $scope.getStatemachine(table_name)
+      //$scope.getStatemachine(table_name)
   	})
   }
 
@@ -431,7 +437,7 @@ app.controller('genCtrl', function ($scope, $http) {
     for (var i=0;i<keys.length;i++) {
       var col = keys[i]
       // if they have no foreign key --> just add to result
-      tmpCol = $scope.getColByName(table, col)
+      tmpCol = table.columns[col]
       if (tmpCol) {
         if (tmpCol.foreignKey.table == "") {
           // No Foreign-Key present
@@ -455,6 +461,7 @@ app.controller('genCtrl', function ($scope, $http) {
     if (param) $scope.loadRow(param.table, param.row)
 
     var body = {cmd: 'cud', paramJS: {}}
+    //TODO: Give as parameter
     var t = $scope.selectedTable
 
     //------------------- Assemble Data
@@ -530,8 +537,9 @@ app.controller('genCtrl', function ($scope, $http) {
         $('#modalEdit').modal('show')
       }
       else if (cud == 'getFormCreate') {
+        table.CreateForm = response
         table.form_data = response
-        $('#modalCreate').modal('show')
+        //$('#modalCreate').modal('show')
       }
       //---------------------- StateEngine (List Transitions)
       else if (cud == 'getNextStates') {
@@ -580,8 +588,28 @@ app.filter('orderObjectBy', function() {
     });
     if(reverse) filtered.reverse();
     return filtered;
-  };
-});
+  }
+})
+app.filter('convertDate', function($filter) {
+  return function (dateString, format) {
+    if(dateString === '0000-00-00') {
+       return "";
+    } else {
+       return $filter('date')(dateString, format.toString());
+    }
+  }
+})
+app.filter('convertDateTime', function($filter) {
+  return function (dateString, format) {
+    if(dateString === '0000-00-00 00:00:00') {
+       return "";
+    } else {
+       return $filter('date')(dateString, format.toString());
+    }
+  }
+})
+
+
 /************************** ANGULAR END *************************/ 
 
 // Every time a modal is shown, if it has an autofocus element, focus on it.

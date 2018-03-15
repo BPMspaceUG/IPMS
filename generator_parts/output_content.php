@@ -30,10 +30,10 @@
                 <div class="form-group" style="white-space: nowrap; /*Prevents Wrapping*/">
                   <!-- PROCESS -->
                   <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
-                    ng-click="openSEPopup(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-random"></i></button>
+                    ng-click="openSEPopup(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-random"></i> Workflow</button>
                   <!-- ADD -->
                   <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
-                  	ng-click="addEntry(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-plus"></i></button>
+                  	ng-click="addEntry(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-plus"></i> Create</button>
                   <!-- SEARCH -->
                   <input type="text" class="form-control searchfield" placeholder="Search..."
                     ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px" autofocus>
@@ -101,9 +101,18 @@
                         <b ng-class="'state'+ row[col.COLUMN_NAME]">{{substituteSE(table.table_name, row[col.COLUMN_NAME])}}</b>
                       </div>
                       <!-- Cell -->
-                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active)">
+                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active)
+                          && (col.COLUMN_TYPE != 'date') && (col.COLUMN_TYPE != 'datetime')">
                         {{ row[col.COLUMN_NAME] | limitTo: 40 }}{{ row[col.COLUMN_NAME].length > 40 ? '...' : ''}}
                      	</span>
+                      <!-- Date -->
+                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active) && (col.COLUMN_TYPE == 'date')">
+                        {{ row[col.COLUMN_NAME] | convertDate:'dd.MM.yyyy' }}
+                      </span>
+                      <!-- Datetime -->
+                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active) && (col.COLUMN_TYPE == 'datetime')">
+                        {{ row[col.COLUMN_NAME] | convertDateTime:'dd.MM.yyyy HH:mm:ss' }}
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -159,19 +168,21 @@
           <i class="fa fa-plus"></i> Create Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
         </h4>
       </div>
-      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
         <!-- Content -->
         <form class="form-horizontal">
           <!-- Add if is in menu -->
           <div class="form-group"
             ng-repeat="(key, value) in selectedRow track by $index"
-            ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
+            ng-if="selectedTable.columns[key].is_in_menu
+              && selectedTable.form_data[key] != 'HI'
+              && selectedTable.columns[key].EXTRA != 'auto_increment'">
             <!-- [LABEL] -->
-            <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
+            <label class="col-sm-3 control-label">{{selectedTable.columns[key].column_alias}}</label>
             <!-- [VALUE] -->
             <div class="col-sm-9">
               <!-- Foreign Key (FK) -->
-              <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
+              <span ng-if="selectedTable.columns[key].foreignKey.table != ''">
                 <button class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
@@ -180,38 +191,44 @@
                 </button>
               </span>
               <!-- NO FK -->
-              <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
+              <span ng-if="selectedTable.columns[key].foreignKey.table == ''">
                 <!-- Number  -->
                 <input class="form-control" type="number" string-to-number 
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
-                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('int') >= 0
+                  && selectedTable.columns[key].COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- Text -->
                 <input class="form-control" type="text"
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
-                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
-                  && !getColByName(selectedTable, key).is_ckeditor"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('int') < 0
+                  && selectedTable.columns[key].COLUMN_TYPE.indexOf('long') < 0
+                  && !selectedTable.columns[key].is_ckeditor"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
                 <textarea class="form-control" rows="3"
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
-                  || getColByName(selectedTable, key).is_ckeditor"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('longtext') >= 0
+                  || selectedTable.columns[key].is_ckeditor"
                   ng-model="selectedRow[key]" style="font-family: Courier;"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus></textarea>
                 <!-- Boolean (tinyint or boolean) -->
-                <input class="form-control"
-                  type="checkbox"
-                  ng-show="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tinyint') >= 0
-                  && !getColByName(selectedTable, key).is_read_only"
+                <input class="form-control" type="checkbox"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('tinyint(') >= 0
+                  && !selectedTable.columns[key].is_read_only"
                   ng-model="selectedRow[key]"
                   ng-true-value="'1'"
                   ng-false-value="'0'"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   style="width: 50px;"
                   autofocus>
-                <!-- TODO: Date -->
+                <!-- Date -->
+                <input class="form-control" type="date"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE == 'date'
+                  && !selectedTable.columns[key].is_read_only"
+                  ng-model="selectedRow[key]"
+                  ng-model-options="{timezone: 'UTC'}"
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  autofocus>
               </span>
             </div>
           </div>
@@ -240,19 +257,21 @@
           <i class="fa fa-pencil"></i> Edit Entry <small>in <b>{{selectedTable.table_alias}}</b></small>
         </h4>
       </div>
-      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
         <!-- Content -->
         <form class="form-horizontal">
           <!-- Add if is in menu -->
           <div class="form-group"
             ng-repeat="(key, value) in selectedRow track by $index"
-            ng-if="getColByName(selectedTable, key).is_in_menu && (selectedTable.form_data[key] != 'HI')">
+            ng-if="selectedTable.columns[key].is_in_menu
+              && selectedTable.form_data[key] != 'HI'
+              && selectedTable.columns[key].EXTRA != 'auto_increment'">
             <!-- [LABEL] -->
-            <label class="col-sm-3 control-label">{{getColAlias(selectedTable, key)}}</label>
+            <label class="col-sm-3 control-label">{{selectedTable.columns[key].column_alias}}</label>
             <!-- [VALUE] -->
             <div class="col-sm-9">
               <!-- Foreign Key (FK) -->
-              <span ng-if="getColByName(selectedTable, key).foreignKey.table != ''">
+              <span ng-if="selectedTable.columns[key].foreignKey.table != ''">
               	<button class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
@@ -262,7 +281,7 @@
                 </button>
               </span>
               <!-- NO FK -->
-              <span ng-if="getColByName(selectedTable, key).foreignKey.table == ''">
+              <span ng-if="selectedTable.columns[key].foreignKey.table == ''">
                 <!-- Number  -->
                 <p class="form-control-static" ng-if="key == 'state_id'">
                   <b ng-if="!pendingState" ng-class="'state'+ selectedRow[key]">
@@ -271,35 +290,42 @@
                 </p>
                 <!-- Number  -->
                 <input class="form-control" type="number" string-to-number 
-                  ng-if="key != 'state_id' && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') >= 0
-                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tiny') < 0"
+                  ng-if="key != 'state_id' && selectedTable.columns[key].COLUMN_TYPE.indexOf('int') >= 0
+                  && selectedTable.columns[key].COLUMN_TYPE.indexOf('tiny') < 0"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- Text -->
                 <input class="form-control" type="text"
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('int') < 0
-                  && getColByName(selectedTable, key).COLUMN_TYPE.indexOf('long') < 0
-                  && !getColByName(selectedTable, key).is_ckeditor"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('int') < 0
+                  && selectedTable.columns[key].COLUMN_TYPE.indexOf('long') < 0
+                  && !selectedTable.columns[key].is_ckeditor
+                  && selectedTable.columns[key].COLUMN_TYPE != 'date'"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
                 <textarea class="form-control" rows="3"
-                  ng-if="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('longtext') >= 0
-                  || getColByName(selectedTable, key).is_ckeditor"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('longtext') >= 0
+                  || selectedTable.columns[key].is_ckeditor"
                   ng-model="selectedRow[key]" style="font-family: Courier;"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus></textarea>
                 <!-- Boolean (tinyint or boolean) -->
-                <input class="form-control"
-                  type="checkbox"
-                  ng-show="getColByName(selectedTable, key).COLUMN_TYPE.indexOf('tinyint') >= 0
-                  && !getColByName(selectedTable, key).is_read_only"
+                <input class="form-control" type="checkbox"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('tinyint(') >= 0
+                  && !selectedTable.columns[key].is_read_only"
                   ng-model="selectedRow[key]"
                   ng-true-value="'1'"
                   ng-false-value="'0'"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   style="width: 50px;"
                   autofocus>
-                <!-- TODO: Date -->
+                <!-- Date -->
+                <input class="form-control" type="date"
+                  ng-if="selectedTable.columns[key].COLUMN_TYPE == 'date'
+                  && !selectedTable.columns[key].is_read_only"
+                  ng-model="selectedRow[key]"
+                  ng-model-options="{timezone: 'UTC'}"
+                  ng-readonly="selectedTable.form_data[key] == 'RO'"
+                  autofocus>
               </span>
             </div>
           </div>
@@ -314,8 +340,8 @@
           <span ng-repeat="state in selectedTable.nextstates">
             <!-- Recursive State -->
             <span ng-if="state.id == selectedRow.state_id">
-              <a class="btn btn-primary" ng-click="gotoState(state)">
-                <i class="fa fa-floppy-o"></i> Save</a>
+              <button class="btn btn-primary" ng-click="gotoState(state)">
+                <i class="fa fa-floppy-o"></i> Save</button>
             </span>
             <!-- Normal state -->
             <span ng-if="state.id != selectedRow.state_id" class="btn btn-default stateBtn"
@@ -360,14 +386,14 @@
           <table class="table table-bordered table-striped table-hover table-condensed table-responsive">
             <thead>
               <tr>
-                <th ng-repeat="(key, value) in FKTbl.rows[0]" ng-if="getColByName(FKTbl, key).is_in_menu">
-                  <span>{{getColAlias(FKTbl, key)}}</span>
+                <th ng-repeat="(key, value) in FKTbl.rows[0]" ng-if="FKTbl.columns[key].is_in_menu">
+                  <span>{{FKTbl.columns[key].column_alias}}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr ng-repeat="row in FKTbl.rows" ng-click="selectFK(row)" style="cursor: pointer;">
-                <td ng-repeat="(key, value) in row" ng-if="getColByName(FKTbl, key).is_in_menu">
+                <td ng-repeat="(key, value) in row" ng-if="FKTbl.columns[key].is_in_menu">
                   {{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
                 </td>
               </tr>

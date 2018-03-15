@@ -4,7 +4,7 @@
 <div ng-app="IPMS">
   <div ng-controller="IPMScontrol">
 
-    <button class="btn btn-primary btn-xl" ng-click="test()">TEST</button>
+    <!--<button class="btn btn-primary btn-xl" ng-click="test()">TEST</button>-->
 
     <!-- CONNECT Part -->
 		<div class="container" style="padding-top: 30px">
@@ -175,7 +175,7 @@
                 <!-- Columns START -->
                 <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" style="font-size: .8em;">
                   <td>&nbsp;</td>
-                  <td>{{col.COLUMN_NAME}}<!-- ({{col.COLUMN_KEY}}, {{col.COLUMN_TYPE}}, {{col.EXTRA}}) --></td>
+                  <td><b>{{col.COLUMN_NAME}}</b> {{col.COLUMN_TYPE}}</td>
                   <td><input type="text" ng-model="col.column_alias"></td>
                   <td colspan="4">
                     <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
