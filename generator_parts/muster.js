@@ -1,7 +1,7 @@
 /************************** ANGULAR START *************************/ 
 var app = angular.module("genApp", [])
 //--- Controller
-app.controller('genCtrl', function ($scope, $http) {
+app.controller('genCtrl', function ($scope, $http, $filter) {
   // Variables
   $scope.tables = []
   $scope.isLoading = true
@@ -89,12 +89,12 @@ app.controller('genCtrl', function ($scope, $http) {
   	$scope.refresh(table.table_name)
   }
   $scope.getNrOfPages = function(table) {
-    if (table)
-      return Math.ceil(table.count / $scope.PageLimit)
+    if (table) return Math.ceil(table.count / $scope.PageLimit)
   }
   $scope.changeTab = function(table_name) {
     $scope.selectedTable = $scope.getTableByName(table_name)
-    $(".searchfield").focus()
+    /* Automatically set focus to search
+    $(".searchfield").focus() */
   }
   $scope.loadRow = function(tbl, row) {
     $scope.selectedRow = angular.copy(row)
@@ -104,28 +104,53 @@ app.controller('genCtrl', function ($scope, $http) {
     // Task is already loaded in memory
     $scope.send('update')
   }
+  
+
+  $scope.convertAllDatesToUTC = function(table, row) {
+    for (var key in row) {
+      if (row.hasOwnProperty(key)) {
+        if (table.columns[key]) {
+          // Load the Database string into JS-Object
+          if (table.columns[key].DATA_TYPE == 'date' 
+          || table.columns[key].DATA_TYPE == 'datetime') {
+            if (row[key]) {
+              if (row[key].length > 0) {
+                var starttime = new Date(row[key]);
+                var isotime = new Date((new Date(starttime)).toISOString() );
+                var fixedtime = new Date(isotime.getTime()-(starttime.getTimezoneOffset()*60000));
+                var formatedMysqlString = fixedtime.toISOString().slice(0, 19).replace('T', ' ');
+                row[key] = formatedMysqlString//new Date(row[key]).toISOString();
+              }
+            }
+          }
+        }
+      }
+    }
+    return row
+  }
+  $scope.convertDateTimeStrToDate = function(datestring) {
+    if (!datestring) return null
+    if (datestring == "") return null
+    if(datestring == '0000-00-00 00:00:00') return null
+    return new Date(datestring)
+  }
+
   $scope.editEntry = function(table, row) {
-  	// Check if there is a Date field
-
-  	console.log("---------------------------LOAD")
-
-		for (var key in row) {
-		  if (row.hasOwnProperty(key)) {
-		    console.log(key + " -> " + row[key]);
-		  	if (table.columns[key]) {
-		  		if (table.columns[key].DATA_TYPE == 'date') {
-		  			row[key] = new Date(row[key])
-		  			console.log("#########################################")
-		  		}
-		  	}
-		  }
-		}
-
-		console.log(row)
-		console.log("---------------------------/LOAD")
-
     $scope.loadRow(table, row)
+  	// Check if there is a Date field
+    for (var key in $scope.selectedRow) {
+      if (row.hasOwnProperty(key)) {
+        //console.log(key + " -> " + row[key]);
+        if (table.columns[key]) {
+          // Load the Database string into JS-Object
+          if (table.columns[key].DATA_TYPE == 'date'
+          || table.columns[key].DATA_TYPE == 'datetime') {
 
+            $scope.selectedRow[key] = $scope.convertDateTimeStrToDate($scope.selectedRow[key])
+          }
+        }
+      }
+    }
     // TODO: Remove and get at Init
     $scope.send("getFormData")
     $scope.hideSmBtns = true
@@ -485,6 +510,7 @@ app.controller('genCtrl', function ($scope, $http) {
         if (cud == 'update' || cud == 'makeTransition') {
           // Filter foreign keys
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+          body.paramJS.row = $scope.convertAllDatesToUTC(t, body.paramJS.row)
         }
         // Check if state_machine at create
         if (cud == 'create') {
@@ -495,6 +521,7 @@ app.controller('genCtrl', function ($scope, $http) {
           if (t.se_active) body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
           // check Foreign keys
           body.paramJS.row = $scope.filterFKeys(t, body.paramJS.row)
+          body.paramJS.row = $scope.convertAllDatesToUTC(t, body.paramJS.row)
         }
     }
 
@@ -590,22 +617,19 @@ app.filter('orderObjectBy', function() {
     return filtered;
   }
 })
+
 app.filter('convertDate', function($filter) {
   return function (dateString, format) {
-    if(dateString === '0000-00-00') {
-       return "";
-    } else {
-       return $filter('date')(dateString, format.toString());
-    }
+    if(dateString === '0000-00-00') return ""
+    return $filter('date')(dateString, format.toString())
   }
 })
 app.filter('convertDateTime', function($filter) {
   return function (dateString, format) {
-    if(dateString === '0000-00-00 00:00:00') {
-       return "";
-    } else {
-       return $filter('date')(dateString, format.toString());
-    }
+    if (!dateString) return ""
+    if (dateString == "") return ""
+    if(dateString == '0000-00-00 00:00:00') return ""
+    return $filter('date')(new Date(dateString), format.toString())
   }
 })
 

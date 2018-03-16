@@ -202,7 +202,9 @@
                 <input class="form-control" type="text"
                   ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('int') < 0
                   && selectedTable.columns[key].COLUMN_TYPE.indexOf('long') < 0
-                  && !selectedTable.columns[key].is_ckeditor"
+                  && !selectedTable.columns[key].is_ckeditor
+                  && selectedTable.columns[key].COLUMN_TYPE != 'datetime'
+                  && selectedTable.columns[key].COLUMN_TYPE != 'date'"
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
@@ -229,6 +231,19 @@
                   ng-model-options="{timezone: 'UTC'}"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   autofocus>
+                <!-- Datetime -->
+                <div class="form-inline"
+                	ng-if="selectedTable.columns[key].COLUMN_TYPE == 'datetime'
+	                  && !selectedTable.columns[key].is_read_only">
+	                <input class="form-control col-sm-7" type="date"
+	                  ng-model="selectedRow[key]"
+	                  ng-model-options="{timezone: 'UTC'}"
+	                  ng-readonly="selectedTable.form_data[key] == 'RO'">	                  
+	                <input class="form-control col-sm-5" type="time"
+	                  ng-model="selectedRow[key]"
+	                  ng-model-options="{timezone: 'UTC'}"
+	                  ng-readonly="selectedTable.form_data[key] == 'RO'">
+	              </div>
               </span>
             </div>
           </div>
@@ -299,7 +314,9 @@
                   ng-if="selectedTable.columns[key].COLUMN_TYPE.indexOf('int') < 0
                   && selectedTable.columns[key].COLUMN_TYPE.indexOf('long') < 0
                   && !selectedTable.columns[key].is_ckeditor
-                  && selectedTable.columns[key].COLUMN_TYPE != 'date'"
+                  && selectedTable.columns[key].COLUMN_TYPE != 'date'
+                  && selectedTable.columns[key].COLUMN_TYPE != 'datetime'
+                  "
                   ng-model="selectedRow[key]"
                   ng-readonly="selectedTable.form_data[key] == 'RO'" autofocus>
                 <!-- LongText (probably HTML) -->
@@ -323,9 +340,19 @@
                   ng-if="selectedTable.columns[key].COLUMN_TYPE == 'date'
                   && !selectedTable.columns[key].is_read_only"
                   ng-model="selectedRow[key]"
-                  ng-model-options="{timezone: 'UTC'}"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
                   autofocus>
+                <!-- Datetime -->
+                <div class="form-inline" ng-if="selectedTable.columns[key].COLUMN_TYPE == 'datetime'
+	                  && !selectedTable.columns[key].is_read_only">
+	                <input class="form-control col-sm-7" type="date"
+	                  ng-model="selectedRow[key]"
+	                  ng-model-options="{timezone: 'UTC'}"
+	                  ng-readonly="selectedTable.form_data[key] == 'RO'">	                  
+	                <input class="form-control col-sm-5" type="time"
+	                  ng-model="selectedRow[key]"
+	                  ng-readonly="selectedTable.form_data[key] == 'RO'">
+	              </div>
               </span>
             </div>
           </div>
