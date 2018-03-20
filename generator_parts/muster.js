@@ -32,6 +32,7 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
     var table_name = $scope.selectedTable.columns[key].foreignKey.table
     // Get the table from foreign key
     $scope.FKTbl = $scope.getTableByName(table_name)
+    console.log("TODO: Change here the where parameter to filter the Entries", $scope.FKTbl)
     $scope.FKActCol = key
     // Show Modal
     $('#myFKModal').modal('show')
@@ -113,14 +114,14 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
           // Load the Database string into JS-Object
           if (table.columns[key].DATA_TYPE == 'date' 
           || table.columns[key].DATA_TYPE == 'datetime') {
+          	console.log("Convert1: ", row[key])
             if (row[key]) {
-              if (row[key].length > 0) {
-                var starttime = new Date(row[key]);
-                var isotime = new Date((new Date(starttime)).toISOString() );
-                var fixedtime = new Date(isotime.getTime()-(starttime.getTimezoneOffset()*60000));
-                var formatedMysqlString = fixedtime.toISOString().slice(0, 19).replace('T', ' ');
-                row[key] = formatedMysqlString//new Date(row[key]).toISOString();
-              }
+            	console.log("Convert2: ", row[key])
+              var starttime = new Date(row[key]);
+              var isotime = new Date((new Date(starttime)).toISOString() );
+              var fixedtime = new Date(isotime.getTime()-(starttime.getTimezoneOffset()*60000));
+              var formatedMysqlString = fixedtime.toISOString().slice(0, 19).replace('T', ' ');
+              row[key] = formatedMysqlString//new Date(row[key]).toISOString();
             }
           }
         }
@@ -215,8 +216,8 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
         // If table is in menu
         if (resp[t]) { //.is_in_menu) {
           // Add where, sqlwhere, order
-          resp[t].sqlwhere = ''
-          resp[t].sqlwhere_old = ''
+          resp[t].sqlfilter = ''
+          resp[t].sqlfilter_old = ''
           resp[t].sqlorderby = ''
           resp[t].sqlascdesc = ''
           resp[t].nextstates = []
@@ -273,10 +274,10 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
         cmd: 'read',
         paramJS: {
           select: "COUNT(*) AS cnt",
-          tablename: t.table_name,
+          table: t.table_name,
           limitStart: 0,
           limitSize: 1,
-          where: t.sqlwhere,
+          filter: t.sqlfilter,
           orderby: t.sqlorderby,
           ascdesc: t.sqlascdesc,
           join: joins
@@ -320,6 +321,9 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
       t.statenames = response
   	})
   }
+
+
+
   function isExitNode(NodeID, links) {
   	var res = true;
   	links.forEach(function(e){
@@ -391,12 +395,15 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
   }
   //-------------------------------------------------------
 
+
+
+
   // Refresh Function
   $scope.refresh = function(table_name) {
 
     var t = $scope.getTableByName(table_name)
     // Search-Event (set LIMIT Param to 0)
-    if (t.sqlwhere != t.sqlwhere_old)
+    if (t.sqlfilter != t.sqlfilter_old)
     	t.PageIndex = 0
     // Get columns from columns
     var sel = []
@@ -422,11 +429,12 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
   		data: {
     		cmd: 'read',
     		paramJS: {
-    			tablename: t.table_name,
+    			table: t.table_name,
     			limitStart: t.PageIndex * $scope.PageLimit,
     			limitSize: $scope.PageLimit,
     			select: str_sel,
-          where: t.sqlwhere,
+          //where: 'a.state_id = 2',
+          filter: t.sqlfilter,
           orderby: t.sqlorderby,
          	ascdesc: t.sqlascdesc,
           join: joins
@@ -436,7 +444,7 @@ app.controller('genCtrl', function ($scope, $http, $filter) {
 
       t.rows = response // Save cells in tablevar
 
-      t.sqlwhere_old = t.sqlwhere
+      t.sqlfilter_old = t.sqlfilter
       // Refresh Counter (changes when delete or create happens) => countrequest if nr of entries >= PageLimit
       if (response.length >= $scope.PageLimit)
         $scope.countEntries(table_name)
@@ -641,7 +649,14 @@ $('#myFKModal').on('shown.bs.modal', function() { $(this).find('[autofocus]').fo
 $('#modalCreate').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });
 $('#modalEdit').on('shown.bs.modal', function() { $(this).find('[autofocus]').first().focus() });
 
-
+// Overlay of many Modal windows
+$(document).on('show.bs.modal', '.modal', function () {
+  var zIndex = 1040 + (10 * $('.modal:visible').length);
+  $(this).css('z-index', zIndex);
+  setTimeout(function() {
+      $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+  }, 0);
+});
 
 function drawTokens(tbl) {
   // Clear all Tokens

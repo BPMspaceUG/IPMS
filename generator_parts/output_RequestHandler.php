@@ -145,7 +145,9 @@
     //================================== READ
     public function read($param) {
       // Parameters
+      $tablename = $param["table"];
       $where = isset($param["where"]) ? $param["where"] : "";
+      $filter = isset($param["filter"]) ? $param["filter"] : "";
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
       $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
       $joins = isset($param["join"]) ? $param["join"] : "";
@@ -164,7 +166,7 @@
       $limit = " LIMIT ".$param["limitStart"].",".$param["limitSize"];
 
       // JOIN
-      $join_from = $param["tablename"]." AS a"; // if there is no join
+      $join_from = $tablename." AS a"; // if there is no join
       $sel = array();
       $sel_raw = array();
       $sel_str = "";
@@ -179,32 +181,36 @@
         $sel_str = ",".implode(",", $sel);
       }
 
-      // SEARCH
-      if (trim($where) <> "") {
+      // SEARCH / Filter
+      if (trim($where) <> "" && $filter == "") {
+        $where = " WHERE ".trim($where);
+      }
+      else if (trim($filter) <> "") {
         // Get columns from the table
-        $res = $this->db->query("SHOW COLUMNS FROM ".$param["tablename"].";");
+        $res = $this->db->query("SHOW COLUMNS FROM ".$tablename.";");
         $k = [];
         while ($row = $res->fetch_array()) { $k[] = $row[0]; } 
         $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
-        // xxx LIKE = '%".$param["where"]."%' OR yyy LIKE '%'
+        // xxx LIKE = '%".$param["filter"]."%' OR yyy LIKE '%'
         $q_str = "";
         foreach ($k as $key) {
           $prefix = "";
           // if no "." in string then refer to first table
           if (strpos($key, ".") === FALSE) $prefix = "a.";
-          $q_str .= " ".$prefix.$key." LIKE '%".$where."%' OR ";
+          $q_str .= " ".$prefix.$key." LIKE '%".$filter."%' OR ";
         }
         // Remove last 'OR '
         $q_str = substr($q_str, 0, -3);
-
-        $where = " WHERE ".$q_str;
+        // Build WHERE String
+        $where = " WHERE ".trim($where)." ".$q_str;
+        //$where = " WHERE ".$q_str;
       }
+
+
       // Concat final query
       $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
-
       //var_dump($query);
-
       $res = $this->db->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);

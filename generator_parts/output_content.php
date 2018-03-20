@@ -13,43 +13,37 @@
       <div class="panel panel-default panel-table">
         <!-- Panel Header -->
         <div class="panel-heading">
-          <div class="row">
-            <div class="col-sm-8 col-xs-12">
-              <!-- Tabs-->
-              <ul class="nav nav-tabs">
-                <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}" ng-if="t.is_in_menu">
-                  <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
-                    <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <!-- Where filter -->
-            <div class="col-sm-4 col-xs-12">
-              <form class="form-inline pull-right">
-                <div class="form-group" style="white-space: nowrap; /*Prevents Wrapping*/">
-                  <!-- PROCESS -->
-                  <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
-                    ng-click="openSEPopup(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-random"></i> Workflow</button>
-                  <!-- ADD -->
-                  <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
-                  	ng-click="addEntry(selectedTable.table_name)" style="display: inline-block;"><i class="fa fa-plus"></i> Create</button>
-                  <!-- SEARCH -->
-                  <input type="text" class="form-control searchfield" placeholder="Search..."
-                    ng-model="selectedTable.sqlwhere" style="display: inline-block; max-width: 150px" autofocus>
-                  <!-- REFRESH -->
-                  <button class="btn btn-default" title="Refresh" 
-                  	ng-click="refresh(selectedTable.table_name);" style="display: inline-block;"><i class="fa fa-refresh"></i></button>
-                </div>
-              </form>
-            </div>
-            <!--Clear -->
-            <div class="clearfix"></div>
-          </div>
+          <!-- Tabs-->
+          <ul class="nav nav-tabs">
+            <li ng-repeat="t in tables" ng-class="{active: (selectedTable.table_name == t.table_name)}" ng-if="t.is_in_menu">
+              <a href="#{{t.table_name}}" data-toggle="tab" ng-click="changeTab(t.table_name)">
+                <i class="{{t.table_icon}}"></i>&nbsp;<span ng-bind="t.table_alias"></span>
+              </a>
+            </li>
+          </ul>
         </div>
         <!-- Panel Body -->
-        <div class="panel-body" ng-class="{'text-primary': (selectedTable.sqlwhere_old.length != 0)}">
+        <div class="panel-body" ng-class="{'text-primary': (selectedTable.sqlfilter_old.length != 0)}">
           <div class="tab-content" style="overflow: auto;">
+
+            <!-- Table Options -->
+            <form class="form-inline" style="background: #eee; padding: .5em;">
+              <div class="form-group" >
+                <!-- FILTER -->
+                <input type="text" class="form-control searchfield" placeholder="Filter..."
+                  ng-model="selectedTable.sqlfilter" autofocus>
+                <!-- REFRESH -->
+                <button class="btn btn-default" title="Refresh" 
+                  ng-click="refresh(selectedTable.table_name);"><i class="fa fa-refresh"></i></button>
+                <!-- CREATE -->
+                <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
+                  ng-click="addEntry(selectedTable.table_name)"><i class="fa fa-plus"></i> Create</button>
+                <!-- PROCESS -->
+                <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
+                  ng-click="openSEPopup(selectedTable.table_name)"><i class="fa fa-random"></i> Workflow</button>
+              </div>
+            </form>
+
             <div ng-repeat="(name, table) in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
             	<!-- No Entries -->
             	<table class="table table-bordered table-condensed" ng-if="table.count <= 0">
@@ -399,13 +393,17 @@
         <h4 class="modal-title" id="myFKModalLabel"><i class="fa fa-key"></i> Select a Foreign Key</h4>
       </div>
       <div class="modal-body">
-        <!-- Search form -->
+
+        <!-- Table Options -->
         <form class="form-inline">
           <div class="form-group">
-            <label for="searchtext">Search:</label>
-            <input type="text" class="form-control" id="searchtext" placeholder="Seachword" ng-model="FKTbl.sqlwhere" autofocus>
-          </div>
-          <button type="submit" class="btn btn-default" ng-click="refresh(FKTbl.table_name)"><i class="fa fa-search"></i> Search</button>
+            <!-- FILTER -->
+            <input type="text" class="form-control searchfield" id="searchtext" placeholder="Filter..." ng-model="FKTbl.sqlfilter" autofocus>
+            <button type="submit" class="btn btn-default" ng-click="refresh(FKTbl.table_name)"><i class="fa fa-search"></i> Search</button>
+            <!-- CREATE -->
+              <button class="btn btn-success" title="Create Entry" ng-hide="FKTbl.is_read_only" type="button"
+                ng-click="addEntry(FKTbl.table_name)"><i class="fa fa-plus"></i> Create</button>
+          </div>          
         </form>
         <br>
         <!-- Table Content -->
@@ -469,8 +467,8 @@
         <div id="statediagram" style="max-height: 600px; overflow: auto;"></div>
       </div>
       <div class="modal-footer">
-      	<button type="button" class="btn btn-warning" id="test" ng-click="openSEPopup(selectedTable.table_name)">
-          <i class="fa fa-refresh"></i> Refresh</button>
+      	<!--<button type="button" class="btn btn-warning" id="test" ng-click="openSEPopup(selectedTable.table_name)">
+          <i class="fa fa-refresh"></i> Refresh</button>-->
         <button type="button" class="btn btn-default pull-right" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
       </div>
     </div>
