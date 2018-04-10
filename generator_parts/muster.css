@@ -1,6 +1,6 @@
 thead tr {background-color: #eee;}
 /*.controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}*/
-.controllcoulm {min-width: 60px; width: 60px; background-color: #eee;}
+.controllcoulm {min-width: 50px; width: 50px; background-color: #eee;}
 /**********************************************************/
 
 .panel-table .panel-body { padding:0; margin:0;}
@@ -69,51 +69,50 @@ thead tr {background-color: #eee;}
     background-color: #555;
 }
 
-
-
-
-
 /* Table */
+.element .datatbl {overflow: auto;}
+.element .footer {margin: 0; padding: .5em; font-size: 12px; background: #ddd;}
+.element .footer p {padding: 0; margin: 0; margin-top: 7px; margin-left: 6px;}
+.element .pagination {margin: 0; padding: 0;}
+.element .pagination a {cursor: pointer;}
+.tableCont {margin: 0; padding: 0;}
+.tableCont th, tr td {white-space: nowrap; }
 .tableCont th {cursor: pointer;}
 .tableCont th:hover {background-color: #ddd; color: steelblue;}
-.tableCont th:first-of-type:hover {color: #333; background-color: none; cursor: auto;}
-.tableCont th, tr td {white-space: nowrap;}
-.sorted {background-color: #ddd; color: steelblue;}
-
-.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
-  background-color: #ddd;
-  cursor: pointer;
-}
+.tableCont th:first-of-type:hover {color: #333; background-color: #eee; cursor: auto;}
+/*.tableCont .sorted {background-color: #ddd; color: steelblue;}*/
+.tableCont .datarow:hover {cursor: pointer;}
+/* .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+    cursor: pointer;
+}*/
 
 /*********************************************/
-
-.fKeyLink {}
-.fKeyLink:hover {text-decoration: none;}
 
 /* State Engine */
 .stateBtn {cursor: pointer; font-weight: bold;}
 /* TODO: Optimize... not every stateID is that low value */
-.state1 {color: darkgreen;}
-.state2 {color: steelblue;}
-.state3 {color: red;}
-.state4 {color: orange;}
-.state5 {color: lightblue;}
-.state6 {color: darkmagenta;}
-.state7 {color: steelblue;}
-.state8 {color: brown;}
-.state9 {color: mediumorchid;}
-.state10 {color: tan;}
-.state11 {color: wheat;}
-.state12 {color: darksalmon;}
-.state13 {color: orange;}
-.state14 {color: darkgreen;}
-.state15 {color: brown;}
-.state16 {color: mediumorchid;}
-.state17 {color: steelblue;}
-.state18 {color: darkmagenta;}
-.state19 {color: tan;}
-.state20 {color: red;}
-.state21 {color: wheat;}
+.label-state {background-color: #333;}
+.state1 {background-color: darkgreen;}
+.state2 {background-color: steelblue;}
+.state3 {background-color: red;}
+.state4 {background-color: orange;}
+.state5 {background-color: lightblue;}
+.state6 {background-color: darkmagenta;}
+.state7 {background-color: steelblue;}
+.state8 {background-color: brown;}
+.state9 {background-color: mediumorchid;}
+.state10 {background-color: tan;}
+.state11 {background-color: wheat;}
+.state12 {background-color: darksalmon;}
+.state13 {background-color: orange;}
+.state14 {background-color: darkgreen;}
+.state15 {background-color: brown;}
+.state16 {background-color: mediumorchid;}
+.state17 {background-color: steelblue;}
+.state18 {background-color: darkmagenta;}
+.state19 {background-color: tan;}
+.state20 {background-color: red;}
+.state21 {background-color: wheat;}
 
 /* Token functions */
 .token:hover {cursor: pointer;}

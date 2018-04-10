@@ -1,6 +1,7 @@
 <?php
   //LIAM header starts here
   // comment if you do NOT want to use BPMspace LIAM for identity and access management
+  /*
   include_once '../phpSecureLogin/includes/db_connect.inc.php';
   include_once '../phpSecureLogin/includes/functions.inc.php';
   
@@ -13,5 +14,6 @@
   else {
     $logged = 'in';
   }
+  */
   //LIAM header ends here
 ?>

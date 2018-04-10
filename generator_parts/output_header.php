@@ -10,14 +10,14 @@
   <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
   <link rel="stylesheet" href="../css/font-awesome.min.css">
   <!-- Custom CSS -->
-  <style>
+  <style>    
 replaceCSS
   </style>
   <!-- JS -->
-  <script type="text/javascript" src="../js/viz-lite.js"></script>
-  <script type="text/javascript" src="../js/angular.min.js"></script>
-  <script type="text/javascript" src="../js/angular-sanitize.min.js"></script>
-  <script type="text/javascript" src="../js/jquery-2.1.4.min.js"></script>
-  <script type="text/javascript" src="../js/bootstrap.min.js"></script>
+  <script src="../js/viz-lite.js"></script>
+  <script src="../js/angular.min.js"></script>
+  <script src="../js/angular-sanitize.min.js"></script>
+  <script src="../js/jquery-2.1.4.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
 </head>
-<body ng-app="genApp" ng-controller="genCtrl">
+<body id="webapp" ng-app="genApp" ng-controller="genCtrl">

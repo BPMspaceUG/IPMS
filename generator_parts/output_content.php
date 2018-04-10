@@ -23,132 +23,84 @@
           </ul>
         </div>
         <!-- Panel Body -->
-        <div class="panel-body" ng-class="{'text-primary': (selectedTable.sqlfilter_old.length != 0)}">
-          <div class="tab-content" style="overflow: auto;">
-
-            <!-- Table Options -->
-            <form class="form-inline" style="background: #eee; padding: .5em;">
-              <div class="form-group" >
-                <!-- FILTER -->
-                <input type="text" class="form-control searchfield" placeholder="Filter..."
-                  ng-model="selectedTable.sqlfilter" autofocus>
-                <!-- REFRESH -->
-                <button class="btn btn-default" title="Refresh" 
-                  ng-click="refresh(selectedTable.table_name);"><i class="fa fa-refresh"></i></button>
-                <!-- CREATE -->
-                <button class="btn btn-success" title="Create Entry" ng-hide="selectedTable.is_read_only" type="button"
-                  ng-click="addEntry(selectedTable.table_name)"><i class="fa fa-plus"></i> Create</button>
-                <!-- PROCESS -->
-                <button class="btn btn-default" title="Show Process" ng-hide="!selectedTable.se_active" type="button"
-                  ng-click="openSEPopup(selectedTable.table_name)"><i class="fa fa-random"></i> Workflow</button>
+        <div class="panel-body">
+          <div class="tab-content">
+            <div>
+              <!-- Table Options -->
+              <form class="form-inline" style="background: #eee; padding: .5em;">
+                <div class="form-group" >
+                  <!-- DELETE -->
+                  <button class="btn btn-danger" title="Show Process" ng-hide="!selectedRow" type="button"
+                    ng-click="deleteEntry()"><i class="fa fa-trash"></i> Delete</button>
+                </div>
+              </form>
+              <div class="tab-pane">
+                <div class="table_x"></div>
               </div>
-            </form>
-
-            <div ng-repeat="(name, table) in tables" class="tab-pane" ng-class="{active: (selectedTable.table_name == table.table_name)}" id="{{table.table_name}}">
-            	<!-- No Entries -->
-            	<table class="table table-bordered table-condensed" ng-if="table.count <= 0">
-            		<thead>
-            			<tr><th style="padding: 3em 0; font-weight: normal;">No entries found</th></tr>
-            		</thead>          		
-            	</table>
-              <!-- Data content -->
-              <table class="table table-bordered table-striped table-hover table-condensed tableCont" ng-if="table.count > 0">
-                <!-- ============= COLUMN HEADERS ============= -->
-                <thead>
-                  <tr>
-                    <!-- Control-Column -->
-                    <th ng-hide="table.is_read_only">
-                      <em class="fa fa-cog"></em>
-                    </th>
-                    <!-- Data-Columns -->
-                    <th ng-repeat="col in table.columns | orderObjectBy:'col_order':false"
-                    		ng-click="sortCol(table, col.COLUMN_NAME)"
-                        ng-class="{sorted: table.sqlorderby == col.COLUMN_NAME}"
-                    		ng-if="col.is_in_menu">
-                      <span>{{col.column_alias}}
-                        <i class="fa fa-caret-down" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'desc'"></i>
-                        <i class="fa fa-caret-up" ng-show="table.sqlorderby == col.COLUMN_NAME && table.sqlascdesc == 'asc'"></i>
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <!-- ============= CONTENT ============= -->
-                <tbody>
-                  <!-- Rows -->
-                  <tr ng-repeat="row in table.rows" ng-class="getRowCSS(row)">
-                    <!-- Control-Column -->
-                    <td class="controllcoulm" ng-hide="table.is_read_only">
-                      <!--<button class="btn btn-default" ng-click="editEntry(table, row)" title="Edit Entry">
-                        <i class="fa fa-pencil"></i>
-                      </button>-->
-                      <button class="btn btn-danger" ng-click="deleteEntry(table, row)" title="Delete Entry">
-                        <i class="fa fa-times"></i>
-                      </button>
-                    </td>
-                    <!-- Cells -->
-                    <td ng-repeat="col in table.columns | orderObjectBy:'col_order':false"
-                      ng-click="editEntry(table, row)"
-                    	ng-if="col.is_in_menu">
-                      <!-- Substitue StateMachine -->
-                      <!-- TODO: Use maybe ForeignKeys for this function -->
-                      <div ng-if="(col.COLUMN_NAME == 'state_id' && table.se_active)">
-                        <b ng-class="'state'+ row[col.COLUMN_NAME]">{{substituteSE(table.table_name, row[col.COLUMN_NAME])}}</b>
-                      </div>
-                      <!-- Cell -->
-                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active)
-                          && (col.COLUMN_TYPE != 'date') && (col.COLUMN_TYPE != 'datetime')">
-                        {{ row[col.COLUMN_NAME] | limitTo: 40 }}{{ row[col.COLUMN_NAME].length > 40 ? '...' : ''}}
-                     	</span>
-                      <!-- Date -->
-                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active) && (col.COLUMN_TYPE == 'date')">
-                        {{ row[col.COLUMN_NAME] | convertDate:'dd.MM.yyyy' }}
-                      </span>
-                      <!-- Datetime -->
-                      <span ng-if="!(col.COLUMN_NAME == 'state_id' && table.se_active) && (col.COLUMN_TYPE == 'datetime')">
-                        {{ row[col.COLUMN_NAME] | convertDateTime:'dd.MM.yyyy HH:mm:ss' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <!-- Panel Footer -->
-        <div class="panel-footer">
-          <div class="row">
-            <div class="col col-xs-6">
-              <span class="text-primary">
-                <span>{{selectedTable.count}} Entries total</span>
-                <span ng-if="getNrOfPages(selectedTable) > 0"> - Page {{selectedTable.PageIndex + 1}} of {{ getNrOfPages(selectedTable) }}</span>
-              </span>
-            </div>
-            <div class="col col-xs-6">
-              <ul class="pagination pull-right"><!-- visible-xs -->
-                <!-- JUMP to first page -->
-                <li ng-class="{disabled: selectedTable.PageIndex <= 0}">
-                  <a href="" ng-click="gotoPage(0, selectedTable)">«</a>
-                </li>          
-                <!-- Page Buttons -->
-                <li ng-repeat="btn in getPageination(selectedTable.table_name)"
-                  ng-class="{disabled: btn + selectedTable.PageIndex == selectedTable.PageIndex}">
-                  <a href="" ng-click="gotoPage(btn + selectedTable.PageIndex, selectedTable)">{{btn + selectedTable.PageIndex + 1}}</a>
-                </li>
-                <!-- JUMP to last page -->
-                 <li ng-class="{disabled: (selectedTable.PageIndex + 1) >= (selectedTable.count / PageLimit)}">
-                  <!-- TODO: fix 9999 number, maybe to (-1) -->
-                  <a href="" ng-click="gotoPage(999999, selectedTable)">»</a>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
       </div>
-
+      
     </div>
   </div>
 </div>
+
+<!-- Modal for Create -->
+<div class="modal fade" id="modalCreateEntry" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">
+          <i class="fa fa-plus"></i> Create Entry <small>in <b>#Table</b></small>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <div class="create_form"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="btnCreateEntry">
+          <i class="fa fa-plus"></i> Create</button>
+        &nbsp;
+        <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
+          <i class="fa fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Modal for Edit -->
+<div class="modal fade" id="modalEditEntry" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">
+          <i class="fa fa-pencil"></i> Edit Entry <small>in <b>#Table</b></small>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <div class="edit_form"></div>
+      </div>
+      <div class="modal-footer">
+        <span class="footer_btns">
+          <button class="btn btn-primary" id="btnSaveEntry" type="button">Save &amp; Close</button>
+        </span>
+        &nbsp;
+        <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
+          <i class="fa fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 <!-- Modal for Create -->
 <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog">
@@ -245,7 +197,7 @@
       </div>
       <div class="modal-footer">
         <!-- CREATE / CLOSE -->
-        <button class="btn btn-success" ng-click="send('create', {row: selectedRow, table: selectedTable})">
+        <button class="btn btn-success" ng-click="send(selectedTable.table_name, 'create', {row: selectedRow, table: selectedTable})">
           <i class="fa fa-plus"></i> Create</button>
         &nbsp;
         <button class="btn btn-default pull-right" type="button" data-dismiss="modal">
@@ -284,8 +236,7 @@
               	<button class="btn btn-default"
                   ng-click="(selectedTable.form_data[key] == 'RO') || openFK(key)"
                   ng-readonly="selectedTable.form_data[key] == 'RO'"
-                  ng-disabled="selectedTable.form_data[key] == 'RO'"
-                  >
+                  ng-disabled="selectedTable.form_data[key] == 'RO'">
                   <i class="fa fa-key"></i> {{value}}
                 </button>
               </span>
@@ -360,13 +311,13 @@
           </span>
           <span ng-repeat="state in selectedTable.nextstates">
             <!-- Recursive State -->
-            <span ng-if="state.id == selectedRow.state_id">
-              <button class="btn btn-primary" ng-click="gotoState(state)">
-                <i class="fa fa-floppy-o"></i> Save</button>
+            <span ng-if="state.name == selectedRow.state_id">
+              <button class="btn btn-primary" ng-click="gotoState(state)"><i class="fa fa-floppy-o"></i> Save</button>
             </span>
             <!-- Normal state -->
-            <span ng-if="state.id != selectedRow.state_id" class="btn btn-default stateBtn"
-              ng-class="'state'+state.id" ng-click="gotoState(state)">{{state.name}}</span>
+            <span ng-if="state.name != selectedRow.state_id">
+              <button class="btn btn-default stateBtn" ng-class="'state'+state.id" ng-click="gotoState(state)">{{state.name}}</button>
+            </span>
           </span>
         </span>
         <!-- If has no StateMachine -->
@@ -385,7 +336,7 @@
 </div>
 
 <!-- Modal for ForeignKey -->
-<div class="modal fade" id="myFKModal" tabindex="-1" role="dialog"">
+<div class="modal fade" id="myFKModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -393,58 +344,12 @@
         <h4 class="modal-title" id="myFKModalLabel"><i class="fa fa-key"></i> Select a Foreign Key</h4>
       </div>
       <div class="modal-body">
-
-        <!-- Table Options -->
-        <form class="form-inline">
-          <div class="form-group">
-            <!-- FILTER -->
-            <input type="text" class="form-control searchfield" id="searchtext" placeholder="Filter..." ng-model="FKTbl.sqlfilter" autofocus>
-            <button type="submit" class="btn btn-default" ng-click="refresh(FKTbl.table_name)"><i class="fa fa-search"></i> Search</button>
-            <!-- CREATE -->
-              <button class="btn btn-success" title="Create Entry" ng-hide="FKTbl.is_read_only" type="button"
-                ng-click="addEntry(FKTbl.table_name)"><i class="fa fa-plus"></i> Create</button>
-          </div>          
-        </form>
-        <br>
-        <!-- Table Content -->
-        <div style="overflow: auto;">
-          <table class="table table-bordered table-striped table-hover table-condensed table-responsive">
-            <thead>
-              <tr>
-                <th ng-repeat="(key, value) in FKTbl.rows[0]" ng-if="FKTbl.columns[key].is_in_menu">
-                  <span>{{FKTbl.columns[key].column_alias}}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr ng-repeat="row in FKTbl.rows" ng-click="selectFK(row)" style="cursor: pointer;">
-                <td ng-repeat="(key, value) in row" ng-if="FKTbl.columns[key].is_in_menu">
-                  {{value | limitTo: 50}}{{value.length > 50 ? '...' : ''}}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>        
-        <span class="text-primary">
-          <span>{{FKTbl.count}} Entries total</span>
-          <span ng-if="getNrOfPages(FKTbl) > 0"> - Page {{FKTbl.PageIndex + 1}} of {{ getNrOfPages(FKTbl) }}</span>
-        </span>
+        <div id="foreignTable"></div>
       </div>
       <div class="modal-footer">
         <div class="row">
-          <div class="col-xs-8">
-            <ul class="pagination" style="margin:0; padding:0;">
-              <li ng-class="{disabled: FKTbl.PageIndex <= 0}"><a href="" ng-click="gotoPage(0, FKTbl)">«</a></li>          
-              <li ng-repeat="btn in getPageination(FKTbl.table_name)"
-                ng-class="{disabled: btn + FKTbl.PageIndex == FKTbl.PageIndex}">
-                <a href="" ng-click="gotoPage(btn + FKTbl.PageIndex, FKTbl)">{{btn + FKTbl.PageIndex + 1}}</a>
-              </li>
-              <li ng-class="{disabled: (FKTbl.PageIndex + 1) >= (FKTbl.count / PageLimit)}">
-                <a href="" ng-click="gotoPage(999999, FKTbl)">»</a>
-              </li>
-            </ul>
-          </div>        
-          <div class="col-xs-4">
+          <div class="col-xs-12">
+            <button class="btn btn-primary" type="button" onclick="test()"><i class="fa fa-floppy-o"></i> Save</button>
             <button class="btn btn-default pull-right" type="button" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
           </div>
         </div>
@@ -469,6 +374,26 @@
       <div class="modal-footer">
       	<!--<button type="button" class="btn btn-warning" id="test" ng-click="openSEPopup(selectedTable.table_name)">
           <i class="fa fa-refresh"></i> Refresh</button>-->
+        <button type="button" class="btn btn-default pull-right" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Result -->
+<div class="modal fade" id="modalResult" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">
+          <i class="fa fa-arrow-right"></i> This modal is in a transition
+        </h4>
+      </div>
+      <div class="modal-body">
+        <p class="sm_result"></p>
+      </div>
+      <div class="modal-footer">
         <button type="button" class="btn btn-default pull-right" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
       </div>
     </div>

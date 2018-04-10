@@ -21,7 +21,7 @@
   // Open a new DB-Connection
   $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
   if ($con->connect_errno > 0) {
-    die('Unable to connect to database [' . $db->connect_error . ']');
+    die('Unable to connect to database [' . $con->connect_error . ']');
   }
   // Create an array with all table names
   /*
@@ -34,6 +34,7 @@
   /* ------------------------------------- Statemachine ------------------------------------- */
 
   require_once("output_StateEngine.php");
+  require_once("output_RequestHandler.php");
    // Loop each Table with StateMachine checked create a new StateMachine Column
 
   // -------------------- FormData --------------------
@@ -52,14 +53,10 @@
       $SM_ID = $SM->createBasicStateMachine($tablename);
 
       // Add Basic Form Data for each state
-      //   Get all columns
-      $query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME = '$tablename';";
-      $res = $con->query($query);
-      $cols = array();
-      while ($row = $res->fetch_row())
-        $cols[] = $row[0];
-      // construct the Form data
-      $form_data = json_encode($SM->getBasicFormDataByColumns($cols));
+      $colData = $table["columns"];
+      $excludeKeys = RequestHandler::getPrimaryColByTablename($data, $tablename);
+      $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
+
       // write the formdata into the column if empty      
       $query = "UPDATE $db_name.state_machines SET form_data = '$form_data' WHERE ".
                "tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL;";
@@ -112,7 +109,7 @@
   // --- RequestHandler
   $output_RequestHandler = loadFile("./output_RequestHandler.php");
   $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
-  $output_RequestHandler = str_replace('replaceClassStateEngine', $class_StateEngine, $output_RequestHandler);
+  $output_RequestHandler = str_replace('//---DO-NOT-REMOVE---[replaceClassStateEngine]---DO-NOT-REMOVE---', $class_StateEngine, $output_RequestHandler);
 
   // ------------------- Client Side
   // --- HTML Header

@@ -193,18 +193,40 @@
       $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
-    public function getBasicFormDataByColumns($columns) {
-      // possibilities = [RO, RW, HI]
-      $res = array();
-      // Loop each column
-      for ($i=0;$i<count($columns);$i++) {
-      	// if coumn is state_id then Hide it
-      	if ($columns[$i] == 'state_id')
-					$res[$columns[$i]] = "HI";
-      	else      		
-        	$res[$columns[$i]] = "RW"; // default: Read write
+    private function getFormElement($key, $alias, $default, $data_type, $isFK) {
+      // Special case if $key == 'state_id'
+      if ($isFK) {
+        // FK
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static\" name=\"".
+          $key."\"><i class=\"fa fa-key\"></i>FK</p>\n\t</div>\n</div>\n";
       }
-      return $res;
+      else if ($data_type == 'int') {
+        // Number
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"number\" class=\"form-control\" name=\"".
+          $key."\">\n\t</div>\n</div>\n";
+      }
+      return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+        $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"text\" class=\"form-control\" name=\"".
+        $key."\" value=\"$default\">\n\t</div>\n</div>\n";
+    }
+    public function getBasicFormDataByColumns($colData, $excludeKeys) {
+      $header = "<form class=\"form-horizontal\">\n";
+      $footer = "</form>";
+      $content = '';
+      // Loop every column
+      foreach ($colData as $colname => $value) {
+        $key = $colname;
+        $alias = $value['column_alias'];
+        $data_type = $value['DATA_TYPE'];
+        $isFK = ($value['foreignKey']['table'] != '');
+        $default = '';
+        // Check if exclude
+        if (!in_array($key, $excludeKeys))
+          $content .= $this->getFormElement($key, $alias, $default, $data_type, $isFK);
+      }
+      return $header.$content.$footer;
     }
     public function getFormDataByStateID($StateID) {
       if (!($this->ID > 0)) return "";
@@ -299,17 +321,19 @@
         // [1]- Execute [OUT] Script (Inverted Moore)
         $out_script = $this->getOUTScript($actstateID); // from source state
         $res = $this->executeScript($out_script, $param);
-        if (!$res['allow_transition']) 
-          return json_encode($res);
-        else
+        if (!$res['allow_transition']) {
+          $result[] = $res;
+          return json_encode($result);
+        } else
           $result[] = $res;
         
         // [2]- Execute [Transition] Script (Mealy)
         $tr_script = $this->getTransitionScript($actstateID, $stateID);
         $res = $this->executeScript($tr_script, $param);
-        if (!$res["allow_transition"])
-          return json_encode($res);
-        else
+        if (!$res["allow_transition"]) {
+          $result[] = $res;
+          return json_encode($result);
+        } else
           $result[] = $res;
 
         // If all Scripts where successful, update row

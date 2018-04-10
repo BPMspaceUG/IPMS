@@ -1,18 +1,18 @@
 <?php
   // Includes
-  include_once("replaceDBName-config.inc.php");
+  $config_file = "replaceDBName-config.inc.php";
+  if (file_exists($config_file)) include_once($config_file);
 
   // Parameter and inputstream
   $params = json_decode(file_get_contents('php://input'), true);
-  $command = $params["cmd"];
+  @$command = $params["cmd"];
   
-  
-  replaceClassStateEngine
-
+  //---DO-NOT-REMOVE---[replaceClassStateEngine]---DO-NOT-REMOVE---
 
   //RequestHandler Class Definition starts here
   class RequestHandler {
     private $db;
+    private $config;
 
     public function __construct() {
       // create DB connection object - Data comes from config file
@@ -24,12 +24,15 @@
       }
       $db->query("SET NAMES utf8");
       $this->db = $db;
+      $this->config = json_decode(RequestHandler::init(), true);
     }
-    private function getPrimaryColByTablename($tablename) {
-      $config = json_decode($this->init(), true);
-      $res = array();
-      
+    private static function getColumnsByTablename($config, $tablename) {
       $cols = $config[$tablename]["columns"];
+      return $cols;
+    }
+    public static function getPrimaryColByTablename($config, $tablename) {
+      $res = array();
+      $cols = RequestHandler::getColumnsByTablename($config, $tablename);
       // Find primary columns
       foreach ($cols as $col) {
         if ($col["COLUMN_KEY"] == "PRI")
@@ -41,12 +44,29 @@
     private function parseToJSON($result) {
       $results_array = array();
       if (!$result) return false;
-      while ($row = $result->fetch_assoc()) {
-        $results_array[] = $row;
+      // Read out fields
+      $fieldcount = $result->field_count;
+      // each row
+      while ($row = $result->fetch_array()) {
+        $tmprow = array();
+        // Loop columns
+        for($i=0;$i<$fieldcount;$i++) {
+          $colname = mysqli_fetch_field_direct($result, $i)->name;
+          if (array_key_exists($colname ,$tmprow)) {
+            // Is a ForeinKey -> merge Columns
+            $tmpVal = $tmprow[$colname];
+            $tmpArr = array();
+            $tmpArr[] = $tmpVal;
+            $tmpArr[] = $row[$i];
+            $tmprow[$colname] = $tmpArr;
+          } else
+            $tmprow[$colname] = $row[$i];
+        }
+        $results_array[] = $tmprow;
       }
       return json_encode($results_array);
     }
-    private function buildSQLWherePart($primarycols, $rowcols) {
+    private static function buildSQLWherePart($primarycols, $rowcols) {
       $where = "";
       foreach ($primarycols as $col) {
         $where = $where . $col . "='" . $rowcols[$col] . "'";
@@ -71,11 +91,11 @@
       return $update;
     }
     // TODO: Rename to loadConfig
-    public function init() {
+    public static function init() {
       global $config_tables_json;
       return $config_tables_json;
     }
-    private function splitQuery($row) {
+    private static function splitQuery($row) {
       $res = array();
       foreach ($row as $key => $value) { 
         $res[] = array("key" => $key, "value" => $value);
@@ -89,7 +109,7 @@
       // New State Machine
       $SM = new StateMachine($this->db, DB_NAME, $tablename);
       // Check Query
-      $x = $this->splitQuery($param["row"]);
+      $x = RequestHandler::splitQuery($param["row"]);
       // Substitute Value for EntryPoint of Statemachine
       for ($i=0;$i<count($x);$i++) {
         // TODO: Make this better
@@ -101,6 +121,9 @@
       for ($i=0;$i<count($param["row"]);$i++) {
         $param["row"][$x[$i]["key"]] = $x[$i]["value"];
       }
+
+      // TODO: Make ARRAY for Script results
+
       // Has StateMachine? then execute Scripts
       if ($SM->getID() > 0) {
         // Transition Script
@@ -116,7 +139,7 @@
       	// Reload row, because maybe the TransitionScript has changed some params
         $keys = array();
         $vals = array();
-        $x = $this->splitQuery($param["row"]);
+        $x = RequestHandler::splitQuery($param["row"]);
         foreach ($x as $el) {
           $keys[] = $this->db->real_escape_string($el["key"]);
           $vals[] = $this->db->real_escape_string($el["value"]);
@@ -131,7 +154,7 @@
         if ($SM->getID() > 0) {
           $script = $SM->getINScript($SM->getEntryPoint());
           // Refresh row (add ID)
-          $pri_cols = $this->getPrimaryColByTablename($tablename);
+          $pri_cols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
           $param["row"][$pri_cols[0]] = (string)$newElementID;
           // Script
           $script_result = $SM->executeScript($script, $param);
@@ -167,6 +190,7 @@
 
       // JOIN
       $join_from = $tablename." AS a"; // if there is no join
+
       $sel = array();
       $sel_raw = array();
       $sel_str = "";
@@ -206,11 +230,9 @@
         //$where = " WHERE ".$q_str;
       }
 
-
       // Concat final query
-      $query = "SELECT ".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
+      $query = "SELECT a.".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
-      //var_dump($query);
       $res = $this->db->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);
@@ -219,11 +241,12 @@
     public function update($param) {
       // Primary Columns
       $tablename = $param["table"];
-      $pCols = $this->getPrimaryColByTablename($tablename);
+      $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
       // Build query
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
-      $where = $this->buildSQLWherePart($pCols, $param["row"]);
+      $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "UPDATE ".$tablename." SET ".$update." WHERE ".$where.";";
+      //var_dump($query);
       $res = $this->db->query($query);
       // Check if rows where updated
       $success = false;
@@ -237,9 +260,9 @@
     public function delete($param) {
       // Primary Columns
       $tablename = $param["table"];
-      $pCols = $this->getPrimaryColByTablename($tablename);
+      $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
       // Build query
-      $where = $this->buildSQLWherePart($pCols, $param["row"]);
+      $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "DELETE FROM ".$tablename." WHERE ".$where.";";
       $res = $this->db->query($query);
       // Check if rows where updated
@@ -252,11 +275,23 @@
     }
     //----------------------------------
     public function getFormData($param) {
+      // Inputs
       $tablename = $param["table"];
+
+      // TODO: Make function::::::::::::::::::::::::
+      // Find correct state_id with the inputs
+      $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
+      $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
+      // get StateID from the Element itself
+      $query = "SELECT state_id FROM ".DB_NAME.".$tablename WHERE ".$where.";";
+      $res = $this->db->query($query);
+      $r = $res->fetch_array();
+      $stateID = (int)$r[0];
+
+
       $SM = new StateMachine($this->db, DB_NAME, $tablename);
       // Check if has state machine ?
       if ($SM->getID() > 0) {
-        $stateID = $param["row"]["state_id"];
         $r = $SM->getFormDataByStateID($stateID);
         if (empty($r)) $r = "1"; // default: allow editing (if there are no rules set)
         return $r;
@@ -268,15 +303,18 @@
     public function getFormCreate($param) {
       $tablename = $param["table"];
       $SM = new StateMachine($this->db, DB_NAME, $tablename);
-      // Check if has state machine ?
+      // StateMachine ?
       if ($SM->getID() > 0) {
+        // Has StateMachine
         $r = $SM->getCreateFormByTablename();
         if (empty($r)) $r = "1"; // default: allow editing (if there are no rules set)
-        return $r;
       } else {
-        // allow editing if no statemachine
-        return "1"; 
+        // Has NO StateMachine -> Return standard form
+        $cols = RequestHandler::getColumnsByTablename(json_decode(RequestHandler::init(), true), $tablename);
+        $excludeKeys = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
+        $r = $SM->getBasicFormDataByColumns($cols, $excludeKeys);
       }
+      return $r;
     }
     //==== Statemachine -> substitue StateID of a Table with Statemachine
     public function getNextStates($param) {
@@ -285,8 +323,8 @@
       $tablename = $param["table"];
 
       // Find correct state_id with the inputs
-      $pCols = $this->getPrimaryColByTablename($tablename);
-      $where = $this->buildSQLWherePart($pCols, $param["row"]);
+      $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
+      $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
 
       // get StateID from the Element itself
       $query = "SELECT state_id FROM ".DB_NAME.".$tablename WHERE ".$where.";";
@@ -304,7 +342,7 @@
       // Get the next ID for the next State
       @$nextStateID = $param["row"]["state_id"];
       @$tablename = $param["table"];
-      @$pricols = $this->getPrimaryColByTablename($tablename);
+      @$pricols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
       @$pricol = $pricols[0]; // there should always be only 1 primary column for the identification of element
       @$ElementID = $param["row"][$pricol];
 
@@ -314,7 +352,8 @@
       //$param["row"] = $res->fetch_assoc();
       //var_dump($r);
       //$param["row"] = $this->parseToJSON($res);
-      
+      //var_dump($param["row"]);
+
       // Statemachine
       $SE = new StateMachine($this->db, DB_NAME, $tablename);
       // get ActStateID by Element ID
@@ -327,13 +366,17 @@
       $actstateID = $actstateObj[0]["id"];
       // Try to set State
       $result = $SE->setState($ElementID, $nextStateID, $pricol, $param);
+      if (!$result) {
+        echo "Transition not possible!";
+        exit;
+      }
       // Check if it was a recursive state
       $r = json_decode($result, true);
       // After successful transition, update entry
       // SAVE EVERY TIME, Not only at recursion, also when going to another state
       $allow_trans = true;
       for ($i=0;$i<count($r);$i++) {
-      	$allow_trans = $allow_trans && $r[$i]["allow_transition"];
+        $allow_trans = $allow_trans && $r[$i]["allow_transition"];
       }
       if ($allow_trans) {
         $this->update($param); // Update all other rows
@@ -354,18 +397,25 @@
       return json_encode($res);
     }
   }
+
+
   // Class Definition ends here
   // Request Handler ends here
   //----------------------------------------------------------
 
-  $RH = new RequestHandler();  
-  if ($command != "") { // check if at least a command is set    
-    if ($params != "") // are there parameters?      
-      $result = $RH->$command($params["paramJS"]); // execute with params
-    else
-      $result = $RH->$command(); // only execute
-    // Output
-    echo $result;
-    exit(); // Terminate further execution
+  // Exit if class is only included
+  if (file_exists($config_file)) {
+    //---System in LIVE Mode -> A Request was made
+    $RH = new RequestHandler();  
+    if ($command != "") { // check if at least a command is set    
+      if ($params != "") // are there parameters?      
+        $result = $RH->$command($params["paramJS"]); // execute with params
+      else
+        $result = $RH->$command(); // only execute
+      // Output
+      echo $result;
+      exit(); // Terminate further execution
+    }
   }
+
 ?>
