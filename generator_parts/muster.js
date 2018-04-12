@@ -1,5 +1,8 @@
 function doModal(idStr, heading, content, footer, isBig) {
     if (isBig === void 0) { isBig = false; }
+    if (isBig === void 0) {
+        isBig = false;
+    }
     // Check if ID exists then add Number -> like 'idStrxxx'
     while ($("#" + idStr).length) {
         idStr += "x";
@@ -44,6 +47,52 @@ var gURL = window.location.pathname;
 // Plugins
 var $;
 var Viz;
+var Modal = /** @class */ (function () {
+    function Modal(heading, content, footer, isBig) {
+        if (footer === void 0) { footer = ''; }
+        if (isBig === void 0) { isBig = false; }
+        this.DOM_ID = 'msgBx';
+        // Check if ID exists then add Number -> like 'idStrxxx'
+        while ($("#" + this.DOM_ID).length) {
+            this.DOM_ID += "X";
+        }
+        var sizeType = '';
+        if (isBig)
+            sizeType = ' modal-lg';
+        // Result
+        var html = '<div id="' + this.DOM_ID + '" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="confirm-modal" aria-hidden="true">';
+        html += '<div class="modal-dialog' + sizeType + '">';
+        html += '<div class="modal-content">';
+        html += '<div class="modal-header">';
+        html += '<button type="button" class="close" data-dismiss="modal" aria-label="Close">';
+        html += '<span aria-hidden="true">&times;</span>';
+        html += '</button>';
+        html += '<h4>' + heading + '</h4>';
+        html += '</div>';
+        html += '<div class="modal-body">';
+        // TODO: Remove this and store in object instead
+        html += '<span style="display:none;" class="stored_data"></span>';
+        html += content;
+        html += '</div>';
+        html += '<div class="modal-footer">';
+        html += footer;
+        html += '<span class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
+        html += '</div>'; // content
+        html += '</div>'; // dialog
+        html += '</div>'; // footer
+        html += '</div>'; // modalWindow
+        $('body').append(html);
+        // Remove from DOM on close
+        $('#' + this.DOM_ID).on('hidden.bs.modal', function (e) {
+            $(this).remove();
+        });
+    }
+    Modal.prototype.show = function () {
+        $("#" + this.DOM_ID).modal();
+        $("#" + this.DOM_ID).modal('show');
+    };
+    return Modal;
+}());
 var StateMachine = /** @class */ (function () {
     function StateMachine() {
     }
@@ -449,13 +498,14 @@ var Table = /** @class */ (function () {
 // BUTTON Create
 function createEntry(table_name) {
     var htmlForm = getTable(table_name).Form_Create;
-    var SaveBtn = '<button class="btn btn-success" id="btnCreateEntry" type="button">Create</button>';
-    var ModalID = doModal('msgboxCreate', 'Create Entry', htmlForm, SaveBtn, true);
+    var SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button">Create</button>';
+    var M = new Modal('Create Entry', htmlForm, SaveBtn, true);
+    var ModalID = M.DOM_ID;
     // save hidden data in modal
     var data = { mid: ModalID, tablename: table_name };
     $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
     // Bind Buttonclick
-    $('#' + ModalID + ' #btnCreateEntry').click(function () {
+    $('#' + ModalID + ' .btnCreateEntry').click(function () {
         // Recover hidden data from modal
         var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
         var tablename = Xdata.tablename;
@@ -485,10 +535,12 @@ function createEntry(table_name) {
         // REQUEST
         getTable(tablename).createRow(data, created);
     });
+    M.show();
 }
+// TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
 function setState(btn, tablename, RowID, targetStateID) {
     var Xdata = JSON.parse($(btn).parent().parent().find('.stored_data').html());
-    console.log(Xdata);
+    //console.log(Xdata)
     var Mid = Xdata.mid;
     var t = getTable(tablename);
     // Read out all input fields with {key:value}
@@ -527,7 +579,6 @@ function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
     });
     // Show Modal
     var EditMID = doModal('msgboxEditEntry', 'Edit Entry', htmlForm, btns, true);
-    console.log("EditModal opened", EditMID);
     // save hidden data in modal
     var data = { mid: EditMID, tablename: Table.tablename };
     $('#' + EditMID + ' .stored_data').html(JSON.stringify(data));
@@ -555,21 +606,20 @@ function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
         }
     });
     // Add Primary ID --> TODO: in stored Data
-    $('#' + EditMID + ' .edit_form').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
+    $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
 }
 function modifyRow(table_name, id) {
     // Indicate which row is getting modified
     addClassToDataRow(id, 'warning');
     var t = getTable(table_name);
     // if is in a FK-Modal return selected Row
+    // TODO:
     if (t.jQSelector.indexOf("#") >= 0) {
         t.selectedIDs = [];
         t.selectedIDs.push(id);
         return;
     }
     else {
-        // open edit modal
-        //$('#modalEditEntry .modal-title b').text(table_name) // Set title
         // Set Form
         if (t.SM) {
             var PrimaryColumn = t.PrimaryColumn;
@@ -615,30 +665,45 @@ function modifyRow(table_name, id) {
             // EDIT-Modal WITHOUT StateMachine
             var htmlForm = t.Form_Create;
             var PrimaryColumn = t.PrimaryColumn;
-            $('#modalEditEntry .edit_form').html(htmlForm);
-            $('#modalEditEntry .edit_form').append('<input style="display:none;" type="text" name="' + PrimaryColumn + '" value="' + id + '">');
+            var btn = '<button class="btn btn-primary" onclick="saveEntry(this)" type="button">Save &amp; Close</button>';
+            var M = new Modal('Edit Entry', htmlForm, btn, true);
+            var dataxx = { mid: M.DOM_ID, tablename: table_name };
+            $('#' + M.DOM_ID + ' .stored_data').html(JSON.stringify(dataxx));
+            $('#' + M.DOM_ID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + id + '">');
             // Write all input fields with {key:value}
             var row = t.getRowByID(id);
-            var inputs = $('#modalEditEntry :input');
+            var inputs = $('#' + M.DOM_ID + ' :input');
             inputs.each(function () {
                 var e = $(this);
-                e.val(row[e.attr('name')]);
+                var value = row[e.attr('name')];
+                // isFK?
+                if (Array.isArray(value)) {
+                    console.log("--> FK", e.attr('name'), value);
+                    // Special case if name = 'state_id'
+                    if (e.attr('name') == 'state_id') {
+                        e.parent().find('.label').text(value[1]);
+                    }
+                    else {
+                        e.parent().find('.fkval').text(value[1]);
+                    }
+                    // Save in hidden input
+                    e.val(value[0]);
+                }
+                else {
+                    e.val(value); // Normal
+                }
             });
-            // Buttons
-            $('#modalEditEntry .footer_btns').empty();
-            var btn = '<button class="btn btn-primary" onclick="saveEntry()" type="button">Save &amp; Close</button>';
-            $('#modalEditEntry .footer_btns').append(btn);
-            // Show Modal
-            $('#modalEditEntry').modal('show');
+            M.show();
         }
     }
 }
 // BUTTON SAVE + Close
-function saveEntry() {
-    var tablename = $('#modalEditEntry .modal-title b').text();
-    var t = getTable(tablename);
+function saveEntry(x) {
+    var Xdata = JSON.parse($(x).parent().parent().find('.stored_data').html());
+    var mid = Xdata.mid;
+    var t = getTable(Xdata.tablename);
     // Read out all input fields with {key:value}
-    var inputs = $('#modalEditEntry :input');
+    var inputs = $('#' + mid + ' :input');
     var data = {};
     inputs.each(function () {
         var e = $(this);
@@ -651,7 +716,7 @@ function saveEntry() {
         if (r.length > 0) {
             if (r != "0") {
                 // Success
-                $('#modalEditEntry').modal('hide');
+                $('#' + mid).modal('hide');
                 t.loadRows(".table_x");
             }
             else {
@@ -690,7 +755,6 @@ function getTable(table_name) {
 function changeTab(tab) {
     var table_name = tab.attributes.href.textContent;
     table_name = table_name.replace('#', '');
-    console.log(table_name);
     var result = getTable(table_name);
     result.loadRows(".table_x");
 }
@@ -738,18 +802,19 @@ $(document).on('show.bs.modal', '.modal', function () {
     }, 0);
 });
 function openFK(x, fk_table_name, originalKey) {
+    var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
     // Modal
-    var SelectBtn = '<button class="btn btn-warning" id="btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
-    var ModalID = doModal('msgboxSelectFK', 'Select Foreign Key', '<div class="foreignTable"></div>', SelectBtn, true);
+    var M = new Modal('Select Foreign Key', '<div class="foreignTable"></div>', SelectBtn, true);
+    var ModalID = M.DOM_ID; //doModal('msgboxSelectFK', 'Select Foreign Key', , SelectBtn, true)  
     // Load Table
     getTable(fk_table_name).loadRows('#' + ModalID + ' .foreignTable');
     // save hidden data in modal
     var stdata_caller = JSON.parse($(x).parent().parent().parent().parent().find('.stored_data').html());
     var callerMID = stdata_caller.mid;
-    var data = { mid: ModalID, tablename: fk_table_name, orgKey: originalKey, fromMID: callerMID };
+    var data = { mid: ModalID, tablename: fk_table_name, orgKey: originalKey, fromMID: callerMID, originTable: stdata_caller.tablename };
     $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
     // Bind Buttonclick
-    $('#' + ModalID + ' #btnSelectFK').click(function () {
+    $('#' + ModalID + ' .btnSelectFK').click(function () {
         // Recover hidden data from modal
         var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
         var tablename = Xdata.tablename;
@@ -757,14 +822,20 @@ function openFK(x, fk_table_name, originalKey) {
         var FKS = getTable(tablename).getSelectedRows();
         var orgKey = Xdata.orgKey;
         var callerMID = Xdata.fromMID;
-        //console.log(MID, tablename, FKS, orgKey, callerMID)
         // Hide FK Modal
         $('#' + FKMID).modal('hide');
         // Find Edit Entry Modal and set Rows
         var element = $('#' + callerMID + ' input[name=\'' + orgKey + '\'');
         element.val(FKS); // Set value
-        element.parent().find('.fkval').text(FKS); // Set GUI
+        // TODO:
+        var ForeignRow = getTable(fk_table_name).getRowByID(FKS);
+        var col_subst = getTable(Xdata.originTable).Columns[orgKey].foreignKey.col_subst;
+        var val_subst = ForeignRow[col_subst];
+        console.log("Pick", col_subst);
+        console.log("XXX", Xdata);
+        element.parent().find('.fkval').text(val_subst); // Set GUI
     });
+    M.show();
 }
 function showResult(content) {
     var ModalID = doModal('msgboxSmFeedback', '<i class="fa fa-random"></i> StateMachine Feedback', content, '');
