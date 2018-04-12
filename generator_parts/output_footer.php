@@ -8,7 +8,6 @@
             <li>using</li>
             <li><a target="_blank" href="http://getbootstrap.com/">Bootstrap</a></li>
             <li><a target="_blank" href="https://jquery.com/">jQuery</a></li>
-            <li><a target="_blank" href="https://angularjs.org/">AngularJS</a></li>
             <li><a target="_blank" href="http://php.net/">PHP</a></li>
             <li><a target="_blank" href="https://github.com/peredurabefrog/phpSecureLogin">phpSecureLogin</a></li>
             <li><a target="_blank" href="https://github.com/mdaines/viz.js">viz.js</a></li>

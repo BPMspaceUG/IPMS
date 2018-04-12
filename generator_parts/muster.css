@@ -86,6 +86,9 @@ thead tr {background-color: #eee;}
     cursor: pointer;
 }*/
 
+.fKey:hover {color: #33a; cursor: pointer;}
+.editor {font-family: 'Courier New', 'Courier', 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;}
+
 /*********************************************/
 
 /* State Engine */

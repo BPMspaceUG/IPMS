@@ -193,19 +193,34 @@
       $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
-    private function getFormElement($key, $alias, $default, $data_type, $isFK) {
+    private function getFormElement($key, $alias, $default, $data_type, $FKTable) {
       // Special case if $key == 'state_id'
-      if ($isFK) {
-        // FK
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static\" name=\"".
-          $key."\"><i class=\"fa fa-key\"></i>FK</p>\n\t</div>\n</div>\n";
+      if ($key == 'state_id') {
+        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
+          "<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static\">".
+          "<span class=\"label label-primary status\"></span></p>\n\t</div>\n</div>\n";
       }
-      else if ($data_type == 'int') {
+      //----------------------------------
+      if ($FKTable != '') {
+        // FK
+        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
+          "<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static text-primary fKey\"".
+          "onclick=\"openFK(this, '$FKTable', '$key')\"><i class=\"fa fa-key\"></i> ".
+          "<span class=\"fkval\">Select Foreign Key ...</span></p>\n\t</div>\n</div>\n";
+      }
+      else if (strtolower($data_type) == 'int') {
         // Number
         return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
           $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"number\" class=\"form-control\" name=\"".
           $key."\">\n\t</div>\n</div>\n";
+      }
+      else if (strtolower($data_type) == 'longtext') {
+        // TextEditor
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<textarea rows=\"4\" class=\"form-control editor\" name=\"".
+          $key."\">$default</textarea>\n\t</div>\n</div>\n";
       }
       return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
         $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"text\" class=\"form-control\" name=\"".
@@ -220,11 +235,11 @@
         $key = $colname;
         $alias = $value['column_alias'];
         $data_type = $value['DATA_TYPE'];
-        $isFK = ($value['foreignKey']['table'] != '');
+        $FKTable = $value['foreignKey']['table'];
         $default = '';
         // Check if exclude
         if (!in_array($key, $excludeKeys))
-          $content .= $this->getFormElement($key, $alias, $default, $data_type, $isFK);
+          $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable);
       }
       return $header.$content.$footer;
     }

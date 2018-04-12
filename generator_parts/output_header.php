@@ -15,9 +15,7 @@ replaceCSS
   </style>
   <!-- JS -->
   <script src="../js/viz-lite.js"></script>
-  <script src="../js/angular.min.js"></script>
-  <script src="../js/angular-sanitize.min.js"></script>
   <script src="../js/jquery-2.1.4.min.js"></script>
   <script src="../js/bootstrap.min.js"></script>
 </head>
-<body id="webapp" ng-app="genApp" ng-controller="genCtrl">
+<body id="webapp">

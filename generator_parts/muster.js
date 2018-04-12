@@ -1,8 +1,48 @@
+function doModal(idStr, heading, content, footer, isBig) {
+    if (isBig === void 0) { isBig = false; }
+    // Check if ID exists then add Number -> like 'idStrxxx'
+    while ($("#" + idStr).length) {
+        idStr += "x";
+    }
+    var sizeType = '';
+    if (isBig)
+        sizeType = ' modal-lg';
+    // Result
+    var html = '<div id="' + idStr + '" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="confirm-modal" aria-hidden="true">';
+    html += '<div class="modal-dialog' + sizeType + '">';
+    html += '<div class="modal-content">';
+    html += '<div class="modal-header">';
+    html += '<button type="button" class="close" data-dismiss="modal" aria-label="Close">';
+    html += '<span aria-hidden="true">&times;</span>';
+    html += '</button>';
+    html += '<h4>' + heading + '</h4>';
+    html += '</div>';
+    html += '<div class="modal-body">';
+    html += '<span style="display:none;" class="stored_data"></span>';
+    html += content;
+    html += '</div>';
+    html += '<div class="modal-footer">';
+    html += footer;
+    html += '<span class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
+    html += '</div>'; // content
+    html += '</div>'; // dialog
+    html += '</div>'; // footer
+    html += '</div>'; // modalWindow
+    $('body').append(html);
+    $("#" + idStr).modal();
+    $("#" + idStr).modal('show');
+    // Remove from DOM on close
+    $('#' + idStr).on('hidden.bs.modal', function (e) {
+        $(this).remove();
+    });
+    // Return ID
+    return idStr;
+}
 // Global variables
 var gTables = [];
+var gURL = window.location.pathname;
 // Plugins
 var $;
-//var angular: any;
 var Viz;
 var StateMachine = /** @class */ (function () {
     function StateMachine() {
@@ -46,23 +86,18 @@ var Table = /** @class */ (function () {
     }
     Table.prototype.getFormCreate = function () {
         var me = this;
-        //console.log("Request FORM-Create.... for Table", this.tablename)
         $.ajax({
             method: "POST",
-            url: window.location.pathname,
+            url: gURL,
             contentType: 'json',
             data: JSON.stringify({
                 cmd: 'getFormCreate',
                 paramJS: { table: this.tablename }
             })
         }).done(function (response) {
-            //console.log("Form-Create ['", me.tablename,"'] (Raw):", response)
             if (response.length > 0)
                 me.Form_Create = response;
         });
-    };
-    Table.prototype.getRows = function () {
-        return this.Rows;
     };
     Table.prototype.getRowByID = function (RowID) {
         var result = null;
@@ -74,14 +109,88 @@ var Table = /** @class */ (function () {
         });
         return result;
     };
-    Table.prototype.deleteRow = function (RowID) {
-        return false;
+    // Core functions
+    Table.prototype.createRow = function (row_data, callback) {
+        console.log("Request [create]", row_data);
+        // Request
+        $.ajax({
+            method: "POST",
+            url: gURL,
+            contentType: 'json',
+            data: JSON.stringify({
+                cmd: 'create',
+                paramJS: {
+                    table: this.tablename,
+                    row: row_data
+                }
+            })
+        }).done(function (response) {
+            callback(response);
+        });
     };
-    Table.prototype.updateRow = function (RowID) {
-        return false;
+    Table.prototype.deleteRow = function (RowID, callback) {
+        var data = {};
+        data[this.PrimaryColumn] = RowID;
+        console.log("Request [delete]", RowID);
+        // Request
+        $.ajax({
+            method: "POST",
+            url: gURL,
+            contentType: 'json',
+            data: JSON.stringify({
+                cmd: 'delete',
+                paramJS: {
+                    table: this.tablename,
+                    row: data
+                }
+            })
+        }).done(function (response) {
+            callback(response);
+        });
+    };
+    Table.prototype.updateRow = function (RowID, new_data, callback) {
+        console.log("Request [update] for ID" + RowID, new_data);
+        // Request
+        $.ajax({
+            method: "POST",
+            url: gURL,
+            contentType: 'json',
+            data: JSON.stringify({
+                cmd: 'update',
+                paramJS: {
+                    table: this.tablename,
+                    row: new_data
+                }
+            })
+        }).done(function (response) {
+            callback(response);
+        });
+    };
+    Table.prototype.transitRow = function (RowID, TargetStateID, trans_data, callback) {
+        if (trans_data === void 0) { trans_data = null; }
+        var data = { state_id: 0 };
+        if (trans_data)
+            data = trans_data;
+        data[this.PrimaryColumn] = RowID;
+        data.state_id = TargetStateID;
+        console.log("Request [transit] for ID" + RowID + " -> " + TargetStateID, trans_data);
+        // Request
+        $.ajax({
+            method: "POST",
+            url: gURL,
+            contentType: 'json',
+            data: JSON.stringify({
+                cmd: 'makeTransition',
+                paramJS: {
+                    table: this.tablename,
+                    row: data
+                }
+            })
+        }).done(function (response) {
+            callback(response);
+        });
     };
     Table.prototype.toggleSort = function (ColumnName) {
-        //console.log("toggle Sort for Column", ColumnName)
         this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC;
         this.OrderBy = ColumnName;
         // Refresh
@@ -94,11 +203,11 @@ var Table = /** @class */ (function () {
         if (do_render === void 0) { do_render = false; }
         var me = this;
         var joins = this.buildJoinPart(this);
-        // HTTP Request
-        //console.log("HTTP-Request (Count) @ Table:", this.tablename)
+        // Request
+        console.log("Request [count]");
         $.ajax({
             method: "POST",
-            url: window.location.pathname,
+            url: gURL,
             contentType: 'json',
             data: JSON.stringify({
                 cmd: 'read',
@@ -145,30 +254,31 @@ var Table = /** @class */ (function () {
         if ((this.Filter != this.Filter_Old) && this.PageIndex != 0)
             this.PageIndex = 0;
         var joins = this.buildJoinPart(this);
+        var data = {
+            table: this.tablename,
+            limitStart: this.PageIndex * this.PageLimit,
+            limitSize: this.PageLimit,
+            select: '*',
+            where: '',
+            filter: this.Filter,
+            orderby: this.OrderBy,
+            ascdesc: this.AscDesc,
+            join: joins
+        };
         // HTTP Request
-        console.log("HTTP-Request (loadRows) @ Table:", this.tablename);
+        console.log("Request [read] @ Table:", this.tablename);
         // AJAX
         $.ajax({
             method: "POST",
-            url: window.location.pathname,
+            url: gURL,
             contentType: 'json',
             data: JSON.stringify({
                 cmd: 'read',
-                paramJS: {
-                    table: this.tablename,
-                    limitStart: this.PageIndex * this.PageLimit,
-                    limitSize: this.PageLimit,
-                    select: '*',
-                    where: '',
-                    filter: this.Filter,
-                    orderby: this.OrderBy,
-                    ascdesc: this.AscDesc,
-                    join: joins
-                }
+                paramJS: data
             })
         }).done(function (response) {
             // use "me" instead of "this", because of async functions
-            // console.log("Response (Raw)", response)
+            //console.log("Response loadRows (Raw)", response)
             var resp = JSON.parse(response);
             me.Rows = resp;
             // Reset Filter Event
@@ -185,9 +295,6 @@ var Table = /** @class */ (function () {
             //me.renderHTML(jQSelector)
             //}      
         });
-    };
-    Table.prototype.getPrimaryColumn = function () {
-        return this.PrimaryColumn;
     };
     Table.prototype.setPageIndex = function (targetIndex) {
         var newIndex = targetIndex;
@@ -234,6 +341,19 @@ var Table = /** @class */ (function () {
         }
         return pages;
     };
+    Table.prototype.formatCell = function (cellStr) {
+        var trunc_len = 30;
+        if (typeof cellStr == 'string') {
+            // String, and longer than X chars
+            if (cellStr.length >= trunc_len)
+                return cellStr.substr(0, 30) + "\u2026";
+        }
+        else if (Array.isArray(cellStr)) {
+            // Foreign Key
+            return cellStr[1];
+        }
+        return cellStr;
+    };
     Table.prototype.getHTMLStatusText = function (obj) {
         if (obj.actRowCount > 0)
             return 'Showing Entries ' + ((obj.PageIndex * obj.PageLimit) + 1) + '-' +
@@ -259,8 +379,8 @@ var Table = /** @class */ (function () {
             me.Filter = ''; // Set Filter to empty-string
         var pgntn = '';
         this.getPaginationButtons().forEach(function (btnIndex) {
-            pgntn += '<li' + (_this.PageIndex == _this.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="setPage(\'' +
-                me.tablename + '\', ' + (_this.PageIndex + btnIndex) + ')">' +
+            pgntn += '<li' + (_this.PageIndex == _this.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="' +
+                'getTable(\'' + me.tablename + '\').setPageIndex(' + (_this.PageIndex + btnIndex) + ')">' +
                 (_this.PageIndex + 1 + btnIndex) +
                 '</a></li>';
         });
@@ -293,7 +413,7 @@ var Table = /** @class */ (function () {
         me.Rows.forEach(function (row) {
             var data_string = '<td class="controllcoulm">' +
                 '<i class="fa fa-pencil"></i>' +
-                '<i class="fa fa-trash" onclick="deleteRow(\'' + me.tablename + '\', ' + row[me.PrimaryColumn] + ')"></i>' +
+                '<i class="fa fa-trash" onclick="delRow(\'' + me.tablename + '\', ' + row[me.PrimaryColumn] + ')"></i>' +
                 '</td>';
             // Loop Columns
             Object.keys(me.Columns).forEach(function (col) {
@@ -304,7 +424,7 @@ var Table = /** @class */ (function () {
                     var modRowStr = 'modifyRow(\'' + me.tablename + '\', ' + row[me.PrimaryColumn] + ')';
                     if (value) {
                         // Truncate Cell if Content is too long
-                        value = formatCell(value);
+                        value = me.formatCell(value);
                         // Check for statemachine
                         if (col == 'state_id' && me.tablename != 'state')
                             data_string += '<td onclick="' + modRowStr + '">' +
@@ -325,75 +445,117 @@ var Table = /** @class */ (function () {
     };
     return Table;
 }());
+// TODO:  Put the folowing functions in the classes, or reduce them
+// BUTTON Create
 function createEntry(table_name) {
-    $('#modalCreateEntry .modal-title b').text(table_name); // Set title
-    // Set Form
     var htmlForm = getTable(table_name).Form_Create;
-    $('#modalCreateEntry .create_form').html(htmlForm);
-    // Show Modal
-    $('#modalCreateEntry').modal('show');
-}
-function setState(tablename, RowID, targetStateID) {
-    var t = getTable(tablename);
-    var PrimaryColumn = t.getPrimaryColumn();
-    var data = { state_id: 0 };
-    data[PrimaryColumn] = RowID;
-    data.state_id = targetStateID;
-    $.ajax({
-        method: "POST",
-        url: window.location.pathname,
-        contentType: 'json',
-        data: JSON.stringify({
-            cmd: 'makeTransition',
-            paramJS: {
-                table: tablename,
-                row: data
+    var SaveBtn = '<button class="btn btn-success" id="btnCreateEntry" type="button">Create</button>';
+    var ModalID = doModal('msgboxCreate', 'Create Entry', htmlForm, SaveBtn, true);
+    // save hidden data in modal
+    var data = { mid: ModalID, tablename: table_name };
+    $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
+    // Bind Buttonclick
+    $('#' + ModalID + ' #btnCreateEntry').click(function () {
+        // Recover hidden data from modal
+        var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
+        var tablename = Xdata.tablename;
+        var MID = Xdata.mid;
+        // Read out all input fields with {key:value}
+        var inputs = $('#' + MID + ' :input');
+        var data = {};
+        inputs.each(function () {
+            var e = $(this);
+            if (e.attr('name'))
+                data[e.attr('name')] = e.val();
+        });
+        // Only if statemachine active
+        if (getTable(tablename).SM)
+            data['state_id'] = '%!%PLACE_EP_HERE%!%';
+        // RESPONSE
+        function created(r) {
+            var resp = JSON.parse(r);
+            if (resp.element_id > 0) {
+                $('#' + MID).modal('hide');
+                getTable(tablename).loadRows(".table_x");
             }
-        })
-    }).done(function (response) {
-        //console.log("RAW:", response)
-        if (response.length > 0) {
+            else {
+                alert("Element could not be created!");
+            }
+        }
+        // REQUEST
+        getTable(tablename).createRow(data, created);
+    });
+}
+function setState(btn, tablename, RowID, targetStateID) {
+    var Xdata = JSON.parse($(btn).parent().parent().find('.stored_data').html());
+    console.log(Xdata);
+    var Mid = Xdata.mid;
+    var t = getTable(tablename);
+    // Read out all input fields with {key:value}
+    var inputs = $('#' + Mid + ' :input');
+    var data = {};
+    inputs.each(function () {
+        var e = $(this);
+        if (e.attr('name'))
+            data[e.attr('name')] = e.val();
+    });
+    // RESPONSE
+    function transitioned(r) {
+        if (r.length > 0) {
             // Messages ausgeben
-            var msgs = JSON.parse(response);
-            //console.log(msgs);
+            var msgs = JSON.parse(r);
+            //console.log("TransitionResults:", msgs);
             msgs.forEach(function (msg) {
                 if (msg.show_message)
                     showResult(msg.message);
             });
             // Close Edit Window
-            $('#modalEditEntry').modal('hide');
-            getTable(tablename).loadRows(".table_x");
+            $('#' + Mid).modal('hide');
+            t.loadRows(".table_x");
         }
-    });
+    }
+    // REQUEST
+    t.transitRow(RowID, targetStateID, data, transitioned);
 }
 function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
-    $('#modalEditEntry .edit_form').html(htmlForm);
-    $('#modalEditEntry .edit_form').append('<input style="display:none;" type="text" name="' + PrimaryColumn + '" value="' + RowID + '">');
-    // Write all input fields with {key:value}
+    // state Buttons
+    var btns = '';
+    nextStates.forEach(function (s) {
+        var btn = '<button class="btn btn-primary" onclick="setState(this, \''
+            + Table.tablename + '\', ' + RowID + ', ' + s.id + ')">' + s.name + '</button>';
+        btns += btn;
+    });
+    // Show Modal
+    var EditMID = doModal('msgboxEditEntry', 'Edit Entry', htmlForm, btns, true);
+    console.log("EditModal opened", EditMID);
+    // save hidden data in modal
+    var data = { mid: EditMID, tablename: Table.tablename };
+    $('#' + EditMID + ' .stored_data').html(JSON.stringify(data));
+    // Load data from row and write to input fields with {key:value}
     var row = Table.getRowByID(RowID);
-    var inputs = $('#modalEditEntry :input');
+    var inputs = $('#' + EditMID + ' :input');
     inputs.each(function () {
         var e = $(this);
         var value = row[e.attr('name')];
+        // isFK?
         if (Array.isArray(value)) {
-            // FK
-            e.val(value[1]);
-            // Save ID hidden
-            $('#modalEditEntry .edit_form').append('<input style="display:none;" type="text" name="' + e.attr('name') + '" value="' + value[0] + '">');
+            console.log("--> FK", e.attr('name'), value);
+            // Special case if name = 'state_id'
+            if (e.attr('name') == 'state_id') {
+                e.parent().find('.label').text(value[1]);
+            }
+            else {
+                e.parent().find('.fkval').text(value[1]);
+            }
+            // Save in hidden input
+            e.val(value[0]);
         }
-        else
-            e.val(value);
+        else {
+            e.val(value); // Normal
+        }
     });
-    // Next states buttons
-    $('#modalEditEntry .footer_btns').empty();
-    nextStates.forEach(function (s) {
-        //console.log(s)
-        var btn = '<button class="btn btn-primary" onclick="setState(\''
-            + Table.tablename + '\', ' + RowID + ', ' + s.id + ')">' + s.name + '</button>';
-        $('#modalEditEntry .footer_btns').append(btn);
-    });
-    // Show Modal
-    $('#modalEditEntry').modal('show');
+    // Add Primary ID --> TODO: in stored Data
+    $('#' + EditMID + ' .edit_form').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
 }
 function modifyRow(table_name, id) {
     // Indicate which row is getting modified
@@ -407,15 +569,15 @@ function modifyRow(table_name, id) {
     }
     else {
         // open edit modal
-        $('#modalEditEntry .modal-title b').text(table_name); // Set title
+        //$('#modalEditEntry .modal-title b').text(table_name) // Set title
         // Set Form
         if (t.SM) {
-            var PrimaryColumn = t.getPrimaryColumn();
+            var PrimaryColumn = t.PrimaryColumn;
             var data = {};
             data[PrimaryColumn] = id;
             $.ajax({
                 method: "POST",
-                url: window.location.pathname,
+                url: gURL,
                 contentType: 'json',
                 data: JSON.stringify({
                     cmd: 'getFormData',
@@ -431,7 +593,7 @@ function modifyRow(table_name, id) {
                     // NEXT STATES
                     $.ajax({
                         method: "POST",
-                        url: window.location.pathname,
+                        url: gURL,
                         contentType: 'json',
                         data: JSON.stringify({
                             cmd: 'getNextStates',
@@ -450,8 +612,9 @@ function modifyRow(table_name, id) {
             });
         }
         else {
+            // EDIT-Modal WITHOUT StateMachine
             var htmlForm = t.Form_Create;
-            var PrimaryColumn = t.getPrimaryColumn();
+            var PrimaryColumn = t.PrimaryColumn;
             $('#modalEditEntry .edit_form').html(htmlForm);
             $('#modalEditEntry .edit_form').append('<input style="display:none;" type="text" name="' + PrimaryColumn + '" value="' + id + '">');
             // Write all input fields with {key:value}
@@ -473,73 +636,48 @@ function modifyRow(table_name, id) {
 // BUTTON SAVE + Close
 function saveEntry() {
     var tablename = $('#modalEditEntry .modal-title b').text();
+    var t = getTable(tablename);
     // Read out all input fields with {key:value}
     var inputs = $('#modalEditEntry :input');
     var data = {};
     inputs.each(function () {
         var e = $(this);
-        data[e.attr('name')] = e.val();
+        if (e.attr('name'))
+            data[e.attr('name')] = e.val();
     });
-    console.log("Request UPDATE", data);
-    // Request
-    $.ajax({
-        method: "POST",
-        url: window.location.pathname,
-        contentType: 'json',
-        data: JSON.stringify({
-            cmd: 'update',
-            paramJS: {
-                table: tablename,
-                row: data
+    // RESPONSE
+    function updated(r) {
+        console.log(r);
+        if (r.length > 0) {
+            if (r != "0") {
+                // Success
+                $('#modalEditEntry').modal('hide');
+                t.loadRows(".table_x");
             }
-        })
-    }).done(function (response) {
-        console.log("Update", response);
-        if (response.length > 0) {
-            $('#modalEditEntry').modal('hide');
-            getTable(tablename).loadRows(".table_x");
+            else {
+                // Fail
+                alert("Element could not be updated!");
+            }
         }
-        else {
-            //alert("Element could not be updated!")
-        }
-    });
+    }
+    // REQUEST
+    t.updateRow(data[t.PrimaryColumn], data, updated);
 }
-// BUTTON Create
-$('#btnCreateEntry').click(function () {
-    var tablename = $('#modalCreateEntry .modal-title b').text();
-    // Read out all input fields with {key:value}
-    var inputs = $('#modalCreateEntry :input');
-    var data = {};
-    inputs.each(function () {
-        var e = $(this);
-        data[e.attr('name')] = e.val();
-    });
-    //data['state_id'] = '%!%PLACE_EP_HERE%!%';
-    //console.log("CREATE REQUEST", data)
-    // Request
-    $.ajax({
-        method: "POST",
-        url: window.location.pathname,
-        contentType: 'json',
-        data: JSON.stringify({
-            cmd: 'create',
-            paramJS: {
-                table: tablename,
-                row: data
-            }
-        })
-    }).done(function (response) {
-        console.log("Create", response);
-        var resp = JSON.parse(response);
-        if (resp.element_id > 0) {
-            $('#modalCreateEntry').modal('hide');
-            getTable(tablename).loadRows(".table_x");
+function delRow(tablename, id) {
+    // Ask 
+    var IsSure = confirm("Do you really want to delete this entry?");
+    if (!IsSure)
+        return;
+    // RESPONSE
+    function deleted(r) {
+        console.log("Deleted Row", r);
+        if (r == "1") {
+            addClassToDataRow(id, 'danger');
         }
-        else {
-            alert("Element could not be created!");
-        }
-    });
-});
+    }
+    // REQUEST
+    getTable(tablename).deleteRow(id, deleted);
+}
 function getTable(table_name) {
     var result;
     gTables.forEach(function (t) {
@@ -549,259 +687,42 @@ function getTable(table_name) {
     });
     return result;
 }
-/************************** ANGULAR START *************************/
-var app = angular.module("genApp", []);
-//--- Controller
-app.controller('genCtrl', function ($scope, $http, $filter) {
-    /*
-    // Variables
-    $scope.tables = []
-    $scope.isLoading = true
-    $scope.selectedRow = {} // TODO: Remove
-    $scope.FKTbl = [] // TODO: Remove
-    $scope.pendingState = false
-    $scope.FKactKey = ''
-  
-    // TODO: Remove this function
-    // THIS Functions are obsolete!!!
-    $scope.getTableByName = function(table_name) {
-      if (typeof table_name != "string") return
-      return $scope.tables[table_name]
-    }
-    $scope.getRowByID = function(RowID){
-      var t: Table = getTable($scope.selectedTable.table_name)
-      return t.getRowByID(RowID)
-    }
-    $scope.parseDate = function(date_string) {
-      return new Date(date_string)
-    }
-    $scope.openFK = function(key) {
-      // TODO: save key
-      $scope.FKactKey = key
-      var fk_table_name = $scope.selectedTable.columns[key].foreignKey.table
-      // Get the table from foreign key
-      getTable(fk_table_name).loadRows("#foreignTable")
-      // Show Modal
-      $('#myFKModal').modal('show')
-    }
-    */
-    $scope.changeTab = function (table_name) {
-        var result = getTable(table_name);
-        result.loadRows(".table_x");
-    };
-    /*
-    $scope.saveEntry = function() {
-      // Task is already loaded in memory
-      $scope.send($scope.selectedTable.table_name, 'update')
-    }
-    /*
-    $scope.convertAllDatesToUTC = function(table, row) {
-      for (var key in row) {
-        if (row.hasOwnProperty(key)) {
-          if (table.columns[key]) {
-            // Load the Database string into JS-Object
-            if (table.columns[key].DATA_TYPE == 'date'
-            || table.columns[key].DATA_TYPE == 'datetime') {
-              //console.log("Convert1: ", row[key])
-              if (row[key]) {
-                  //console.log("Convert2: ", row[key])
-                var starttime = new Date(row[key]);
-                var isotime = new Date((new Date(starttime)).toISOString() );
-                var fixedtime = new Date(isotime.getTime()-(starttime.getTimezoneOffset()*60000));
-                var formatedMysqlString = fixedtime.toISOString().slice(0, 19).replace('T', ' ');
-                row[key] = formatedMysqlString//new Date(row[key]).toISOString();
-              }
-            }
-          }
+function changeTab(tab) {
+    var table_name = tab.attributes.href.textContent;
+    table_name = table_name.replace('#', '');
+    console.log(table_name);
+    var result = getTable(table_name);
+    result.loadRows(".table_x");
+}
+function initTables(callback) {
+    // Request
+    $.ajax({
+        method: "POST",
+        url: gURL,
+        contentType: 'json',
+        data: JSON.stringify({ cmd: 'init', paramJS: '' })
+    }).done(function (response) {
+        if (response.length > 0) {
+            var resp = JSON.parse(response);
+            callback(resp);
         }
-      }
-      return row
-    }
-    $scope.convertDateTimeStrToDate = function(datestring) {
-      if (!datestring) return null
-      if (datestring == "") return null
-      if(datestring == '0000-00-00 00:00:00') return null
-      return new Date(datestring)
-    }
-    $scope.editEntry = function(table, row) {
-      // Load the row
-      //$scope.loadRow(table, row)
-      // Check if there is a Date field
-      /*
-      for (var key in $scope.selectedRow) {
-        if (row.hasOwnProperty(key)) {
-          if (table.columns[key]) {
-            // Load the Database string into JS-Object
-            if (table.columns[key].DATA_TYPE == 'date'
-            || table.columns[key].DATA_TYPE == 'datetime') {
-              // Convert Date + Time to Object
-              $scope.selectedRow[key] = $scope.convertDateTimeStrToDate($scope.selectedRow[key])
-            }
-          }
-        }
-      }
-      // TODO: Remove and get the Form for each state at Init
-      $scope.send(table.table_name, "getFormData")
-      $scope.hideSmBtns = true
-    }
-  
-    $scope.gotoState = function(nextstate) {
-      $scope.selectedTable.hideSmBtns = true
-      $scope.selectedRow['state_id'] = nextstate.id // set next stateID
-      $scope.send($scope.selectedTable.table_name, 'makeTransition')
-    }
-  */
-    // TODO: Also change this function
-    $scope.initTables = function () {
-        console.log("Loading configuration...");
-        // Request data from config file
-        $http({
-            url: window.location.pathname,
-            method: 'post',
-            data: {
-                cmd: 'init',
-                paramJS: ''
-            }
-        }).success(function (resp) {
-            // Init each table
-            Object.keys(resp).forEach(function (t) {
-                gTables.push(new Table(resp[t].table_name, resp[t].columns, resp[t].se_active));
-            });
-            // save in tables var
-            $scope.tables = resp;
-            //console.log("Config loaded.", resp)
-            // GUI
-            $scope.isLoading = false;
-            // First Tab selection
-            var res = Object.keys(resp).filter(function (t) { return resp[t].is_in_menu; });
-            var first_tbl_name = res[0];
-            //$scope.selectedTable = $scope.tables[first_tbl_name] //$scope.getTableByName()
-            $('#' + first_tbl_name).tab('show');
-            var result = getTable(first_tbl_name);
-            result.loadRows(".table_x");
-        });
-    };
-    //------------------------------------------------------- Statemachine functions
-    $scope.initTables();
-    //============================================== Basic Send Method
-    /*
-      $scope.send = function(tablename, command, param) {
-    
-        // if params are given load params
-        if (param) $scope.loadRow(param.table, param.row)
-        var body = {cmd: 'cud', paramJS: {}} // Skeleton
-        var t = $scope.getTableByName(tablename)
-    
-        //------------------- Assemble Data (Check for valid commands, useful on client?)
-        if (command == 'create' || command == 'delete' ||	command == 'update' ||
-        command == 'getFormData' || command == 'getFormCreate' ||
-        command == 'getNextStates' ||	command == 'getStates' ||
-        command == 'makeTransition') {
-    
-          $scope.pendingState = true
-    
-          // Confirmation when deleting // TODO: Outsource this
-          if (command == 'delete') {
-            var IsSure = confirm("Do you really want to delete this entry?")
-            if (!IsSure) return
-          }
-    
-          // Prepare Data
-          body.paramJS = {row : $scope.selectedRow, table : t.table_name}
-          // Special preprations ATTENTION! Client Side
-          body.paramJS.row = prepareRow(body.paramJS.row)
-          // TODO: Improve
-          /*
-          if (command == 'create') {
-            if (t.se_active) body.paramJS.row.state_id = '%!%PLACE_EP_HERE%!%';
-          }
-    
-        }
-        // ------------------- Send request
-        console.log("===> POST --- CMD:", command, "--- params=", body.paramJS)
-    
-        // Request
-        $http({
-          url: window.location.pathname,
-          method: 'post',
-          data: {
-            cmd: command,
-            paramJS: body.paramJS
-          }
-        }).success(function(response) {
-          // Response
-          console.log("<= ResponseData: ", response)
-          $scope.pendingState = false
-    
-          //-------------------- table data was modified
-          if (response != 0 && (command == 'delete' || command == 'update' || command == 'create')) {
-            
-            // Created
-                    if (command == 'create') {
-                if (response.show_message) {
-                showResult(response.message)
-              }
-              // Hide create-modal
-              if (response.element_id) {
-                $('#modalCreate').modal('hide')
-              }
-              else if (!response.element_id || response.element_id <= 0) {
-                alert("Error: New entry could not be created.")
-              }
-            }
-            var result: Table = getTable(t.table_name)
-            result.loadRows(".table_x")
-            // TODO: Wait... Imrove not with wait func LeL
-            //console.log("Success:", $scope.selectedRow[result.PrimaryColumn])
-            setTimeout(function(){
-              addClassToDataRow($scope.selectedRow[result.PrimaryColumn], 'success')
-            }, 1000)
-          }
-          else if (command == 'getFormData') {
-            if (response != "1") {
-                $scope.send(t.table_name, "getNextStates") // get next States
-                t.form_data = response
-            }
-            $('#modalEdit').modal('show')
-          }
-          else if (command == 'getFormCreate') {
-            // Save in scope
-            t.CreateForm = response
-            t.form_data = response
-          }
-          //---------------------- StateEngine (List Transitions)
-          else if (command == 'getNextStates') {
-            // Save next States
-            t.nextstates = response
-            t.hideSmBtns = false
-          }
-          else if (command == 'makeTransition') {
-    
-            $('#modalEdit').modal('hide') // Close modal
-            var result: Table = getTable(t.table_name)
-            result.loadRows(".table_x")
-            console.log("Success:", $scope.selectedRow[result.PrimaryColumn])
-            setTimeout(function(){
-              addClassToDataRow($scope.selectedRow[result.PrimaryColumn], 'success')
-            }, 1000)
-    
-            // Show messages
-            var rsp = response
-            for (var i=0; i<rsp.length; i++) {
-              // Message
-              if (rsp[i].show_message) {
-                showResult(rsp[i].message)
-              }
-            }
-          }
-          else {
-            // Error from server
-            alert("Error at ["+command+"] command.\nThe server returned:\n" + response)
-          }
-        })
-      }*/
+    });
+}
+initTables(function (resp) {
+    // Init each table
+    Object.keys(resp).forEach(function (t) {
+        gTables.push(new Table(resp[t].table_name, resp[t].columns, resp[t].se_active));
+        // GUI - Add Tabs
+        $('.nav-tabs').append('<li><a href="#' + resp[t].table_name +
+            '" data-toggle="tab" onclick="changeTab(this)"><i class="' +
+            resp[t].table_icon + '"></i>&nbsp;<span class="table_alias">' +
+            resp[t].table_alias + '</span>' +
+            '</a></li>');
+    });
+    // First Tab selection
+    $('.nav-tabs li:first').addClass('active');
+    gTables[0].loadRows(".table_x");
 });
-/************************** ANGULAR END *************************/
 // Every time a modal is shown, if it has an autofocus element, focus on it.
 /*
 $('#myFKModal').on('shown.bs.modal', function() { $(this).find('[autofocus]').focus() });
@@ -816,84 +737,42 @@ $(document).on('show.bs.modal', '.modal', function () {
         $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
     }, 0);
 });
-// TODO: UNUSED
-function prepareRow(row) {
-    console.log("prepareRow", row);
-    var r = {};
-    Object.keys(row).forEach(function (key) {
-        if (row.hasOwnProperty(key)) {
-            if (Array.isArray(row[key]))
-                r[key] = row[key][0];
-            else
-                r[key] = row[key];
-        }
+function openFK(x, fk_table_name, originalKey) {
+    // Modal
+    var SelectBtn = '<button class="btn btn-warning" id="btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
+    var ModalID = doModal('msgboxSelectFK', 'Select Foreign Key', '<div class="foreignTable"></div>', SelectBtn, true);
+    // Load Table
+    getTable(fk_table_name).loadRows('#' + ModalID + ' .foreignTable');
+    // save hidden data in modal
+    var stdata_caller = JSON.parse($(x).parent().parent().parent().parent().find('.stored_data').html());
+    var callerMID = stdata_caller.mid;
+    var data = { mid: ModalID, tablename: fk_table_name, orgKey: originalKey, fromMID: callerMID };
+    $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
+    // Bind Buttonclick
+    $('#' + ModalID + ' #btnSelectFK').click(function () {
+        // Recover hidden data from modal
+        var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
+        var tablename = Xdata.tablename;
+        var FKMID = Xdata.mid;
+        var FKS = getTable(tablename).getSelectedRows();
+        var orgKey = Xdata.orgKey;
+        var callerMID = Xdata.fromMID;
+        //console.log(MID, tablename, FKS, orgKey, callerMID)
+        // Hide FK Modal
+        $('#' + FKMID).modal('hide');
+        // Find Edit Entry Modal and set Rows
+        var element = $('#' + callerMID + ' input[name=\'' + orgKey + '\'');
+        element.val(FKS); // Set value
+        element.parent().find('.fkval').text(FKS); // Set GUI
     });
-    return r;
-}
-function setPage(tablename, newIndex) {
-    getTable(tablename).setPageIndex(newIndex);
-}
-function formatCell(cellStr) {
-    var trunc_len = 30;
-    if (typeof cellStr == 'string') {
-        // String, and longer than X chars
-        if (cellStr.length >= trunc_len)
-            return cellStr.substr(0, 30) + "\u2026";
-    }
-    else if (Array.isArray(cellStr)) {
-        // Foreign Key
-        return cellStr[1];
-    }
-    return cellStr;
 }
 function showResult(content) {
-    //console.log("Open modal from Script...")
-    $(".sm_result").html(content);
-    $('#modalResult').modal('show');
+    var ModalID = doModal('msgboxSmFeedback', '<i class="fa fa-random"></i> StateMachine Feedback', content, '');
+    console.log("SM Feedback ModalID=", ModalID);
 }
 function addClassToDataRow(id, classname) {
     $('.datarow').removeClass(classname);
     $('#row-' + id).addClass(classname);
-}
-/*
-function test() {
-  // Get scope - TODO: Remove
-  var scope = angular.element(document.getElementById("webapp")).scope()
-  var FKeyCol = scope.FKactKey
-  var fk_table_name = scope.selectedTable.columns[FKeyCol].foreignKey.table
-  var FKS = getTable(fk_table_name).getSelectedRows();
-  //console.log(fk_table_name, FKeyCol, FKS)
-  scope.selectedRow[FKeyCol] = FKS;
-  $('#myFKModal').modal('hide');
-  //console.log("XYX",scope.selectedRow)
-}*/
-// TODO: OPTIMZE!!
-// TODO: Make a callback function
-function deleteRow(tablename, id) {
-    var data = {};
-    var PrimaryColumn;
-    PrimaryColumn = getTable(tablename).getPrimaryColumn();
-    data[PrimaryColumn] = id;
-    var IsSure = confirm("Do you really want to delete this entry?");
-    if (!IsSure)
-        return;
-    // Request
-    $.ajax({
-        method: "POST",
-        url: window.location.pathname,
-        contentType: 'json',
-        data: JSON.stringify({
-            cmd: 'delete',
-            paramJS: {
-                table: tablename,
-                row: data
-            }
-        })
-    }).done(function (response) {
-        console.log("Deleted...", response);
-        if (response == "1")
-            addClassToDataRow(id, 'danger');
-    });
 }
 //--------------------- Drawing Functions for StateMachine Render
 // TODO: Put in TS-Class
@@ -905,7 +784,7 @@ function openSEPopup(table_name) {
     // Get nodes
     $.ajax({
         method: "POST",
-        url: window.location.pathname,
+        url: gURL,
         contentType: 'json',
         data: JSON.stringify({
             cmd: 'getStates', paramJS: { table: table_name }
@@ -915,24 +794,22 @@ function openSEPopup(table_name) {
         // Get links
         $.ajax({
             method: "POST",
-            url: window.location.pathname,
+            url: gURL,
             contentType: 'json',
             data: JSON.stringify({
                 cmd: 'smGetLinks', paramJS: { table: table_name }
             })
         }).done(function (response) {
             smLinks = JSON.parse(response);
-            // Render the StateMachine as SVG
+            // Render the StateMachine JSON DATA in DOT Language
             var strSVG = transpileSMtoDOT(smNodes, smLinks);
-            renderDOTtoSVG(strSVG);
             //drawTokens(t)
             // Finally, if everything is loading, show Modal
-            $('#modalStateMachine').modal('show');
+            var MID = doModal('msgboxSM', 'StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true);
+            console.log("Open Modal SM", MID);
+            $("#" + MID + " .statediagram").html(Viz(strSVG));
         });
     });
-}
-function renderDOTtoSVG(strHTML) {
-    document.getElementById("statediagram").innerHTML = Viz(strHTML);
 }
 function transpileSMtoDOT(smNodes, smLinks) {
     var strLinks = "";

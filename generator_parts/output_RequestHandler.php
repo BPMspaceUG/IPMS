@@ -180,7 +180,7 @@
       if ($ascdesc == "asc" || $ascdesc == "") $ascdesc == "ASC";
       if ($ascdesc == "desc") $ascdesc == "DESC";
       if (trim($orderby) <> "")
-        $orderby = " ORDER BY ".$param["orderby"]." ".$ascdesc;
+        $orderby = " ORDER BY a.".$param["orderby"]." ".$ascdesc;
       else
         $orderby = " "; // ORDER BY replacer_id DESC";
 
