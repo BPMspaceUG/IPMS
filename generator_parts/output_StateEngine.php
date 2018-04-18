@@ -310,12 +310,8 @@
       $std_res = array("allow_transition" => true, "show_message" => false, "message" => "");
       // Check if script is not empty
       if (!empty($script)) {
-
-        // TODO:::: !
-        //$Database = $this->db; //DB::getInstance()->getConn
         // Execute Script (WARNING -> eval = evil)
         eval($script);
-
         // check results, if no result => standard result
         if (empty($script_result))
           return $std_res;
@@ -323,54 +319,6 @@
           return $script_result;
       }
       return $std_res;
-    }
-    public function setState($ElementID, $stateID, $primaryIDColName, &$param = null) {
-      // get actual state from element
-      $actstateObj = $this->getActState($ElementID, $primaryIDColName);
-      if (count($actstateObj) == 0) return false;
-      $actstateID = $actstateObj[0]["id"];
-      // check transition (TODO: also check if allowed)
-      $trans = $this->checkTransition($actstateID, $stateID);
-      // if transition is possible
-      if ($trans) {
-        $newstateObj = $this->getStateAsObject($stateID);
-
-        $result = array();
-
-        // [1]- Execute [OUT] Script (Inverted Moore)
-        $out_script = $this->getOUTScript($actstateID); // from source state
-        $res = $this->executeScript($out_script, $param);
-        if (!$res['allow_transition']) {
-          $result[] = $res;
-          return json_encode($result);
-        } else
-          $result[] = $res;
-        
-        // [2]- Execute [Transition] Script (Mealy)
-        $tr_script = $this->getTransitionScript($actstateID, $stateID);
-        $res = $this->executeScript($tr_script, $param);
-        if (!$res["allow_transition"]) {
-          $result[] = $res;
-          return json_encode($result);
-        } else
-          $result[] = $res;
-
-        // If all Scripts where successful, update row
-        if ($res['allow_transition']){
-          $query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
-          $this->db->query($query);
-
-          // [3]- Execute IN Script (Moore)
-          $in_script = $this->getINScript($stateID); // from target state
-          $res = $this->executeScript($in_script, $param);
-          $res["allow_transition"] = true;
-          $result[] = $res;
-        }
-
-        return json_encode($result);
-
-      }
-      return false; // transition is not possible, because not wired in DB
     }
     public function checkTransition($fromID, $toID) {
       settype($fromID, 'integer');
@@ -380,7 +328,6 @@
       $cnt = $res->num_rows;
       return ($cnt > 0);
     }
-
     public function getTransitionScript($fromID, $toID) {
       settype($fromID, 'integer');
       settype($toID, 'integer');
@@ -404,7 +351,7 @@
       $script = $this->getResultArray($res);
       return $script[0]['script'];
     }
-    private function getOUTScript($StateID) {
+    public function getOUTScript($StateID) {
       if (!($this->ID > 0)) return ""; // check for valid state machine
       $query = "SELECT script_OUT AS script FROM $this->db_name.state WHERE state_id = $StateID;";
       $res = $this->db->query($query);

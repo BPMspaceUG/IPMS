@@ -520,6 +520,7 @@ function createEntry(table_name) {
             data['state_id'] = '%!%PLACE_EP_HERE%!%';
         // RESPONSE
         function created(r) {
+            console.log("Create (RAW):", r);
             try {
                 var msgs = JSON.parse(r);
             }
@@ -538,6 +539,7 @@ function createEntry(table_name) {
                     if (msg.element_id > 0) {
                         $('#' + MID).modal('hide');
                         var t = getTable(tablename);
+                        t.lastModifiedRowID = msg.element_id;
                         t.loadRows();
                     }
                     else {
@@ -890,7 +892,7 @@ function openFK(x, fk_table_name, originalKey) {
     M.show();
 }
 function showResult(content) {
-    var M = new Modal('<i class="fa fa-random"></i> StateMachine Feedback', content);
+    var M = new Modal('StateMachine Feedback', content);
     M.show();
 }
 function addClassToDataRow(jQuerySelector, id, classname) {

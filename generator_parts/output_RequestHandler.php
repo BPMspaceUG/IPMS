@@ -210,7 +210,10 @@
           // Append the ID from new Element
           $tmp_script_res["element_id"] = $newElementID;
           $script_result[] = $tmp_script_res;          
-        } 
+        } else {
+          // No Statemachine
+          $script_result[0]["element_id"] = $newElementID;
+        }
       }
       // Return
       return json_encode($script_result);
@@ -386,6 +389,11 @@
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
+    private function readRow($tablename, $primColName, $ElementID) {
+      $query = "SELECT * FROM $tablename WHERE $primColName = $ElementID;";
+      $res = DB::getInstance()->getConnection()->query($query);
+      return $res->fetch_assoc();
+    }
     public function makeTransition($param) {
       // INPUT [table, ElementID, (next)state_id]
       // Get the next ID for the next State
@@ -396,14 +404,6 @@
       @$pricol = $pricols[0]; // there should always be only 1 primary column for the identification of element
       @$ElementID = $param["row"][$pricol];
 
-      // TODO: read out all params from DB
-      //$query = "SELECT * FROM $tablename WHERE $pricol = $ElementID;";
-      //$res = DB::getInstance()->getConnection()->query($query);
-      //$param["row"] = $res->fetch_assoc();
-      //var_dump($r);
-      //$param["row"] = $this->parseToJSON($res);
-      //var_dump($param["row"]);
-
       // Statemachine
       $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       // get ActStateID by Element ID
@@ -412,27 +412,50 @@
       if (count($actstateObj) == 0) {
         echo "Element not found";
         return false;
-      }
+      }      
       $actstateID = $actstateObj[0]["id"];
-      // Try to set State
-      $result = $SE->setState($ElementID, $nextStateID, $pricol, $param);
-      if (!$result) {
+      // check if transition is allowed
+      $transPossible = $SE->checkTransition($actstateID, $nextStateID);
+      if ($transPossible) {
+        // Execute Scripts
+        $feedbackMsgs = array(); // prepare empty array
+        //---[1]- Execute [OUT] Script
+        $out_script = $SE->getOUTScript($actstateID); // from source state
+        $res = $SE->executeScript($out_script, $param);
+        if (!$res['allow_transition']) {
+          $feedbackMsgs[] = $res;
+          return json_encode($feedbackMsgs);
+        } else {
+          $feedbackMsgs[] = $res;
+        }
+        //---[2]- Execute [Transition] Script
+        $tr_script = $SE->getTransitionScript($actstateID, $nextStateID);
+        $res = $SE->executeScript($tr_script, $param);
+        if (!$res["allow_transition"]) {
+          $feedbackMsgs[] = $res;
+          return json_encode($feedbackMsgs);
+        } else {
+          $feedbackMsgs[] = $res;
+        }
+        //---[3]- Execute IN Script
+        $in_script = $SE->getINScript($nextStateID); // from target state
+        $res = $SE->executeScript($in_script, $param);
+        $res["allow_transition"] = true;
+        $feedbackMsgs[] = $res;
+
+        // UPDATE
+        $this->update($param); // Update all other rows
+        // UPDATE StateID only
+        //$query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
+        //$this->db->query($query);
+        // Return
+        echo json_encode($feedbackMsgs);
+        exit;
+
+      } else {
         echo "Transition not possible!";
         exit;
       }
-      // Check if it was a recursive state
-      $r = json_decode($result, true);
-      // After successful transition, update entry
-      // SAVE EVERY TIME, Not only at recursion, also when going to another state
-      $allow_trans = true;
-      for ($i=0;$i<count($r);$i++) {
-        $allow_trans = $allow_trans && $r[$i]["allow_transition"];
-      }
-      if ($allow_trans) {
-        $this->update($param); // Update all other rows
-      }
-      // Return to client
-      echo $result; // TODO: Do not echo, use return
     }
     public function getStates($param) {
       $tablename = $param["table"];
