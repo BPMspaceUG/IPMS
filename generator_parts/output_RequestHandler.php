@@ -83,8 +83,13 @@
       foreach ($cols as $col) {
         // update only when no primary column
         if (!in_array($col, $primarycols)) {
-          $update = $update . $col."='".$this->db->real_escape_string($rows[$col])."'";
-          $update = $update . ", ";
+          // TODO: NULL!
+          if (is_null($rows[$col]))
+            $update .= $col.'=NULL';
+          else
+            $update .= $col."='".$this->db->real_escape_string($rows[$col])."'";
+          // Seperate by komma
+          $update .= ", ";
         }
       }
       $update = substr($update, 0, -2); // remove last ' ,' (2 chars)
@@ -102,12 +107,24 @@
       }
       return $res;
     }
+    private static function highend_implode($input) {
+      $output = "";
+      foreach ($input as $key => $value) {
+        if (is_null($value)) {
+          $output .= 'NULL';
+        } else
+          $output .= '\''.$value.'\'';
+        $output .= ",";
+      }
+      $output = substr($output, 0, -1);
+      return $output;
+    }
     //================================== CREATE
     public function create($param) {
       // Inputs
       $tablename = $param["table"];
       // New State Machine
-      $SM = new StateMachine($this->db, DB_NAME, $tablename);
+      $SM = new StateMachine($this->db, DB_NAME, $tablename);      
       // Check Query
       $x = RequestHandler::splitQuery($param["row"]);
       // Substitute Value for EntryPoint of Statemachine
@@ -123,18 +140,23 @@
       }
 
       // TODO: Make ARRAY for Script results
+      $script_result = array();
 
       // Has StateMachine? then execute Scripts
       if ($SM->getID() > 0) {
         // Transition Script
         $script = $SM->getTransitionScriptCreate();
-        $script_result = $SM->executeScript($script, $param);
+        $script_result[] = $SM->executeScript($script, $param);
+
       } else {
         // NO StateMachine
-        $script_result = array("allow_transition" => true);
+        $script_result[] = array("allow_transition" => true);
       }
+
+
+
       // If allow transition then Create
-      if (@$script_result["allow_transition"] == true) {
+      if (@$script_result[0]["allow_transition"] == true) {
 
       	// Reload row, because maybe the TransitionScript has changed some params
         $keys = array();
@@ -142,11 +164,12 @@
         $x = RequestHandler::splitQuery($param["row"]);
         foreach ($x as $el) {
           $keys[] = $this->db->real_escape_string($el["key"]);
-          $vals[] = $this->db->real_escape_string($el["value"]);
+          $vals[] = is_null($el["value"]) ? NULL : $this->db->real_escape_string($el["value"]);          
         }
 
         // --- Operation CREATE
-        $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES ('".implode("','", $vals)."');";
+        $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES (".
+          RequestHandler::highend_implode($vals).");";
         $res = $this->db->query($query);
         $newElementID = $this->db->insert_id;
 
@@ -155,12 +178,13 @@
           $script = $SM->getINScript($SM->getEntryPoint());
           // Refresh row (add ID)
           $pri_cols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
-          $param["row"][$pri_cols[0]] = (string)$newElementID;
+          $param["row"][$pri_cols[0]] = (string)$newElementID;          
           // Script
-          $script_result = $SM->executeScript($script, $param);
-        }
-        // Append the ID from new Element        
-        $script_result["element_id"] = $newElementID; 
+          $tmp_script_res = $SM->executeScript($script, $param);   
+          // Append the ID from new Element
+          $tmp_script_res["element_id"] = $newElementID;
+          $script_result[] = $tmp_script_res;          
+        } 
       }
       // Return
       return json_encode($script_result);
@@ -246,7 +270,6 @@
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
       $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "UPDATE ".$tablename." SET ".$update." WHERE ".$where.";";
-      //var_dump($query);
       $res = $this->db->query($query);
       // Check if rows where updated
       $success = false;
@@ -342,6 +365,7 @@
       // Get the next ID for the next State
       @$nextStateID = $param["row"]["state_id"];
       @$tablename = $param["table"];
+      // Get Primary Column
       @$pricols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
       @$pricol = $pricols[0]; // there should always be only 1 primary column for the identification of element
       @$ElementID = $param["row"][$pricol];

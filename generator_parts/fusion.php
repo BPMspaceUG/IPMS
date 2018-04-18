@@ -55,6 +55,7 @@
       // Add Basic Form Data for each state
       $colData = $table["columns"];
       $excludeKeys = RequestHandler::getPrimaryColByTablename($data, $tablename);
+      $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the create Form
       $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
 
       // write the formdata into the column if empty      
