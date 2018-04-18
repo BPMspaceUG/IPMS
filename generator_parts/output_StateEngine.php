@@ -310,8 +310,12 @@
       $std_res = array("allow_transition" => true, "show_message" => false, "message" => "");
       // Check if script is not empty
       if (!empty($script)) {
+
+        // TODO:::: !
+        //$Database = $this->db; //DB::getInstance()->getConn
         // Execute Script (WARNING -> eval = evil)
         eval($script);
+
         // check results, if no result => standard result
         if (empty($script_result))
           return $std_res;

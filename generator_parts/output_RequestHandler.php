@@ -9,21 +9,47 @@
   
   //---DO-NOT-REMOVE---[replaceClassStateEngine]---DO-NOT-REMOVE---
 
+  // Database Class
+  class DB {
+    private $_connection;
+    private static $_instance; //The single instance
+    private $_host = DB_HOST;
+    private $_username = DB_USER;
+    private $_password = DB_PASS;
+    private $_database = DB_NAME;
+
+    public static function getInstance() {
+      if(!self::$_instance) { // If no instance then make one
+        self::$_instance = new self();
+      }
+      return self::$_instance;
+    }
+    // Constructor
+    private function __construct() {
+      $this->_connection = new mysqli($this->_host, $this->_username, $this->_password, $this->_database);
+      // Error handling
+      if(mysqli_connect_error()) {
+        trigger_error("Failed to connect to MySQL: ".mysql_connect_error(), E_USER_ERROR);
+      }
+    }
+    // Magic method clone is empty to prevent duplication of connection
+    private function __clone() { }
+    // Get mysqli connection
+    public function getConnection() {
+      return $this->_connection;
+    }
+    public function __destruct() {
+      $this->_connection->close();
+    }
+  }
+
   //RequestHandler Class Definition starts here
   class RequestHandler {
-    private $db;
+    //private $db;
     private $config;
 
     public function __construct() {
-      // create DB connection object - Data comes from config file
-      $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-      // check connection
-      if($db->connect_errno){
-        printf("Connect failed: %s", mysqli_connect_error());
-        exit();
-      }
-      $db->query("SET NAMES utf8");
-      $this->db = $db;
+      DB::getInstance()->getConnection()->query("SET NAMES utf8");
       $this->config = json_decode(RequestHandler::init(), true);
     }
     private static function getColumnsByTablename($config, $tablename) {
@@ -87,7 +113,7 @@
           if (is_null($rows[$col]))
             $update .= $col.'=NULL';
           else
-            $update .= $col."='".$this->db->real_escape_string($rows[$col])."'";
+            $update .= $col."='".DB::getInstance()->getConnection()->real_escape_string($rows[$col])."'";
           // Seperate by komma
           $update .= ", ";
         }
@@ -124,7 +150,7 @@
       // Inputs
       $tablename = $param["table"];
       // New State Machine
-      $SM = new StateMachine($this->db, DB_NAME, $tablename);      
+      $SM = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);      
       // Check Query
       $x = RequestHandler::splitQuery($param["row"]);
       // Substitute Value for EntryPoint of Statemachine
@@ -163,15 +189,15 @@
         $vals = array();
         $x = RequestHandler::splitQuery($param["row"]);
         foreach ($x as $el) {
-          $keys[] = $this->db->real_escape_string($el["key"]);
-          $vals[] = is_null($el["value"]) ? NULL : $this->db->real_escape_string($el["value"]);          
+          $keys[] = DB::getInstance()->getConnection()->real_escape_string($el["key"]);
+          $vals[] = is_null($el["value"]) ? NULL : DB::getInstance()->getConnection()->real_escape_string($el["value"]);          
         }
 
         // --- Operation CREATE
         $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES (".
           RequestHandler::highend_implode($vals).");";
-        $res = $this->db->query($query);
-        $newElementID = $this->db->insert_id;
+        $res = DB::getInstance()->getConnection()->query($query);
+        $newElementID = DB::getInstance()->getConnection()->insert_id;
 
         // Execute IN-Script
         if ($SM->getID() > 0) {
@@ -235,7 +261,7 @@
       }
       else if (trim($filter) <> "") {
         // Get columns from the table
-        $res = $this->db->query("SHOW COLUMNS FROM ".$tablename.";");
+        $res = DB::getInstance()->getConnection()->query("SHOW COLUMNS FROM ".$tablename.";");
         $k = [];
         while ($row = $res->fetch_array()) { $k[] = $row[0]; } 
         $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
@@ -257,7 +283,7 @@
       // Concat final query
       $query = "SELECT a.".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
-      $res = $this->db->query($query);
+      $res = DB::getInstance()->getConnection()->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);
     }
@@ -270,10 +296,10 @@
       $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
       $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "UPDATE ".$tablename." SET ".$update." WHERE ".$where.";";
-      $res = $this->db->query($query);
+      $res = DB::getInstance()->getConnection()->query($query);
       // Check if rows where updated
       $success = false;
-      if($this->db->affected_rows >= 0){
+      if(DB::getInstance()->getConnection()->affected_rows >= 0){
       	$success = true;
       }
       // Output
@@ -287,10 +313,10 @@
       // Build query
       $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "DELETE FROM ".$tablename." WHERE ".$where.";";
-      $res = $this->db->query($query);
+      $res = DB::getInstance()->getConnection()->query($query);
       // Check if rows where updated
       $success = false;
-      if($this->db->affected_rows >= 0){
+      if(DB::getInstance()->getConnection()->affected_rows >= 0){
       	$success = true;
       }
       // Output
@@ -307,12 +333,12 @@
       $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       // get StateID from the Element itself
       $query = "SELECT state_id FROM ".DB_NAME.".$tablename WHERE ".$where.";";
-      $res = $this->db->query($query);
+      $res = DB::getInstance()->getConnection()->query($query);
       $r = $res->fetch_array();
       $stateID = (int)$r[0];
 
 
-      $SM = new StateMachine($this->db, DB_NAME, $tablename);
+      $SM = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       // Check if has state machine ?
       if ($SM->getID() > 0) {
         $r = $SM->getFormDataByStateID($stateID);
@@ -325,7 +351,7 @@
     }
     public function getFormCreate($param) {
       $tablename = $param["table"];
-      $SM = new StateMachine($this->db, DB_NAME, $tablename);
+      $SM = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       // StateMachine ?
       if ($SM->getID() > 0) {
         // Has StateMachine
@@ -351,12 +377,12 @@
 
       // get StateID from the Element itself
       $query = "SELECT state_id FROM ".DB_NAME.".$tablename WHERE ".$where.";";
-      $res = $this->db->query($query);
+      $res = DB::getInstance()->getConnection()->query($query);
       $r = $res->fetch_array();
       $stateID = (int)$r[0];
 
       // execute query
-      $SE = new StateMachine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
@@ -372,14 +398,14 @@
 
       // TODO: read out all params from DB
       //$query = "SELECT * FROM $tablename WHERE $pricol = $ElementID;";
-      //$res = $this->db->query($query);
+      //$res = DB::getInstance()->getConnection()->query($query);
       //$param["row"] = $res->fetch_assoc();
       //var_dump($r);
       //$param["row"] = $this->parseToJSON($res);
       //var_dump($param["row"]);
 
       // Statemachine
-      $SE = new StateMachine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       // get ActStateID by Element ID
       $actstateObj = $SE->getActState($ElementID, $pricol);
       // No Element found in Database
@@ -410,13 +436,13 @@
     }
     public function getStates($param) {
       $tablename = $param["table"];
-      $SE = new StateMachine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       $res = $SE->getStates();
       return json_encode($res);
     }
     public function smGetLinks($param) {
       $tablename = $param["table"];
-      $SE = new StateMachine($this->db, DB_NAME, $tablename);
+      $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       $res = $SE->getLinks();
       return json_encode($res);
     }
