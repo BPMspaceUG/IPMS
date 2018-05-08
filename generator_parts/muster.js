@@ -340,12 +340,10 @@ var Table = /** @class */ (function () {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
-            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
-            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -399,12 +397,17 @@ var Table = /** @class */ (function () {
         if (!t.Filter)
             t.Filter = ''; // Set Filter to empty-string
         var pgntn = '';
-        t.getPaginationButtons().forEach(function (btnIndex) {
-            pgntn += '<li' + (t.PageIndex == t.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="' +
-                'getTable(\'' + t.tablename + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
-                (t.PageIndex + 1 + btnIndex) +
-                '</a></li>';
-        });
+        var PaginationButtons = t.getPaginationButtons();
+        // Only Display Buttons, when more than one Button exists
+        if (PaginationButtons.length > 1)
+            PaginationButtons.forEach(function (btnIndex) {
+                pgntn += '<li' + (t.PageIndex == t.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="' +
+                    'getTable(\'' + t.tablename + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
+                    (t.PageIndex + 1 + btnIndex) +
+                    '</a></li>';
+            });
+        else
+            pgntn += '<li><a style="background-color: #ddd; cursor: default;">&nbsp;</a></li>';
         var header = '<div class="element">' +
             '<p class="form-inline">' +
             '<input class="form-control filterText" style="max-width: 300px" placeholder="Filter..."' +
@@ -475,7 +478,6 @@ var Table = /** @class */ (function () {
         $(jQSelector).append(header + tds + footer);
         $(jQSelector + ' .filterText').focus().val('').val(t.Filter);
         if (t.lastModifiedRowID != 0) {
-            //console.log("--------->", t.lastModifiedRowID)
             addClassToDataRow(jQSelector, t.lastModifiedRowID, 'info');
             t.lastModifiedRowID = 0;
         }
@@ -498,29 +500,15 @@ function createEntry(table_name) {
         var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
         var tablename = Xdata.tablename;
         var MID = Xdata.mid;
-        // TODO: Check Dry!!
         // Read out all input fields with {key:value}
-        var inputs = $('#' + MID + ' :input');
-        var data = {};
-        inputs.each(function () {
-            var e = $(this);
-            var key = e.attr('name');
-            if (key) {
-                // Set all ForeignKeys to null, if empty and FK
-                if (e.val() == '' && getTable(tablename).Columns[key].foreignKey.table != '') {
-                    data[key] = null;
-                }
-                else
-                    data[key] = e.val();
-            }
-        });
+        var data = readDataFromForm('#' + MID, tablename);
         // Only if statemachine active,
         // otherwise conflict when creating an entry in tabe 'state'
         if (getTable(tablename).SM)
             data['state_id'] = '%!%PLACE_EP_HERE%!%';
         // RESPONSE
         function created(r) {
-            console.log("Create (RAW):", r);
+            //console.log("Create (RAW):", r)
             try {
                 var msgs = JSON.parse(r);
             }
@@ -559,25 +547,10 @@ function setState(btn, tablename, RowID, targetStateID) {
     var Mid = Xdata.mid;
     var t = getTable(tablename);
     // Read out all input fields with {key:value}
-    // TODO: Check Dry!!
-    // Read out all input fields with {key:value}
-    var inputs = $('#' + Mid + ' :input');
-    var data = {};
-    inputs.each(function () {
-        var e = $(this);
-        var key = e.attr('name');
-        if (key) {
-            // Set all ForeignKeys to null, if empty and FK
-            if (e.val() == '' && getTable(tablename).Columns[key].foreignKey.table != '') {
-                data[key] = null;
-            }
-            else
-                data[key] = e.val();
-        }
-    });
+    var data = readDataFromForm('#' + Mid, tablename);
     // RESPONSE
     function transitioned(r) {
-        console.log("Transition Feedback (RAW):", r);
+        //console.log("Transition Feedback (RAW):", r)
         if (r.length > 0) {
             // Messages ausgeben
             var msgs = JSON.parse(r); // TODO: Try..catch
@@ -587,7 +560,6 @@ function setState(btn, tablename, RowID, targetStateID) {
             });
             // Close Edit Window
             $('#' + Mid).modal('hide');
-            //console.log("xxx", RowID)
             t.lastModifiedRowID = RowID;
             t.loadRows();
         }
@@ -615,14 +587,35 @@ function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
     var data = { mid: EditMID, tablename: Table.tablename };
     $('#' + EditMID + ' .stored_data').html(JSON.stringify(data));
     // Load data from row and write to input fields with {key:value}
-    //--------------------------------- DRY!
-    var inputs = $('#' + EditMID + ' :input');
+    writeDataToForm('#' + EditMID, row);
+    // Add PrimaryID in stored Data
+    $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
+    M.show();
+}
+function readDataFromForm(jQSel, tablename) {
+    var inputs = $(jQSel + ' :input');
+    var data = {};
     inputs.each(function () {
         var e = $(this);
-        var value = row[e.attr('name')];
+        var key = e.attr('name');
+        if (key) {
+            // Set all ForeignKeys to null, if empty and FK
+            if (e.val() == '' && getTable(tablename).Columns[key].foreignKey.table != '') {
+                data[key] = null;
+            }
+            else
+                data[key] = e.val();
+        }
+    });
+    return data;
+}
+function writeDataToForm(jQSel, data) {
+    var inputs = $(jQSel + ' :input');
+    inputs.each(function () {
+        var e = $(this);
+        var value = data[e.attr('name')];
         // isFK?
         if (Array.isArray(value)) {
-            //console.log("--> FK", e.attr('name'), value)
             // Special case if name = 'state_id'
             if (e.attr('name') == 'state_id') {
                 var label = e.parent().find('.label');
@@ -640,10 +633,6 @@ function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
             e.val(value); // Normal
         }
     });
-    //--------------------------------- /DRY!
-    // Add Primary ID --> TODO: in stored Data
-    $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
-    M.show();
 }
 // TODO: Find Table by jQSel
 function modifyRow(jQSel, table_name, id) {
@@ -717,33 +706,8 @@ function modifyRow(jQSel, table_name, id) {
             var dataxx = { mid: M.DOM_ID, tablename: table_name };
             $('#' + M.DOM_ID + ' .stored_data').html(JSON.stringify(dataxx));
             $('#' + M.DOM_ID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + id + '">');
-            //--------------------------------- DRY!
             // Write all input fields with {key:value}
-            var row = t.getRowByID(id);
-            var inputs = $('#' + M.DOM_ID + ' :input');
-            inputs.each(function () {
-                var e = $(this);
-                var value = row[e.attr('name')];
-                // isFK?
-                if (Array.isArray(value)) {
-                    console.log("--> FK", e.attr('name'), value);
-                    // Special case if name = 'state_id'
-                    if (e.attr('name') == 'state_id') {
-                        var label = e.parent().find('.label');
-                        label.text(value[1]);
-                        label.addClass('state' + value[0]);
-                    }
-                    else {
-                        e.parent().find('.fkval').text(value[1]);
-                    }
-                    // Save in hidden input
-                    e.val(value[0]);
-                }
-                else {
-                    e.val(value); // Normal
-                }
-            });
-            //--------------------------------- /DRY!
+            writeDataToForm('#' + M.DOM_ID, t.getRowByID(id));
             M.show();
         }
     }
@@ -826,13 +790,13 @@ initTables(function (data) {
     Object.keys(data).forEach(function (t) {
         var newT = new Table(false, '.table_' + data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only);
         gTables.push(newT);
+        // TODO: Generate this via PHP
         // GUI
         if (data[t].is_in_menu) {
             // GUI - Add Tabs
-            $('.nav-tabs').append('<li><a href="#' + newT.tablename +
-                '" data-toggle="tab"><i class="' +
-                data[t].table_icon + '"></i>&nbsp;<span class="table_alias">' +
-                data[t].table_alias + '</span>' +
+            $('.nav-tabs').append('<li><a href="#' + newT.tablename + '" data-toggle="tab">' +
+                '<i class="' + data[t].table_icon + '"></i>&nbsp;' +
+                '<span class="table_alias">' + data[t].table_alias + '</span>' +
                 '</a></li>');
             // Add Tab panes too
             $('.tab-content').append('<div role="tabpanel" class="tab-pane' + (gTables.length == 1 ? ' active' : '') + '" id="' + newT.tablename + '">' +
@@ -958,9 +922,9 @@ function transpileSMtoDOT(smNodes, smLinks) {
         var extNd = isExitNode(e.id, smLinks); // Set flag
         // Actual State
         var strActState = "";
-        if (!extNd) // no Exit Node
+        if (!extNd)
             strLabels += 's' + e.id + ' [label="' + formatLabel(e.name) + '"' + strActState + '];\n';
-        else // Exit Node
+        else
             strLabels += 's' + e.id + ' [label="\n\n\n' + formatLabel(e.name) +
                 '" shape=doublecircle color=gray20 fillcolor=gray20 fixedsize=true width=0.1 height=0.1];\n';
     });

@@ -9,14 +9,12 @@
   
   //---DO-NOT-REMOVE---[replaceClassStateEngine]---DO-NOT-REMOVE---
 
-  // Database Class
+  /****************************************************/
+  /* Class: Database                                  */
+  /****************************************************/
   class DB {
     private $_connection;
     private static $_instance; //The single instance
-    private $_host = DB_HOST;
-    private $_username = DB_USER;
-    private $_password = DB_PASS;
-    private $_database = DB_NAME;
 
     public static function getInstance() {
       if(!self::$_instance) { // If no instance then make one
@@ -26,7 +24,7 @@
     }
     // Constructor
     private function __construct() {
-      $this->_connection = new mysqli($this->_host, $this->_username, $this->_password, $this->_database);
+      $this->_connection = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
       // Error handling
       if(mysqli_connect_error()) {
         trigger_error("Failed to connect to MySQL: ".mysql_connect_error(), E_USER_ERROR);
@@ -43,9 +41,10 @@
     }
   }
 
-  //RequestHandler Class Definition starts here
+  /****************************************************/
+  /* Class: RequestHandler                            */
+  /****************************************************/
   class RequestHandler {
-    //private $db;
     private $config;
 
     public function __construct() {
@@ -66,7 +65,7 @@
       }
       return $res;
     }
-    // Format data for output
+    // Format data for output, so long because of ForeignKeys
     private function parseToJSON($result) {
       $results_array = array();
       if (!$result) return false;
@@ -79,7 +78,7 @@
         for($i=0;$i<$fieldcount;$i++) {
           $colname = mysqli_fetch_field_direct($result, $i)->name;
           if (array_key_exists($colname ,$tmprow)) {
-            // Is a ForeinKey -> merge Columns
+            // If it is a ForeignKey -> merge Columns
             $tmpVal = $tmprow[$colname];
             $tmpArr = array();
             $tmpArr[] = $tmpVal;
@@ -109,12 +108,12 @@
       foreach ($cols as $col) {
         // update only when no primary column
         if (!in_array($col, $primarycols)) {
-          // TODO: NULL!
+          // Special check for NULL (especially for ForeignKeys)
           if (is_null($rows[$col]))
             $update .= $col.'=NULL';
           else
             $update .= $col."='".DB::getInstance()->getConnection()->real_escape_string($rows[$col])."'";
-          // Seperate by komma
+          // Seperate by comma
           $update .= ", ";
         }
       }
@@ -133,7 +132,7 @@
       }
       return $res;
     }
-    private static function highend_implode($input) {
+    private static function implodeWithNULLVals($input) {
       $output = "";
       foreach ($input as $key => $value) {
         if (is_null($value)) {
@@ -195,18 +194,18 @@
 
         // --- Operation CREATE
         $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES (".
-          RequestHandler::highend_implode($vals).");";
+          RequestHandler::implodeWithNULLVals($vals).");";
         $res = DB::getInstance()->getConnection()->query($query);
         $newElementID = DB::getInstance()->getConnection()->insert_id;
 
-        // Execute IN-Script
-        if ($SM->getID() > 0) {
+        // Execute IN-Script, but only when Insert was successful 
+        if ($SM->getID() > 0 && $newElementID <> 0) {
           $script = $SM->getINScript($SM->getEntryPoint());
           // Refresh row (add ID)
           $pri_cols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
           $param["row"][$pri_cols[0]] = (string)$newElementID;          
           // Script
-          $tmp_script_res = $SM->executeScript($script, $param);   
+          $tmp_script_res = $SM->executeScript($script, $param);
           // Append the ID from new Element
           $tmp_script_res["element_id"] = $newElementID;
           $script_result[] = $tmp_script_res;          
@@ -214,6 +213,7 @@
           // No Statemachine
           $script_result[0]["element_id"] = $newElementID;
         }
+
       }
       // Return
       return json_encode($script_result);
