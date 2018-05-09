@@ -5,11 +5,14 @@
       <div class="panel panel-default panel-table">
         <!-- Panel Header -->
         <div class="panel-heading">
-          <ul class="nav nav-tabs"></ul>
+          <ul class="nav nav-tabs">
+###TABS###
+          </ul>
         </div>
         <!-- Panel Body -->
         <div class="panel-body">
           <div class="tab-content">
+###TAB_PANELS###
           </div>
         </div>
         <!-- /Panel Body -->

@@ -23,13 +23,6 @@
   if ($con->connect_errno > 0) {
     die('Unable to connect to database [' . $con->connect_error . ']');
   }
-  // Create an array with all table names
-  /*
-  $all_table_names = array();
-  foreach ($data as $table) {
-    array_push($all_table_names, $table);
-  }
-  */
 
   /* ------------------------------------- Statemachine ------------------------------------- */
 
@@ -39,12 +32,35 @@
 
   // -------------------- FormData --------------------
 
+  $content_tabs = '';
+  $content_tabpanels = '';  
+
   foreach ($data as $table) {
     // Get Data
     $tablename = $table["table_name"];
     @$se_active = (bool)$table["se_active"];
 
+
+    //--- Create HTML Content
+    if ($table["is_in_menu"]) {
+      // Tabs
+      $content_tabs .= "            ".
+            "<li>
+              <a href=\"#$tablename\" data-toggle=\"tab\">
+                <i class=\"".$table["table_icon"]."\"></i>&nbsp;
+                <span class=\"table_alias\">".$table["table_alias"]."</span>
+              </a>
+            </li>\n";
+      // TabPanes
+      $content_tabpanels .= "            ".
+        "<div role=\"tabpanel\" class=\"tab-pane\" id=\"$tablename\">".
+        "<div class=\"table_$tablename\"></div></div>\n";
+    }
+    //---/
+
+
     // TODO: Check if the "table" is no view
+
 
     if ($se_active) {
       // ------- StateMachine Creation
@@ -121,8 +137,15 @@
   $output_header = str_replace('replaceCSS', $output_css, $output_header);
   // --- Menu
   $output_menu = loadFile("./output_menu.php");
+  
   // --- Content
   $output_content = loadFile("./output_content.php");
+  // Insert Tabs in HTML (Remove last \n)
+  $content_tabs = substr($content_tabs, 0, -1);
+  $content_tabpanels = substr($content_tabpanels, 0, -1);
+  $output_content = str_replace('###TABS###', $content_tabs, $output_content);
+  $output_content = str_replace('###TAB_PANELS###', $content_tabpanels, $output_content);
+
   // --- Footer
   $output_footer = loadFile("./output_footer.php");
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
@@ -139,7 +162,7 @@
   .$output_RequestHandler
   // .$output_script
   .$output_header
-  .$output_menu
+  //.$output_menu
   .$output_content
   .$output_footer
   ;

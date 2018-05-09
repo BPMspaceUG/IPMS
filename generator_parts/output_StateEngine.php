@@ -222,6 +222,32 @@
           $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<textarea rows=\"4\" class=\"form-control editor\" name=\"".
           $key."\">$default</textarea>\n\t</div>\n</div>\n";
       }
+      else if (strtolower($data_type) == 'time') {
+        // TIME
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"time\" class=\"form-control\" name=\"".
+          $key."\">"
+          ."\n\t</div>\n</div>\n";
+      }
+      else if (strtolower($data_type) == 'date') {
+        // DATE
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"date\" class=\"form-control\" name=\"".
+          $key."\">"
+          ."\n\t</div>\n</div>\n";
+      }
+      else if (strtolower($data_type) == 'datetime') {
+        // DATETIME
+        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t".
+          // TODO:
+          "<div class=\"row\">\n".
+          "  <div class=\"col-xs-6\"><input type=\"date\" class=\"form-control\" name=\"".$key."\"></div>\n". // DATE
+          "  <div class=\"col-xs-6\"><input type=\"time\" class=\"form-control\" name=\"".$key."\"></div>\n". // TIME
+          "</div>".
+          //"<textarea rows=\"4\" class=\"form-control editor\" name=\"".$key."\">$default</textarea>".
+          "\n\t</div>\n</div>\n";
+      }
       return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
         $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"text\" class=\"form-control\" name=\"".
         $key."\" value=\"$default\">\n\t</div>\n</div>\n";

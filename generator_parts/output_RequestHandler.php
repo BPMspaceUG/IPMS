@@ -212,6 +212,10 @@
         } else {
           // No Statemachine
           $script_result[0]["element_id"] = $newElementID;
+          // ErrorHandling
+          if ($newElementID == 0) {
+            $script_result[0]["errormsg"] = DB::getInstance()->getConnection()->error;
+          }
         }
 
       }
