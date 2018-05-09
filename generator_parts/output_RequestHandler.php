@@ -450,8 +450,8 @@
         // UPDATE
         $this->update($param); // Update all other rows
         // UPDATE StateID only
-        //$query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
-        //$this->db->query($query);
+        $query = "UPDATE ".DB_NAME.".".$tablename." SET state_id = $nextStateID WHERE $pricol = $ElementID;";
+        DB::getInstance()->getConnection()->query($query);
         // Return
         echo json_encode($feedbackMsgs);
         exit;

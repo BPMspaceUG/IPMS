@@ -565,18 +565,64 @@ function setState(btn, tablename, RowID, targetStateID) {
     t.transitRow(RowID, targetStateID, data, transitioned);
     // RESPONSE
     function transitioned(r) {
-        if (r.length > 0) {
-            // Messages ausgeben
-            var msgs = JSON.parse(r); // TODO: Try..catch
-            msgs.forEach(function (msg) {
-                if (msg.show_message)
-                    showResult(msg.message);
-            });
-            // Close Edit Window
-            $('#' + Mid).modal('hide');
-            t.lastModifiedRowID = RowID;
-            t.loadRows();
+        try {
+            var msgs = JSON.parse(r);
         }
+        catch (err) {
+            console.log("Error:", r);
+            $('#' + Mid + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+                '<b>Script Error!</b>&nbsp;' + r +
+                '</div>');
+            return;
+        }
+        // Handle Transition Feedback
+        console.log("TransScript:", msgs);
+        var counter = 0;
+        msgs.forEach(function (msg) {
+            // Remove all Error Messages
+            $('#' + Mid + ' .modal-body .alert').remove();
+            // Show Message
+            if (msg.show_message) {
+                var info = "";
+                if (counter == 0)
+                    info = 'OUT-Script';
+                if (counter == 1)
+                    info = 'Transition-Script';
+                if (counter == 2)
+                    info = 'IN-Script';
+                showResult(msg.message, 'Feedback <small>' + info + '</small>');
+            }
+            // Check
+            /*if (msg) {
+              if (msg > 0) {*/
+            $('#' + Mid).modal('hide');
+            t.lastModifiedRowID = msg.element_id;
+            t.loadRows();
+            /*  }
+            } else {
+              // ElementID has to be 0! otherwise the transscript aborted
+              if (msg.element_id == 0) {
+                $('#' + Mid + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
+                  '<b>Database Error!</b>&nbsp;'+ msg.errormsg +
+                  '</div>')
+              }
+            }*/
+            counter++;
+        });
+        /*
+        
+            if (r.length > 0) {
+              // Messages ausgeben
+              var msgs = JSON.parse(r); // TODO: Try..catch
+              msgs.forEach(msg => {
+                if (msg.show_message)
+                  showResult(msg.message)
+              });
+              // Close Edit Window
+              $('#'+Mid).modal('hide')
+              t.lastModifiedRowID = RowID
+              t.loadRows()
+            */
     }
 }
 function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
@@ -763,6 +809,8 @@ function saveEntry(x, closeModal) {
         if (e.attr('name'))
             data[e.attr('name')] = e.val();
     });
+    // REQUEST
+    t.updateRow(data[t.PrimaryColumn], data, updated);
     // RESPONSE
     function updated(r) {
         //console.log(r)
@@ -780,8 +828,6 @@ function saveEntry(x, closeModal) {
             }
         }
     }
-    // REQUEST
-    t.updateRow(data[t.PrimaryColumn], data, updated);
 }
 function delRow(tablename, id) {
     // Ask 
