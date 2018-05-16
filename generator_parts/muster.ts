@@ -1,6 +1,10 @@
 // Global variables
 var gTables: Array<Table> = []
-const gURL = window.location.pathname
+
+// Path for API
+var path = window.location.pathname
+var pathName = path.substring(0, path.lastIndexOf('/') + 1);
+const gURL =  pathName + 'api/'
 
 // Plugins
 var $: any;
@@ -642,15 +646,10 @@ function setState(btn, tablename: string, RowID: number, targetStateID: number):
             '</div>')
         }
       }*/
-      counter++;
-    });
-
-
-
-
+    counter++;
+  });
 
 /*
-
     if (r.length > 0) {
       // Messages ausgeben
       var msgs = JSON.parse(r); // TODO: Try..catch
@@ -663,11 +662,9 @@ function setState(btn, tablename: string, RowID: number, targetStateID: number):
       t.lastModifiedRowID = RowID
       t.loadRows()
     */
-
-    }
-
   }
 }
+
 
 function renderEditForm(Table: Table, RowID: number, PrimaryColumn: string, htmlForm: string, nextStates) {
   var row = Table.getRowByID(RowID)
@@ -707,23 +704,38 @@ function readDataFromForm(jQSel: string, tablename: string): any {
     var e = $(this);
     var key = e.attr('name')
     if (key) {
-      // if empty and FK then value should be NULL
-      if (e.val() == '' && getTable(tablename).Columns[key].foreignKey.table != '') {
-        data[key] = null
-      } else {
-        var DataType = getTable(tablename).Columns[key].DATA_TYPE.toLowerCase()
 
-        if (DataType == 'datetime') {
-          // For DATETIME
-          if (e.attr('type') == 'date')
-            data[key] = e.val() // overwrite
-          else if (e.attr('type') == 'time')
-            data[key] += ' '+e.val() // append
-        }
-        else {
-          data[key] = e.val()
-        }
+      var column = null
+      try {
+        column = getTable(tablename).Columns[key]
+      } catch (error) {
+        // Column doesnt exist in current Table
+        column = null
       }
+      
+      if (column) {
+        if (e.val() == '' && column.foreignKey.table != '') {
+          // if empty and FK then value should be NULL
+          data[key] = null
+        } else {
+          var DataType = column.DATA_TYPE.toLowerCase()
+
+          if (DataType == 'datetime') {
+            // For DATETIME
+            if (e.attr('type') == 'date')
+              data[key] = e.val() // overwrite
+            else if (e.attr('type') == 'time')
+              data[key] += ' '+e.val() // append
+          }
+          else {
+            data[key] = e.val()
+          }
+        }
+      } else {
+        // Virtual Element in FormData
+        data[key] = e.val()
+      }
+
     }
   })
   return data

@@ -16,7 +16,7 @@
       </div>
     </div>
   </div>
-  <!-- Angular handling-script -->
-  <script type="text/javascript">replaceMusterJS</script>
+  <!-- JS -->
+  <script src="js/muster.js"></script>
 </body>
 </html>

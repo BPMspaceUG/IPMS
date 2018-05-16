@@ -1,11 +1,51 @@
 <?php
   // Includes
-  $file_DB = __DIR__."/DatabaseHandler.inc.php";
-  if (file_exists($file_DB)) include_once($file_DB);
+  $config_file = __DIR__."/../replaceDBName-config.inc.php";
+  if (file_exists($config_file)) include_once($config_file);
+  // StateMachine
   $file_SM = __DIR__."/StateMachine.inc.php";
   if (file_exists($file_SM)) include_once($file_SM);
+  
 
+  // Parameter and inputstream
+  $params = json_decode(file_get_contents('php://input'), true);
+  @$command = $params["cmd"];
 
+  /****************************************************/
+  /* Class: Database                                  */
+  /****************************************************/
+  class DB {
+    private $_connection;
+    private static $_instance; //The single instance
+
+    public static function getInstance() {
+      if(!self::$_instance) { // If no instance then make one
+        self::$_instance = new self();
+      }
+      return self::$_instance;
+    }
+    // Constructor
+    private function __construct() {
+      $this->_connection = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+      // Error handling
+      if(mysqli_connect_error()) {
+        trigger_error("Failed to connect to MySQL: ".mysql_connect_error(), E_USER_ERROR);
+      }
+    }
+    // Magic method clone is empty to prevent duplication of connection
+    private function __clone() { }
+    // Get mysqli connection
+    public function getConnection() {
+      return $this->_connection;
+    }
+    public function __destruct() {
+      $this->_connection->close();
+    }
+  }
+
+  /****************************************************/
+  /* Class: RequestHandler                            */
+  /****************************************************/
   class RequestHandler {
     private $config;
 
@@ -165,7 +205,7 @@
           // Refresh row (add ID)
           $pri_cols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
           $param["row"][$pri_cols[0]] = (string)$newElementID;          
-          // IN-Script          
+          // Script
           $tmp_script_res = $SM->executeScript($script, $param);
           // Append the ID from new Element
           $tmp_script_res["element_id"] = $newElementID;
@@ -185,16 +225,13 @@
     }
     //================================== READ
     public function read($param) {
-      // Parameters and default values
+      // Parameters
       $tablename = $param["table"];
-      $select = isset($param["select"]) ? $param["select"] : "*";
       $where = isset($param["where"]) ? $param["where"] : "";
       $filter = isset($param["filter"]) ? $param["filter"] : "";
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
       $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
-      $joins = isset($param["join"]) ? $param["join"] : array();
-      $limitStart = isset($param["limitStart"]) ? $param["limitStart"] : 0;
-      $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : 1000;
+      $joins = isset($param["join"]) ? $param["join"] : "";
 
       // ORDER BY
       $ascdesc = strtolower(trim($ascdesc));
@@ -206,7 +243,8 @@
         $orderby = " "; // ORDER BY replacer_id DESC";
 
       // LIMIT
-      $limit = " LIMIT ".$limitStart.",".$limitSize;
+      // TODO: maybe if limit Start = -1 then no limit is used
+      $limit = " LIMIT ".$param["limitStart"].",".$param["limitSize"];
 
       // JOIN
       $join_from = $tablename." AS a"; // if there is no join
@@ -251,7 +289,7 @@
       }
 
       // Concat final query
-      $query = "SELECT a.".$select.$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
+      $query = "SELECT a.".$param["select"].$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
       $res = DB::getInstance()->getConnection()->query($query);
       // Return result as JSON

@@ -1,6 +1,9 @@
 // Global variables
 var gTables = [];
-var gURL = window.location.pathname;
+// Path for API
+var path = window.location.pathname;
+var pathName = path.substring(0, path.lastIndexOf('/') + 1);
+var gURL = pathName + 'api/';
 // Plugins
 var $;
 var Viz;
@@ -610,7 +613,6 @@ function setState(btn, tablename, RowID, targetStateID) {
             counter++;
         });
         /*
-        
             if (r.length > 0) {
               // Messages ausgeben
               var msgs = JSON.parse(r); // TODO: Try..catch
@@ -657,22 +659,36 @@ function readDataFromForm(jQSel, tablename) {
         var e = $(this);
         var key = e.attr('name');
         if (key) {
-            // if empty and FK then value should be NULL
-            if (e.val() == '' && getTable(tablename).Columns[key].foreignKey.table != '') {
-                data[key] = null;
+            var column = null;
+            try {
+                column = getTable(tablename).Columns[key];
             }
-            else {
-                var DataType = getTable(tablename).Columns[key].DATA_TYPE.toLowerCase();
-                if (DataType == 'datetime') {
-                    // For DATETIME
-                    if (e.attr('type') == 'date')
-                        data[key] = e.val(); // overwrite
-                    else if (e.attr('type') == 'time')
-                        data[key] += ' ' + e.val(); // append
+            catch (error) {
+                // Column doesnt exist in current Table
+                column = null;
+            }
+            if (column) {
+                if (e.val() == '' && column.foreignKey.table != '') {
+                    // if empty and FK then value should be NULL
+                    data[key] = null;
                 }
                 else {
-                    data[key] = e.val();
+                    var DataType = column.DATA_TYPE.toLowerCase();
+                    if (DataType == 'datetime') {
+                        // For DATETIME
+                        if (e.attr('type') == 'date')
+                            data[key] = e.val(); // overwrite
+                        else if (e.attr('type') == 'time')
+                            data[key] += ' ' + e.val(); // append
+                    }
+                    else {
+                        data[key] = e.val();
+                    }
                 }
+            }
+            else {
+                // Virtual Element in FormData
+                data[key] = e.val();
             }
         }
     });

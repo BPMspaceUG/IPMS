@@ -119,28 +119,26 @@
 	*/
 
   // ------------------- Server Side
-  // --- Class State Engine
   $class_StateEngine = loadFile("./output_StateEngine.php");
-  $class_StateEngine = str_replace('<?php', '', $class_StateEngine);
-  $class_StateEngine = str_replace('?>', '', $class_StateEngine);    
-  // --- RequestHandler
-  $output_RequestHandler = loadFile("./output_RequestHandler.php");
-  $output_RequestHandler = str_replace('replaceDBName', $db_name, $output_RequestHandler);
-  $output_RequestHandler = str_replace('//---DO-NOT-REMOVE---[replaceClassStateEngine]---DO-NOT-REMOVE---', $class_StateEngine, $output_RequestHandler);
+  $output_RequestHandler = loadFile("./output_RequestHandler.php");  
+  $output_DBHandler = loadFile("./output_DatabaseHandler.php");
+  $output_AuthHandler = loadFile("./output_AuthHandler.php");
+  $output_API = loadFile("./output_API.php");
+
+  $output_DBHandler = str_replace('replaceDBName', $db_name, $output_DBHandler);
 
   // ------------------- Client Side
+  $output_LoginPage = loadFile("./output_LoginPage.php");
   // --- HTML Header
   $output_header = loadFile("./output_header.php");
   $output_header = str_replace('replaceDBName', $db_name, $output_header);
-  // --- CSS in Header
+  // --- CSS
   $output_css = loadFile("./muster.css");
-  $output_header = str_replace('replaceCSS', $output_css, $output_header);
-  // --- Menu
-  $output_menu = loadFile("./output_menu.php");
   
   // --- Content
   $output_content = loadFile("./output_content.php");
-  // Insert Tabs in HTML (Remove last \n)
+  // Modify HTML for later adaptions
+  //    Insert Tabs in HTML (Remove last \n)
   $content_tabs = substr($content_tabs, 0, -1);
   $content_tabpanels = substr($content_tabpanels, 0, -1);
   $output_content = str_replace('###TABS###', $content_tabs, $output_content);
@@ -151,15 +149,13 @@
   $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
   // --- JavaScript
   $output_JS = loadFile("./muster.js");
-  // place JS in Footer
-  $output_footer = str_replace("replaceMusterJS", $output_JS, $output_footer);
 
   // ------------------------------------ Generate Core File
 
   $output_all = ''
   // .$output_LiamHeader
   // .$output_DebugHeader
-  .$output_RequestHandler
+  //.$output_RequestHandler
   // .$output_script
   .$output_header
   //.$output_menu
@@ -193,31 +189,42 @@
   $config_tables_json = \''.$json.'\';
 ?>';
 
+
+  function createSubDirIfNotExists($dirname) {
+    if (!is_dir($dirname))
+      mkdir($dirname, 0755, true);
+  }
+
+
   // ----> Write to filesystem
 	//$Path_IPMS_test = '../../IPMS_test';
   $Path_IPMS_test = __DIR__ . "/../../IPMS_test"; //.$data."-config.php";
 
 	// check if IPMS test exists
   if (is_dir($Path_IPMS_test)) {
+
   	// Path for Project
-  	$project_dir = $Path_IPMS_test; // .'/'.$db_name;
-  	// Create Project directory
-  	//if (!is_dir($project_dir)) 
-      //mkdir($project_dir, 0755, true);
-    // Folder structure
-    /*
-			Project
-			 -css
-				 prj.css
-			 -js
-			   prj.js
-			 prj-config.inc.php
-			 prj.php
-			 index.php
-    */
+    $project_dir = $Path_IPMS_test.'/'.$db_name;
+    // Create Project directory
+    createSubDirIfNotExists($project_dir);
+    createSubDirIfNotExists($project_dir."/api");
+    createSubDirIfNotExists($project_dir."/css");
+    createSubDirIfNotExists($project_dir."/js");
+    createSubDirIfNotExists($project_dir."/src");
+
     // Put Files
+    file_put_contents($project_dir."/js/muster.js", $output_JS);
+    file_put_contents($project_dir."/css/muster.css", $output_css);
+    file_put_contents($project_dir."/api/index.php", $output_API);
+
+    file_put_contents($project_dir."/src/RequestHandler.inc.php", $output_RequestHandler);
+    file_put_contents($project_dir."/src/StateMachine.inc.php", $class_StateEngine);
+    file_put_contents($project_dir."/src/DatabaseHandler.inc.php", $output_DBHandler);
+    file_put_contents($project_dir."/src/AuthHandler.inc.php", $output_AuthHandler);
+
+    file_put_contents($project_dir."/login.php", $output_LoginPage);
     file_put_contents($project_dir."/".$db_name.".php", $output_all);
     file_put_contents($project_dir."/".$db_name."-config.inc.php", $output_config);
-    /*file_put_contents($project_dir."/index.php", '<?php Header("Location: '.$db_name.'.php"); exit(); ?>'); */
+    file_put_contents($project_dir."/index.php", "<?php\n\tHeader(\"Location: ".$db_name.".php\");\n\texit();\n?>");
   }
 ?>
