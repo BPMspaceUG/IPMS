@@ -64,6 +64,37 @@ class StateMachine {
   }
 }
 
+
+// Atomic Function for API Calls -> ensures Authorization 
+function sendRequest(command: string, params: any, callback): void {
+  // TODO: Better use localStorage -> saves Bandwidth and does not expire
+  var cookie = document.cookie
+  var token = cookie.split('token=')[1]
+  // Request (every Request is processed by this function)
+  $.ajax({
+    method: "POST",
+    url: gURL,
+    beforeSend: function (xhr) {
+      xhr.setRequestHeader('Authorization', 'Bearer '+token);
+    },
+    contentType: 'json',
+    data: JSON.stringify({
+      cmd: command,
+      paramJS: params
+    }),
+    error: function(xhr, status) {
+      // Not Authorized
+      if (xhr.status == 401) {
+        document.location.assign('login.php') // Redirect to Login-Page
+      }
+    }
+  }).done(function(response) {
+    callback(response)
+  });
+}
+
+
+
 enum SortOrder {
   ASC = 'ASC',
   DESC = 'DESC'
@@ -117,21 +148,9 @@ class Table {
     var me = this
     this.countRows(function(){me.loadRows();})
   }
-  private getFormCreate(): void {
-    var me: Table = this;
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'getFormCreate',
-        paramJS: { table: this.tablename }
-      })
-    }).done(function(response) {
-      if (response.length > 0)
-        me.Form_Create = response;
-    })
-  }
+  //=================================================================================//
+  //  Helper functions                                                               //
+  //=================================================================================//
   getRowByID(RowID: number): any {
     var result: any = null;
     var me: Table = this;
@@ -141,94 +160,7 @@ class Table {
       }
     })
     return result
-  }  
-  // Core functions
-  createRow(row_data: any, callback): void {
-    var me = this;
-    console.log("Request [create]", row_data)
-    // Request
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'create',
-        paramJS: {
-          table: this.tablename,
-          row: row_data
-        }
-      })
-    }).done(function(response) {
-      me.countRows(function(){
-        callback(response)
-      })      
-    });
   }
-  deleteRow(RowID: number, callback): void {
-    var me = this;
-    var data = {}
-    data[this.PrimaryColumn] = RowID
-    console.log("Request [delete]", RowID)
-    // Request
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'delete',
-        paramJS: {
-          table: this.tablename,
-          row: data
-        }
-      })
-    }).done(function(response) {
-      me.countRows(function(){
-        callback(response)
-      })
-    })
-  }
-  updateRow(RowID: number, new_data: any, callback): void {
-    console.log("Request [update] for ID", RowID, new_data)
-    // Request
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'update',
-        paramJS: {
-          table: this.tablename,
-          row: new_data
-        }
-      })
-    }).done(function(response) {
-      callback(response)
-    });
-  }
-  transitRow(RowID: number, TargetStateID: number, trans_data: any = null, callback) {
-    var data = {state_id: 0}
-    if (trans_data)
-      data = trans_data
-    data[this.PrimaryColumn] = RowID
-    data.state_id = TargetStateID
-    console.log("Request [transit] for ID", RowID + " -> " + TargetStateID, trans_data)
-    // Request
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'makeTransition',
-        paramJS: {
-          table: this.tablename,
-          row: data
-        }
-      })
-    }).done(function(response) {
-      callback(response)
-    })
-  }
-
   toggleSort(ColumnName: string): void {
     this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC
     this.OrderBy = ColumnName
@@ -237,42 +169,6 @@ class Table {
   }
   getSelectedRows(): number {
     return this.selectedIDs[0]
-  }
-  // TODO: Only call this function once at [init] and then only on [create] and [delete] and at [filter]
-  countRows(callback): void {
-    var me: Table = this;
-    var joins = this.buildJoinPart(this);
-    // Request
-    console.log("Request [count] for Table", me.tablename)
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'read',
-        paramJS: {
-          table: this.tablename,
-          limitStart: this.PageIndex * this.PageLimit,
-          limitSize: this.PageLimit,
-          select: '*, COUNT(*) AS cnt',
-          where: '', //a.state_id = 1',
-          filter: this.Filter,
-          orderby: this.OrderBy,
-          ascdesc: this.AscDesc,
-          join: joins
-        }
-      })
-    }).done(function(response) {
-      //console.log("Count-Response (Raw):", response)
-      if (response.length > 0) {
-        var resp = JSON.parse(response);
-        if (resp.length > 0) {
-          me.actRowCount = parseInt(resp[0].cnt);
-          // Call callback function
-          callback()
-        }
-      }
-    })
   }
   buildJoinPart(t: Table) {
     var joins = []
@@ -285,50 +181,6 @@ class Table {
     })
     return joins
   }
-  loadRows(): void {
-    var me: Table = this;
-
-    // Check Filter event -> jmp to page 1
-    this.Filter = $(this.jQSelector + " .filterText").val()
-    if ((this.Filter != this.Filter_Old) && this.PageIndex != 0)
-      this.PageIndex = 0;
-    
-    var joins = this.buildJoinPart(this);
-    var data = {
-      table: this.tablename,
-      limitStart: this.PageIndex * this.PageLimit,
-      limitSize: this.PageLimit,
-      select: '*',
-      where: '', //a.state_id = 1',
-      filter: this.Filter,
-      orderby: this.OrderBy,
-      ascdesc: this.AscDesc,
-      join: joins
-    }
-    // HTTP Request
-    console.log("Request [read] @ Table:", this.tablename)
-    // AJAX
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'read',
-        paramJS: data
-      })
-    }).done(function(response) {
-      // use "me" instead of "this", because of async functions
-      var resp = JSON.parse(response);
-      me.Rows = resp
-      // Reset Filter Event
-      if (me.Filter) {
-        if (me.Filter.length > 0)
-          me.Filter_Old = me.Filter
-      }
-      me.renderHTML()
-    });
-  }
-  
   setPageIndex(targetIndex: number): void {
     console.log("Set PageIndex", targetIndex)
     var newIndex = targetIndex
@@ -506,7 +358,128 @@ class Table {
       t.lastModifiedRowID = 0;
     }
   }
+  //=================================================================================//
+  //  Core functions                                                                 //
+  //=================================================================================//
+  getFormCreate(): void {
+    var me: Table = this;
+    console.log("Request [getFormCreate]")
+    sendRequest('getFormCreate', {table: me.tablename}, function(response) {
+      if (response.length > 0)
+        me.Form_Create = response;
+    })
+  }
+  getFormModify(data: any, callback): void {
+    var me: Table = this;
+    console.log("Request [getFormData]")
+    sendRequest('getFormData', {table: me.tablename, row: data}, function(response) {
+      callback(response)
+    })
+  }
+  getNextStates(data: any, callback): void {
+    var me: Table = this;
+    console.log("Request [getNextStates]")
+    sendRequest('getNextStates', {table: me.tablename, row: data}, function(response) {
+      callback(response)
+    })
+  }
+  createRow(data: any, callback): void {
+    var me = this;
+    console.log("Request [create]", data)
+    sendRequest('create', {table: me.tablename, row: data}, function(r){
+      me.countRows(function(){
+        callback(r)
+      })
+    })
+  }
+  deleteRow(RowID: number, callback): void {
+    var me = this;
+    var data = {}
+    data[this.PrimaryColumn] = RowID
+    console.log("Request [delete]", RowID)
+    sendRequest('delete', {table: this.tablename, row: data}, function(response) {
+      me.countRows(function(){
+        callback(response)
+      })
+    })
+  }
+  updateRow(RowID: number, new_data: any, callback): void {
+    console.log("Request [update] for ID", RowID, new_data)
+    sendRequest('update', {table: this.tablename, row: new_data}, function(response) {
+      callback(response)
+    })
+  }
+  transitRow(RowID: number, TargetStateID: number, trans_data: any = null, callback) {
+    var data = {state_id: 0}
+    if (trans_data) data = trans_data
+    // PrimaryColID and TargetStateID are the minimum Parameters which have to be set
+    // also RowData can be updated in the client -> has also be transfered to server
+    data[this.PrimaryColumn] = RowID
+    data.state_id = TargetStateID
+    console.log("Request [transit] for ID", RowID + " -> " + TargetStateID, trans_data)
+    sendRequest('makeTransition', {table: this.tablename, row: data}, function(response) {
+      callback(response)
+    })
+  }
+  // TODO: Only call this function once at [init] and then only on [create] and [delete] and at [filter]
+  countRows(callback): void {
+    var me: Table = this;
+    var joins = this.buildJoinPart(this);
+    var data = {
+      table: this.tablename,
+      select: '*, COUNT(*) AS cnt',
+      filter: this.Filter,
+      join: joins
+    }
+    console.log("Request [count] for Table", me.tablename)
+    sendRequest('read', data, function(r){
+      if (r.length > 0) {
+        var resp = JSON.parse(r);
+        if (resp.length > 0) {
+          me.actRowCount = parseInt(resp[0].cnt);
+          // Call callback function
+          callback()
+        }
+      }
+    })
+  }
+  loadRows(): void {
+    var me: Table = this;
+
+    // Check Filter event -> jmp to page 1
+    this.Filter = $(this.jQSelector + " .filterText").val()
+    if ((this.Filter != this.Filter_Old) && this.PageIndex != 0)
+      this.PageIndex = 0;
+    
+    var joins = this.buildJoinPart(this);
+    var data = {
+      table: this.tablename,
+      limitStart: this.PageIndex * this.PageLimit,
+      limitSize: this.PageLimit,
+      select: '*',
+      where: '', //a.state_id = 1',
+      filter: this.Filter,
+      orderby: this.OrderBy,
+      ascdesc: this.AscDesc,
+      join: joins
+    }
+    // HTTP Request
+    console.log("Request [read] @ Table:", this.tablename)
+    sendRequest('read', data, function(r){
+      // use "me" instead of "this", because of async functions
+      var resp = JSON.parse(r);
+      me.Rows = resp
+      // Reset Filter Event
+      if (me.Filter) {
+        if (me.Filter.length > 0)
+          me.Filter_Old = me.Filter
+      }
+      me.renderHTML()
+    })
+  }
 }
+
+
 
 
 
@@ -804,37 +777,12 @@ function modifyRow(jQSel: string, table_name: string, id: number) {
       var data = {}
       data[PrimaryColumn] = id
       
-      console.log("Request [getFormData for Table", t.tablename)
-      $.ajax({
-        method: "POST",
-        url: gURL,
-        contentType: 'json',
-        data: JSON.stringify({
-          cmd: 'getFormData',
-          paramJS: {
-            table: t.tablename,
-            row: data
-          }
-        })
-      }).done(function(response) {
-        console.log("Request [getNextStates]")
-        if (response.length > 0) {
-          var htmlForm = response;
-          // NEXT STATES
-          $.ajax({
-            method: "POST",
-            url: gURL,
-            contentType: 'json',
-            data: JSON.stringify({
-              cmd: 'getNextStates',
-              paramJS: {
-                table: t.tablename,
-                row: data
-              }
-            })
-          }).done(function(response) {
-            if (response.length > 0) {
-              var nextstates = JSON.parse(response);
+      t.getFormModify(data, function(r){
+        if (r.length > 0) {
+          var htmlForm = r;
+          t.getNextStates(data, function(re){
+            if (re.length > 0) {
+              var nextstates = JSON.parse(re);
               renderEditForm(t, id, PrimaryColumn, htmlForm, nextstates);
             }
           })
@@ -922,15 +870,10 @@ function getTable(table_name: string): Table {
 
 // TODO: Put in class TableManager
 function initTables(callback) {
-  // Request
-  $.ajax({
-    method: "POST",
-    url: gURL,
-    contentType: 'json',
-    data: JSON.stringify({cmd: 'init', paramJS: ''})
-  }).done(function(response) {
-    if (response.length > 0) {
-      var resp = JSON.parse(response)
+  console.log('Initializing...')
+  sendRequest('init', '', function(r){
+    if (r.length > 0) {
+      var resp = JSON.parse(r)
       callback(resp)
     }
   })
@@ -1026,76 +969,81 @@ function openSEPopup(table_name: string) {
   var t: Table = getTable(table_name)
   if (!t) return
   var smLinks, smNodes
-  // Get nodes
-  $.ajax({
-    method: "POST",
-    url: gURL,
-    contentType: 'json',
-    data: JSON.stringify({
-      cmd: 'getStates', paramJS: {table: table_name}
-    })
-  }).done(function(response) {
-    smNodes = JSON.parse(response)
-    // Get links
-    $.ajax({
-      method: "POST",
-      url: gURL,
-      contentType: 'json',
-      data: JSON.stringify({
-        cmd: 'smGetLinks', paramJS: {table: table_name}
-      })
-    }).done(function(response) {
-      smLinks = JSON.parse(response)
+
+  console.log("Request [getStates]")
+  sendRequest('getStates', {table: table_name}, function(r) {
+    smNodes = JSON.parse(r)
+    console.log("Request [smGetLinks]")
+    sendRequest('smGetLinks', {table: table_name}, function(r) {
+      smLinks = JSON.parse(r)
       // Render the StateMachine JSON DATA in DOT Language
       var strSVG: string = transpileSMtoDOT(smNodes, smLinks)
       //drawTokens(t)
-      // Finally, if everything is loading, show Modal
+      // Finally, when everything was loaded, show Modal
       var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true)
       var MID = M.DOM_ID
-      //console.log("Open Modal SM", MID)
       $("#"+MID+" .statediagram").html(Viz(strSVG))
       M.show()
     })
-  })   
+  })
+}
+function formatLabel(strLabel) {
+  var newstr: string = strLabel //.replace(" ", "\n")
+  return newstr //strLabel.replace(/(.{10})/g, "$&" + "\n")
 }
 function transpileSMtoDOT(smNodes, smLinks): string {
   var strLinks: string = ""
-  var strLabels: string = ""
+  var strNodes: string = ""
+  var strExitNodes: string = ""
   var strEP: string = ""
   // Build Links-String
   smLinks.forEach(function(e){
-    if (e.from == e.to)
-      strLinks += "s"+e.from+" -> s"+e.to+";\n";
-    else
-      strLinks += "s"+e.from+" -> s"+e.to+";\n"
+    if (e.from == e.to) {
+      // Loop
+      strLinks += "s"+e.from+":e -> s"+e.to+":w [penwidth=0.5];\n";
+    }
+    else {
+      if (isExitNode(e.to, smLinks)) {
+        // Link to exit
+        strLinks += "s"+e.from+":e -> s"+e.to+":w;\n"
+      } else {
+        // Normal Link
+        strLinks += "s"+e.from+":e -> s"+e.to+";\n"
+      }
+    }
   })
   // Build-Nodes String
   smNodes.forEach(function(e){
     // draw EntryPoint
-    if (e.entrypoint == 1) strEP = "start->s"+e.id+";\n" // [Start] -> EntryNode
+    if (e.entrypoint == 1) strEP = "start:e -> s"+e.id+":w;\n" // [Start] -> EntryNode
     // Check if is exit node
     var extNd = isExitNode(e.id, smLinks) // Set flag
     // Actual State
     var strActState = ""
     if (!extNd) // no Exit Node
-      strLabels += 's'+e.id+' [label="'+formatLabel(e.name)+'"'+strActState+'];\n'
-     else // Exit Node
-      strLabels += 's'+e.id+' [label="\n\n\n'+formatLabel(e.name)+
-        '" shape=doublecircle color=gray20 fillcolor=gray20 fixedsize=true width=0.1 height=0.1];\n'
+      strNodes += 's'+e.id+' [label="'+formatLabel(e.name)+'"'+strActState+'];\n'
+    else // Exit Node
+      strExitNodes += 's'+e.id+' [label="" xlabel="'+formatLabel(e.name)+'" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n'
   })
   // Give back vaild DOT String
   var result: string = `
   digraph G {
     # global
-    rankdir=LR; outputorder=edgesfirst; pad=0.5; splines=line;
-    node [style="filled" fillcolor=white color=gray20 fontcolor=gray20 fontname="Helvetica-bold" shape=rect fontsize=8];
-    edge [fontsize=10 color=gray70 arrowhead=open];
-    start [label="" shape=circle color=gray20 fillcolor=gray20 width=0.15 height=0.15];
+    graph [ rankdir=LR, ranksep ="0.7" nodesep=0.5 outputorder=edgesfirst]
+    node [fontname="Tahoma" style="filled" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin="0.20,0.05", shape=Mrecord, fontsize=8];
+    edge [arrowhead="vee" color=gray60, fillcolor=gray60 tailport=e];
+    start [label="" rank="source" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];
     # links
     `+strEP+`
     `+strLinks+`
     # nodes
-    `+strLabels+`
+    subgraph cluster_0 {
+      style=filled;
+      rank=same;
+      color=white;
+      `+strNodes+`
+    }
+    `+strExitNodes+`
   }`
   //console.log(result)
   return result
@@ -1116,10 +1064,6 @@ function isExitNode(NodeID: number, links) {
       res = false;
   })
   return res
-}
-function formatLabel(strLabel) {
-  var newstr: string = strLabel //.replace(" ", "\n")
-  return newstr //strLabel.replace(/(.{10})/g, "$&" + "\n")
 }
 function drawTokenToNode(state_id, text) {
 	// Get Position of Node

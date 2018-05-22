@@ -164,8 +164,8 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
 
   $scope.openProject = function(){
     // Build new URL and execute in new Tab
-    url = document.URL.replace("IPMS", "IPMS_test")
-    window.open(url + $scope.dbNames.model + ".php")
+    url = window.location.href.replace("IPMS", "IPMS_test")
+    window.open(url + $scope.dbNames.model+"/")
   }
 
   $scope.changeSelection = function() {

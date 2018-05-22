@@ -1,21 +1,39 @@
 <?php
   // Includes
+  require_once(__DIR__.'/../src/AuthHandler.inc.php');
   include_once(__DIR__."/../src/RequestHandler.inc.php");
 
-  // Parameter and inputstream
+  // Check if authenticated via Token
+  $rawtoken = JWT::getBearerToken();
+  try {
+    $token = JWT::decode($rawtoken, AUTH_KEY);
+  }
+  catch (Exception $e) {
+    // Invalid Token!
+    http_response_code(401);
+    exit();
+  }
+  // Token vaild but expired
+  if (property_exists($token, "exp")) {
+    if (($token->exp - time()) <= 0) {
+      http_response_code(401);
+      exit();
+    }
+  }
+  
+  // Parameter
   $paramData = json_decode(file_get_contents('php://input'), true);
-
   $command = $paramData["cmd"];
   $param = $paramData["paramJS"];
 
-  $RH = new RequestHandler();
-  // check if a command is set
-  if ($command != "") {   
+  // Handle the Requests
+  if ($command != "") {
+    $RH = new RequestHandler();
     if ($paramData != "") // are there parameters?
       $result = $RH->$command($param); // execute with params
     else
       $result = $RH->$command(); // execute
-    // Output
+    // Output result
     echo $result;
   }
 ?>

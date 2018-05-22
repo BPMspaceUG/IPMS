@@ -111,64 +111,40 @@
   	return $content;
   }
 
-  /*
-  // --- Liam
-  $output_LiamHeader = loadFile("./output_LiamHeader.php");
-  // --- Debug Header
-  $output_DebugHeader = loadFile("./output_DebugHeader.php");  
-	*/
-
-  // ------------------- Server Side
+  // ------------------- Load complete Project
   $class_StateEngine = loadFile("./output_StateEngine.php");
   $output_RequestHandler = loadFile("./output_RequestHandler.php");  
   $output_DBHandler = loadFile("./output_DatabaseHandler.php");
   $output_AuthHandler = loadFile("./output_AuthHandler.php");
   $output_API = loadFile("./output_API.php");
-
-  $output_DBHandler = str_replace('replaceDBName', $db_name, $output_DBHandler);
-
-  // ------------------- Client Side
   $output_LoginPage = loadFile("./output_LoginPage.php");
-  // --- HTML Header
   $output_header = loadFile("./output_header.php");
-  $output_header = str_replace('replaceDBName', $db_name, $output_header);
-  // --- CSS
   $output_css = loadFile("./muster.css");
+  $output_content = loadFile("./output_content.php");
+  $output_footer = loadFile("./output_footer.php");
+  $output_JS = loadFile("./muster.js");
+
+  // Replace Names
+  $output_DBHandler = str_replace('replaceDBName', $db_name, $output_DBHandler); // For Config-Include
+  $output_header = str_replace('replaceDBName', $db_name, $output_header); // For Title
+  $output_footer = str_replace('replaceDBName', $db_name, $output_footer); // For Footer
   
   // --- Content
-  $output_content = loadFile("./output_content.php");
   // Modify HTML for later adaptions
-  //    Insert Tabs in HTML (Remove last \n)
+  // Insert Tabs in HTML (Remove last \n)
   $content_tabs = substr($content_tabs, 0, -1);
   $content_tabpanels = substr($content_tabpanels, 0, -1);
   $output_content = str_replace('###TABS###', $content_tabs, $output_content);
   $output_content = str_replace('###TAB_PANELS###', $content_tabpanels, $output_content);
 
-  // --- Footer
-  $output_footer = loadFile("./output_footer.php");
-  $output_footer = str_replace('replaceDBName', $db_name, $output_footer);
-  // --- JavaScript
-  $output_JS = loadFile("./muster.js");
-
   // ------------------------------------ Generate Core File
-
-  $output_all = ''
-  // .$output_LiamHeader
-  // .$output_DebugHeader
-  //.$output_RequestHandler
-  // .$output_script
-  .$output_header
-  //.$output_menu
-  .$output_content
-  .$output_footer
-  ;
-
+  $output_all = $output_header.$output_content.$output_footer;
+  // Output information
   echo "Generating-Time: ".date("Y-m-d H:i:s")."\n\n";
   echo $queries1;
   echo $output_all;
 
   // ------------------------------------ Generate Config File
-
   // ---> ENCODE Data as JSON
   $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
   // ----------------------- Config File generator
@@ -185,6 +161,9 @@
   define("DB_HOST", "'.$db_server.'");
   define("DB_NAME", "'.$db_name.'");
 
+  // AuthKey
+  define("AUTH_KEY", "secretkeybpmspace_'.time().sha1(time()).'");
+
   // Structure Configuration Data
   $config_tables_json = \''.$json.'\';
 ?>';
@@ -196,7 +175,7 @@
   }
 
 
-  // ----> Write to filesystem
+  // ----> Write Project to Filesystem
 	//$Path_IPMS_test = '../../IPMS_test';
   $Path_IPMS_test = __DIR__ . "/../../IPMS_test"; //.$data."-config.php";
 

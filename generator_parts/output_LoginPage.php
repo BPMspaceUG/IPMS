@@ -1,41 +1,63 @@
 <?php
     // Includes
+    require_once(__DIR__.'/src/DatabaseHandler.inc.php'); // For Config (AuthKey)
     require_once(__DIR__.'/src/AuthHandler.inc.php');
 
     // Parameters
     @$user = $_POST['usr'];
     @$pass = $_POST['pwd'];
-    // TODO: check login
-    if ($user == 'root' && $pass == 'toor') {
-        
-        // TODO: Generate Token
-        $secret_key = 'bmp_space_165423106546545'; // TODO: Config
-        $token = array();
-        $token['uid'] = $_GET['uid'];
-        $token['firstname'] = $_GET['firstname'];
-        $token['lastname'] = $_GET['lastname'];
-        $token['exam_valid_for'] = $_GET['examvalidfor'];
-        $token['exam_id'] = $_GET['examid'];
-        $token['exp'] = time() + $_GET['tokenvalidfor'] * 60;
-        //echo '<a href="verify.php?token=';
-        echo JWT::encode($token, $secret_key);
-        //echo '">verify.php?token='.JWT::encode($token, $secret_key).'</a>'
 
-        // Set Cookie (for the next 30 days)
-        setcookie("token", "content", time()+(3600 * 24 * 30));
+    // TODO: Select Login from Database
+    $login_successful = false;   
+    /* 
+    // Select Login from Database
+    $login_successful = false;    
+    $sql = "SELECT userid, vorname, nachname FROM users WHERE username = '$user' AND password = '$pass' LIMIT 1;";
+    $res = DB::getInstance()->getConnection()->query($sql);
+    if ($res->num_rows > 0) {
+        $row = $res->fetch_array();
+        // Set Data
+        $user_id = $row[0];
+        $firstname = $row[1];
+        $lastname = $row[2];
+        $login_successful = true;
+    }
+    */
+    if ($user == 'root' && $pass == 'toor') {
+        $user_id = 23;
+        $firstname = 'John';
+        $lastname = 'Doe';
+        $login_successful = true;
+    }
+
+    
+    // Set Token when Login was successful
+    if ($login_successful) {
+        // Generate Token
+        $token_data = array();
+        $token_data['uid'] = $user_id;
+        $token_data['firstname'] = $firstname;
+        $token_data['lastname'] = $lastname;
+        // Token vaild for 60min
+        $token_data['exp'] = time() + 60 * 60; // 3600; // * 24 * 60;
+        $token = JWT::encode($token_data, AUTH_KEY);
+
+        // Set Cookie which holds Token (for the next 100 days)
+        // TODO: Better use localstorage in client -> build into API
+        setcookie("token", $token, time()+(3600 * 24 * 100));
+
         // Redirect
         header("Location: index.php");
         exit();
     }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <link rel="icon" href="../../favicon.ico">
     <title>Login</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   </head>
