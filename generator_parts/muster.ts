@@ -10,6 +10,44 @@ const gURL =  pathName + 'api/'
 var $: any;
 var Viz: any;
 
+// Atomic Function for API Calls -> ensures Authorization 
+function sendRequest(command: string, params: any, callback): void {
+  // TODO: Better use localStorage -> saves Bandwidth and does not expire
+  var cookie = document.cookie
+  var token = cookie.split('token=')[1]
+  // Request (every Request is processed by this function)
+  $.ajax({
+    method: "POST",
+    url: gURL,
+    beforeSend: function (xhr) {
+      xhr.setRequestHeader('Authorization', 'Bearer '+token);
+    },
+    contentType: 'json',
+    data: JSON.stringify({
+      cmd: command,
+      paramJS: params
+    }),
+    error: function(xhr, status) {
+      // Not Authorized
+      if (xhr.status == 401) {
+        document.location.assign('login.php') // Redirect to Login-Page
+      } else if (xhr.status == 403) {
+        alert("Sorry! You dont have the rights to do this.");
+      }
+    }
+  }).done(function(response) {
+    callback(response)
+  });
+}
+
+enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
+//==============================================================
+// Class: Modal
+//==============================================================
 class Modal {
   DOM_ID: string
 
@@ -56,50 +94,143 @@ class Modal {
   }
 }
 
-// TODO:
+//==============================================================
+// Class: StateMachine
+//==============================================================
 class StateMachine {
-  constructor(){}
+  tablename: string
+
+  constructor(tablename: string){
+    this.tablename = tablename
+  }
+
   getHTML(): string {
       return "";
   }
-}
 
-
-// Atomic Function for API Calls -> ensures Authorization 
-function sendRequest(command: string, params: any, callback): void {
-  // TODO: Better use localStorage -> saves Bandwidth and does not expire
-  var cookie = document.cookie
-  var token = cookie.split('token=')[1]
-  // Request (every Request is processed by this function)
-  $.ajax({
-    method: "POST",
-    url: gURL,
-    beforeSend: function (xhr) {
-      xhr.setRequestHeader('Authorization', 'Bearer '+token);
-    },
-    contentType: 'json',
-    data: JSON.stringify({
-      cmd: command,
-      paramJS: params
-    }),
-    error: function(xhr, status) {
-      // Not Authorized
-      if (xhr.status == 401) {
-        document.location.assign('login.php') // Redirect to Login-Page
+  openSEPopup() {
+    var smLinks, smNodes
+    var me = this
+  
+    console.log("Request [getStates]")
+    sendRequest('getStates', {table: me.tablename}, function(r) {
+      smNodes = JSON.parse(r)
+      console.log("Request [smGetLinks]")
+      sendRequest('smGetLinks', {table: me.tablename}, function(r) {
+        smLinks = JSON.parse(r)
+        // Render the StateMachine JSON DATA in DOT Language
+        var strSVG: string = me.transpileSMtoDOT(smNodes, smLinks)
+        //drawTokens(t)
+        // Finally, when everything was loaded, show Modal
+        var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true)
+        var MID = M.DOM_ID
+        $("#"+MID+" .statediagram").html(Viz(strSVG))
+        M.show()
+      })
+    })
+  }
+  formatLabel(strLabel) {
+    var newstr: string = strLabel //.replace(" ", "\n")
+    return newstr //strLabel.replace(/(.{10})/g, "$&" + "\n")
+  }
+  transpileSMtoDOT(smNodes, smLinks): string {
+    var strLinks: string = ""
+    var strNodes: string = ""
+    var strExitNodes: string = ""
+    var strEP: string = ""
+    var me = this
+    // Build Links-String
+    smLinks.forEach(function(e){
+      if (e.from == e.to) {
+        // Loop
+        strLinks += "s"+e.from+":e -> s"+e.to+":w [penwidth=0.5];\n";
       }
-    }
-  }).done(function(response) {
-    callback(response)
-  });
+      else {
+        if (me.isExitNode(e.to, smLinks)) {
+          // Link to exit
+          strLinks += "s"+e.from+":e -> s"+e.to+":w;\n"
+        } else {
+          // Normal Link
+          strLinks += "s"+e.from+":e -> s"+e.to+";\n"
+        }
+      }
+    })
+    // Build-Nodes String
+    smNodes.forEach(function(e){
+      // draw EntryPoint
+      if (e.entrypoint == 1) strEP = "start:e -> s"+e.id+":w;\n" // [Start] -> EntryNode
+      // Check if is exit node
+      var extNd = me.isExitNode(e.id, smLinks) // Set flag
+      // Actual State
+      var strActState = ""
+      if (!extNd) // no Exit Node
+        strNodes += 's'+e.id+' [label="'+me.formatLabel(e.name)+'"'+strActState+'];\n'
+      else // Exit Node
+        strExitNodes += 's'+e.id+' [label="" xlabel="'+me.formatLabel(e.name)+'" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n'
+    })
+    // Give back vaild DOT String
+    var result: string = `
+    digraph G {
+      # global
+      graph [ rankdir=LR, ranksep ="0.7" nodesep=0.5 outputorder=edgesfirst]
+      node [fontname="Tahoma" style="filled" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin="0.20,0.05", shape=Mrecord, fontsize=8];
+      edge [arrowhead="vee" color=gray60, fillcolor=gray60 tailport=e];
+      start [label="" rank="source" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];
+      # links
+      `+strEP+`
+      `+strLinks+`
+      # nodes
+      subgraph cluster_0 {
+        style=filled;
+        rank=same;
+        color=white;
+        `+strNodes+`
+      }
+      `+strExitNodes+`
+    }`;
+    return result
+  }
+  drawTokens(tbl) {
+    var me = this
+    // Clear all Tokens from SVG
+    $(".token").remove()
+    // Add Tokens
+    tbl.smNodes.forEach(function(e){
+      if (e.NrOfTokens > 0)
+        me.drawTokenToNode(e.id, e.NrOfTokens)
+    })
+  }
+  isExitNode(NodeID: number, links) {
+    var res: boolean = true;
+    links.forEach(function(e){
+      if (e.from == NodeID && e.from != e.to)
+        res = false;
+    })
+    return res
+  }
+  drawTokenToNode(state_id, text) {
+    // Get Position of Node
+    var pos = $("title").filter(function(){
+      return $(this).text() === 's'+state_id;
+    }).parents(".node")
+    // Find Text
+    var txt = pos.find("text")
+    var x: number = parseFloat(txt.attr("x"))
+    var y: number = parseFloat(txt.attr("y"))
+    y = y + 19
+    // Add Badge
+    var existingContent = pos.html()
+     //x = x - 5 // (text.toString().length * 3) // center
+     text = text.toString()
+    var toInsert: string = '<g class="token"><circle class="token_bg" cx="'+x+'" cy="'+y+'" fill="#5599dd" r="8"></circle>'+
+      '<text class="token_txt" x="'+(x - (2.5 * text.length))+'" y="'+(y+3.5)+'" fill="white" font-size="8px">'+text+'</text></g>'
+    pos.html(existingContent + toInsert)
+  }
 }
 
-
-
-enum SortOrder {
-  ASC = 'ASC',
-  DESC = 'DESC'
-}
-
+//==============================================================
+// Class: Table
+//==============================================================
 class Table {
   Columns;
   Rows;
@@ -142,15 +273,15 @@ class Table {
     this.getFormCreate();
     
     if (hasSM)
-      this.SM = new StateMachine();
+      this.SM = new StateMachine(this.tablename);
     else
       this.SM = null;
     var me = this
     this.countRows(function(){me.loadRows();})
   }
-  //=================================================================================//
-  //  Helper functions                                                               //
-  //=================================================================================//
+
+  //=============  Helper functions
+
   getRowByID(RowID: number): any {
     var result: any = null;
     var me: Table = this;
@@ -289,7 +420,7 @@ class Table {
       // Filter Button
       '&nbsp;<button class="btn btn-default" onclick="getTable(\''+t.tablename+'\').loadRows()"><i class="fa fa-search"></i><span class="hidden-xs">&nbsp;Filter</span></button>'+
       // Workflow Button 
-      '&nbsp;<button class="btn btn-default" onclick="openSEPopup(\''+t.tablename+'\')"'+(t.SM ? '' : ' disabled')+'>'+
+      '&nbsp;<button class="btn btn-default" onclick="showSE(\''+t.tablename+'\')"'+(t.SM ? '' : ' disabled')+'>'+
       '<i class="fa fa-random"></i><span class="hidden-xs">&nbsp;Workflow</span></button>';
   
     // No Buttons if ReadOnly
@@ -358,9 +489,9 @@ class Table {
       t.lastModifiedRowID = 0;
     }
   }
-  //=================================================================================//
-  //  Core functions                                                                 //
-  //=================================================================================//
+  
+  //=============  CORE functions
+
   getFormCreate(): void {
     var me: Table = this;
     console.log("Request [getFormCreate]")
@@ -481,9 +612,6 @@ class Table {
 
 
 
-
-
-
 // TODO:  Put the folowing functions in the classes, or reduce them
 
 // BUTTON Create
@@ -510,17 +638,21 @@ function createEntry(table_name: string): void {
 
     // Only if statemachine active,
     // otherwise conflict when creating an entry in tabe 'state'
+    /*
     if (getTable(tablename).SM)
       data['state_id'] = '%!%PLACE_EP_HERE%!%';
-
+    */
     // RESPONSE
     function created(r){
+      // Remove all Error Messages
+      $('#' + MID + ' .modal-body .alert').remove();
       //console.log("Create (RAW):", r)
       try {
         var msgs = JSON.parse(r)
       }
       catch(err) {
-        console.log("Error:", r)
+        //console.log("Script Error:", r)
+        // Show Error        
         $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
         '<b>Script Error!</b>&nbsp;'+ r +
         '</div>')
@@ -530,13 +662,9 @@ function createEntry(table_name: string): void {
       console.log("TransScript:", msgs)
       var counter = 0; // 0 = trans, 1 = in -- but only at Create!
       msgs.forEach(msg => {
-        // Remove all Error Messages
-        $('#' + MID + ' .modal-body .alert').remove();
-
         // Show Message
         if (msg.show_message)
           showResult(msg.message, 'Feedback <small>'+(counter == 0 ? 'Transition-Script' : 'IN-Script')+'</small>')
-
         // Check
         if (msg.element_id) {
           if (msg.element_id > 0) {
@@ -555,7 +683,6 @@ function createEntry(table_name: string): void {
         }
         counter++;
       });
-
     }
     // REQUEST
     getTable(tablename).createRow(data, created); 
@@ -563,7 +690,6 @@ function createEntry(table_name: string): void {
 
   M.show()
 }
-
 
 // TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
 function setState(btn, tablename: string, RowID: number, targetStateID: number): void {
@@ -578,6 +704,8 @@ function setState(btn, tablename: string, RowID: number, targetStateID: number):
   t.transitRow(RowID, targetStateID, data, transitioned)
   // RESPONSE
   function transitioned(r) {
+    // Remove all Error Messages
+    $('#' + Mid + ' .modal-body .alert').remove();
     try {
       var msgs = JSON.parse(r)
     }
@@ -668,7 +796,6 @@ function renderEditForm(Table: Table, RowID: number, PrimaryColumn: string, html
   $('#'+EditMID+' .modal-body').append('<input type="hidden" name="'+PrimaryColumn+'" value="'+RowID+'">')
   M.show()
 }
-
 
 function readDataFromForm(jQSel: string, tablename: string): any {
   var inputs = $(jQSel+' :input')
@@ -842,7 +969,6 @@ function saveEntry(x, closeModal: boolean = true){
   }
 }
 
-
 function delRow(tablename: string, id: number) {
   // Ask 
   var IsSure = confirm("Do you really want to delete this entry?")
@@ -868,29 +994,24 @@ function getTable(table_name: string): Table {
 
 
 
-// TODO: Put in class TableManager
-function initTables(callback) {
-  console.log('Initializing...')
-  sendRequest('init', '', function(r){
-    if (r.length > 0) {
-      var resp = JSON.parse(r)
-      callback(resp)
-    }
-  })
-}
-
-initTables(function(data){
-  // Init each table
-  Object.keys(data).forEach(function(t){
-    // Create a new object and save it in global array
-    var newT = new Table(false, '.table_'+data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only)
-    gTables.push(newT)
-  })
-  // First Tab selection
-  $('.nav-tabs li:first').addClass('active')
-  $('.tab-content .tab-pane:first').addClass('active')
-});
-
+/*====================================================================
+    I N I T I A L I Z E       T A B L E S
+====================================================================*/
+// TODO: Put in index-html file
+sendRequest('init', '', function(r){
+  if (r.length > 0) {
+    var data = JSON.parse(r)
+    // Init Table Objects
+    Object.keys(data).forEach(function(t){
+      // Create a new object and save it in global array
+      var newT = new Table(false, '.table_'+data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only)
+      gTables.push(newT)
+    })
+    // First Tab selection
+    $('.nav-tabs li:first').addClass('active')
+    $('.tab-content .tab-pane:first').addClass('active')
+  }
+})
 
 
 
@@ -903,13 +1024,17 @@ $(document).on('show.bs.modal', '.modal', function () {
   }, 0);
 });
 // Autofocus first input
+/*
 $(document).on('shown.bs.modal', '.modal', function () {
   //console.log("focus first element...");
   $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
 });
+*/
 
-
-
+function showSE(tablename) {
+  var t = getTable(tablename);
+  t.SM.openSEPopup();
+}
 function openFK(x, fk_table_name, originalKey) {
   var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
   // Modal
@@ -945,10 +1070,8 @@ function openFK(x, fk_table_name, originalKey) {
     var val_subst = ForeignRow[col_subst]
     element.parent().find('.fkval').text(val_subst); // Set GUI
   })
-
   M.show()  
 }
-
 function showResult(content: string, title: string = 'StateMachine Feedback'): void {
   var M = new Modal(title, content)
   M.show()
@@ -956,130 +1079,4 @@ function showResult(content: string, title: string = 'StateMachine Feedback'): v
 function addClassToDataRow(jQuerySelector: string, id: number, classname: string) {
   $(jQuerySelector+' .datarow').removeClass(classname);
   $(jQuerySelector+' .row-'+id).addClass(classname);
-}
-
-
-
-
-
-//--------------------- Drawing Functions for StateMachine Render
-// TODO: Put in TS-Class
-
-function openSEPopup(table_name: string) {
-  var t: Table = getTable(table_name)
-  if (!t) return
-  var smLinks, smNodes
-
-  console.log("Request [getStates]")
-  sendRequest('getStates', {table: table_name}, function(r) {
-    smNodes = JSON.parse(r)
-    console.log("Request [smGetLinks]")
-    sendRequest('smGetLinks', {table: table_name}, function(r) {
-      smLinks = JSON.parse(r)
-      // Render the StateMachine JSON DATA in DOT Language
-      var strSVG: string = transpileSMtoDOT(smNodes, smLinks)
-      //drawTokens(t)
-      // Finally, when everything was loaded, show Modal
-      var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true)
-      var MID = M.DOM_ID
-      $("#"+MID+" .statediagram").html(Viz(strSVG))
-      M.show()
-    })
-  })
-}
-function formatLabel(strLabel) {
-  var newstr: string = strLabel //.replace(" ", "\n")
-  return newstr //strLabel.replace(/(.{10})/g, "$&" + "\n")
-}
-function transpileSMtoDOT(smNodes, smLinks): string {
-  var strLinks: string = ""
-  var strNodes: string = ""
-  var strExitNodes: string = ""
-  var strEP: string = ""
-  // Build Links-String
-  smLinks.forEach(function(e){
-    if (e.from == e.to) {
-      // Loop
-      strLinks += "s"+e.from+":e -> s"+e.to+":w [penwidth=0.5];\n";
-    }
-    else {
-      if (isExitNode(e.to, smLinks)) {
-        // Link to exit
-        strLinks += "s"+e.from+":e -> s"+e.to+":w;\n"
-      } else {
-        // Normal Link
-        strLinks += "s"+e.from+":e -> s"+e.to+";\n"
-      }
-    }
-  })
-  // Build-Nodes String
-  smNodes.forEach(function(e){
-    // draw EntryPoint
-    if (e.entrypoint == 1) strEP = "start:e -> s"+e.id+":w;\n" // [Start] -> EntryNode
-    // Check if is exit node
-    var extNd = isExitNode(e.id, smLinks) // Set flag
-    // Actual State
-    var strActState = ""
-    if (!extNd) // no Exit Node
-      strNodes += 's'+e.id+' [label="'+formatLabel(e.name)+'"'+strActState+'];\n'
-    else // Exit Node
-      strExitNodes += 's'+e.id+' [label="" xlabel="'+formatLabel(e.name)+'" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n'
-  })
-  // Give back vaild DOT String
-  var result: string = `
-  digraph G {
-    # global
-    graph [ rankdir=LR, ranksep ="0.7" nodesep=0.5 outputorder=edgesfirst]
-    node [fontname="Tahoma" style="filled" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin="0.20,0.05", shape=Mrecord, fontsize=8];
-    edge [arrowhead="vee" color=gray60, fillcolor=gray60 tailport=e];
-    start [label="" rank="source" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];
-    # links
-    `+strEP+`
-    `+strLinks+`
-    # nodes
-    subgraph cluster_0 {
-      style=filled;
-      rank=same;
-      color=white;
-      `+strNodes+`
-    }
-    `+strExitNodes+`
-  }`
-  //console.log(result)
-  return result
-}
-function drawTokens(tbl) {
-  // Clear all Tokens from SVG
-  $(".token").remove()
-  // Add Tokens
-  tbl.smNodes.forEach(function(e){
-    if (e.NrOfTokens > 0)
-      drawTokenToNode(e.id, e.NrOfTokens)
-  })
-}
-function isExitNode(NodeID: number, links) {
-  var res: boolean = true;
-  links.forEach(function(e){
-    if (e.from == NodeID && e.from != e.to)
-      res = false;
-  })
-  return res
-}
-function drawTokenToNode(state_id, text) {
-	// Get Position of Node
-	var pos = $("title").filter(function(){
-		return $(this).text() === 's'+state_id;
-	}).parents(".node")
-	// Find Text
-	var txt = pos.find("text")
-	var x: number = parseFloat(txt.attr("x"))
-	var y: number = parseFloat(txt.attr("y"))
-	y = y + 19
-	// Add Badge
-  var existingContent = pos.html()
- 	//x = x - 5 // (text.toString().length * 3) // center
- 	text = text.toString()
-  var toInsert: string = '<g class="token"><circle class="token_bg" cx="'+x+'" cy="'+y+'" fill="#5599dd" r="8"></circle>'+
-  	'<text class="token_txt" x="'+(x - (2.5 * text.length))+'" y="'+(y+3.5)+'" fill="white" font-size="8px">'+text+'</text></g>'
-  pos.html(existingContent + toInsert)
 }

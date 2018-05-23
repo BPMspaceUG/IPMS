@@ -32,7 +32,7 @@
     }
 
     // Token vaild
-    echo "Hello ".$token->firstname."! ";
+    echo "Hello ".$token->firstname." ".$token->lastname."! ";
     if (property_exists($token, "exp"))
       echo "Your Token will expire in ".(($token->exp - time()) / 60)."min.";
     else

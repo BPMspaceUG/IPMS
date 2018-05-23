@@ -62,24 +62,28 @@
       $where = substr($where, 0, -5); // remove last ' AND ' (5 chars)
       return $where;
     }
-    private function buildSQLUpdatePart($cols, $primarycols, $rows) {
+    private function buildSQLUpdatePart($cols, $primarycols, $rows, $tablename) {
       $update = "";
       // Convert everything to lowercase      
       $primarycols = array_map('strtolower', $primarycols);
+      $existing_cols = RequestHandler::getColumnsByTablename($this->config, $tablename);
       // Loop every element
       foreach ($cols as $col) {
         // update only when no primary column
         if (!in_array($col, $primarycols)) {
-          // Special check for NULL (especially for ForeignKeys)
-          if (is_null($rows[$col]))
-            $update .= $col.'=NULL';
-          else
-            $update .= $col."='".DB::getInstance()->getConnection()->real_escape_string($rows[$col])."'";
-          // Seperate by comma
-          $update .= ", ";
+          // Only add existing Columns of param to query
+          if (array_key_exists($col, $existing_cols)) {
+            // Special check for NULL (especially for ForeignKeys)
+            if (is_null($rows[$col]))
+              $update .= $col.'=NULL';
+            else
+              $update .= $col."='".DB::getInstance()->getConnection()->real_escape_string($rows[$col])."'";
+            // Seperate by comma
+            $update .= ",";
+          }
         }
       }
-      $update = substr($update, 0, -2); // remove last ' ,' (2 chars)
+      $update = substr($update, 0, -1); // remove last ',' char
       return $update;
     }
     private static function splitQuery($row) {
@@ -112,26 +116,14 @@
       // Inputs
       $tablename = $param["table"];
       // New State Machine
-      $SM = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);      
-      // Check Query
-      $x = RequestHandler::splitQuery($param["row"]);
-      // Substitute Value for EntryPoint of Statemachine
-      for ($i=0;$i<count($x);$i++) {
-        // TODO: Make this better
-        // (EP from client, and then check if correct in server)
-        if ($x[$i]["value"] == '%!%PLACE_EP_HERE%!%')
-          $x[$i]["value"] = $SM->getEntryPoint();
-      }
-      // Rebuild Object
-      for ($i=0;$i<count($param["row"]);$i++) {
-        $param["row"][$x[$i]["key"]] = $x[$i]["value"];
-      }
-
-      // TODO: Make ARRAY for Script results
+      $SM = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);   
+      // Make ARRAY for Script results
       $script_result = array();
-
       // Has StateMachine? then execute Scripts
       if ($SM->getID() > 0) {
+        // Override/Set EP
+        $EP = $SM->getEntryPoint();
+        $param["row"]["state_id"]  = $EP;
         // Transition Script
         $script = $SM->getTransitionScriptCreate();
         $script_result[] = $SM->executeScript($script, $param);
@@ -140,22 +132,24 @@
         // NO StateMachine
         $script_result[] = array("allow_transition" => true);
       }
-
       // If allow transition then Create
       if (@$script_result[0]["allow_transition"] == true) {
-
       	// Reload row, because maybe the TransitionScript has changed some params
         $keys = array();
         $vals = array();
         $x = RequestHandler::splitQuery($param["row"]);
+        $cols = RequestHandler::getColumnsByTablename($this->config, $tablename);
         foreach ($x as $el) {
-          $keys[] = DB::getInstance()->getConnection()->real_escape_string($el["key"]);
-          $vals[] = is_null($el["value"]) ? NULL : DB::getInstance()->getConnection()->real_escape_string($el["value"]);          
+          // Only add existing Columns of param to query
+          if (array_key_exists($el["key"], $cols)) {
+            // escape keys and values
+            $keys[] = DB::getInstance()->getConnection()->real_escape_string($el["key"]);
+            $vals[] = is_null($el["value"]) ? NULL : DB::getInstance()->getConnection()->real_escape_string($el["value"]);
+          }
         }
-
         // --- Operation CREATE
-        $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES (".
-          RequestHandler::implodeWithNULLVals($vals).");";
+        // Build Query
+        $query = "INSERT INTO ".$tablename." (".implode(",", $keys).") VALUES (".RequestHandler::implodeWithNULLVals($vals).");";
         $res = DB::getInstance()->getConnection()->query($query);
         $newElementID = DB::getInstance()->getConnection()->insert_id;
 
@@ -263,7 +257,7 @@
       $tablename = $param["table"];
       $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);
       // Build query
-      $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"]);
+      $update = $this->buildSQLUpdatePart(array_keys($param["row"]), $pCols, $param["row"], $tablename);
       $where = RequestHandler::buildSQLWherePart($pCols, $param["row"]);
       $query = "UPDATE ".$tablename." SET ".$update." WHERE ".$where.";";
       $res = DB::getInstance()->getConnection()->query($query);
@@ -296,7 +290,6 @@
     public function getFormData($param) {
       // Inputs
       $tablename = $param["table"];
-
       // TODO: Make function::::::::::::::::::::::::
       // Find correct state_id with the inputs
       $pCols = RequestHandler::getPrimaryColByTablename($this->config, $tablename);

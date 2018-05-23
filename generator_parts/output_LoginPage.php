@@ -8,12 +8,13 @@
     @$pass = $_POST['pwd'];
 
     // TODO: Select Login from Database
-    $login_successful = false;   
+    $login_successful = false;
     /* 
     // Select Login from Database
     $login_successful = false;    
     $sql = "SELECT userid, vorname, nachname FROM users WHERE username = '$user' AND password = '$pass' LIMIT 1;";
     $res = DB::getInstance()->getConnection()->query($sql);
+
     if ($res->num_rows > 0) {
         $row = $res->fetch_array();
         // Set Data
@@ -23,6 +24,7 @@
         $login_successful = true;
     }
     */
+    // For Testing
     if ($user == 'root' && $pass == 'toor') {
         $user_id = 23;
         $firstname = 'John';

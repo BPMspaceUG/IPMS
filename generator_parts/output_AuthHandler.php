@@ -1,5 +1,4 @@
 <?php
-
 /**
  * JSON Web Token implementation, based on this spec:
  * http://tools.ietf.org/html/draft-ietf-oauth-json-web-token-06
@@ -195,7 +194,7 @@ class JWT
 
 
 	/** 
-	 * Get hearder Authorization
+	 * Get header Authorization
 	 * */
 	public static function getAuthorizationHeader(){
 		$headers = null;

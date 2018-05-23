@@ -7,6 +7,44 @@ var gURL = pathName + 'api/';
 // Plugins
 var $;
 var Viz;
+// Atomic Function for API Calls -> ensures Authorization 
+function sendRequest(command, params, callback) {
+    // TODO: Better use localStorage -> saves Bandwidth and does not expire
+    var cookie = document.cookie;
+    var token = cookie.split('token=')[1];
+    // Request (every Request is processed by this function)
+    $.ajax({
+        method: "POST",
+        url: gURL,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+        },
+        contentType: 'json',
+        data: JSON.stringify({
+            cmd: command,
+            paramJS: params
+        }),
+        error: function (xhr, status) {
+            // Not Authorized
+            if (xhr.status == 401) {
+                document.location.assign('login.php'); // Redirect to Login-Page
+            }
+            else if (xhr.status == 403) {
+                alert("Sorry! You dont have the rights to do this.");
+            }
+        }
+    }).done(function (response) {
+        callback(response);
+    });
+}
+var SortOrder;
+(function (SortOrder) {
+    SortOrder["ASC"] = "ASC";
+    SortOrder["DESC"] = "DESC";
+})(SortOrder || (SortOrder = {}));
+//==============================================================
+// Class: Modal
+//==============================================================
 var Modal = /** @class */ (function () {
     function Modal(heading, content, footer, isBig) {
         if (footer === void 0) { footer = ''; }
@@ -53,47 +91,122 @@ var Modal = /** @class */ (function () {
     };
     return Modal;
 }());
-// TODO:
+//==============================================================
+// Class: StateMachine
+//==============================================================
 var StateMachine = /** @class */ (function () {
-    function StateMachine() {
+    function StateMachine(tablename) {
+        this.tablename = tablename;
     }
     StateMachine.prototype.getHTML = function () {
         return "";
     };
+    StateMachine.prototype.openSEPopup = function () {
+        var smLinks, smNodes;
+        var me = this;
+        console.log("Request [getStates]");
+        sendRequest('getStates', { table: me.tablename }, function (r) {
+            smNodes = JSON.parse(r);
+            console.log("Request [smGetLinks]");
+            sendRequest('smGetLinks', { table: me.tablename }, function (r) {
+                smLinks = JSON.parse(r);
+                // Render the StateMachine JSON DATA in DOT Language
+                var strSVG = me.transpileSMtoDOT(smNodes, smLinks);
+                //drawTokens(t)
+                // Finally, when everything was loaded, show Modal
+                var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true);
+                var MID = M.DOM_ID;
+                $("#" + MID + " .statediagram").html(Viz(strSVG));
+                M.show();
+            });
+        });
+    };
+    StateMachine.prototype.formatLabel = function (strLabel) {
+        var newstr = strLabel; //.replace(" ", "\n")
+        return newstr; //strLabel.replace(/(.{10})/g, "$&" + "\n")
+    };
+    StateMachine.prototype.transpileSMtoDOT = function (smNodes, smLinks) {
+        var strLinks = "";
+        var strNodes = "";
+        var strExitNodes = "";
+        var strEP = "";
+        var me = this;
+        // Build Links-String
+        smLinks.forEach(function (e) {
+            if (e.from == e.to) {
+                // Loop
+                strLinks += "s" + e.from + ":e -> s" + e.to + ":w [penwidth=0.5];\n";
+            }
+            else {
+                if (me.isExitNode(e.to, smLinks)) {
+                    // Link to exit
+                    strLinks += "s" + e.from + ":e -> s" + e.to + ":w;\n";
+                }
+                else {
+                    // Normal Link
+                    strLinks += "s" + e.from + ":e -> s" + e.to + ";\n";
+                }
+            }
+        });
+        // Build-Nodes String
+        smNodes.forEach(function (e) {
+            // draw EntryPoint
+            if (e.entrypoint == 1)
+                strEP = "start:e -> s" + e.id + ":w;\n"; // [Start] -> EntryNode
+            // Check if is exit node
+            var extNd = me.isExitNode(e.id, smLinks); // Set flag
+            // Actual State
+            var strActState = "";
+            if (!extNd)
+                strNodes += 's' + e.id + ' [label="' + me.formatLabel(e.name) + '"' + strActState + '];\n';
+            else
+                strExitNodes += 's' + e.id + ' [label="" xlabel="' + me.formatLabel(e.name) + '" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n';
+        });
+        // Give back vaild DOT String
+        var result = "\n    digraph G {\n      # global\n      graph [ rankdir=LR, ranksep =\"0.7\" nodesep=0.5 outputorder=edgesfirst]\n      node [fontname=\"Tahoma\" style=\"filled\" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin=\"0.20,0.05\", shape=Mrecord, fontsize=8];\n      edge [arrowhead=\"vee\" color=gray60, fillcolor=gray60 tailport=e];\n      start [label=\"\" rank=\"source\" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];\n      # links\n      " + strEP + "\n      " + strLinks + "\n      # nodes\n      subgraph cluster_0 {\n        style=filled;\n        rank=same;\n        color=white;\n        " + strNodes + "\n      }\n      " + strExitNodes + "\n    }";
+        return result;
+    };
+    StateMachine.prototype.drawTokens = function (tbl) {
+        var me = this;
+        // Clear all Tokens from SVG
+        $(".token").remove();
+        // Add Tokens
+        tbl.smNodes.forEach(function (e) {
+            if (e.NrOfTokens > 0)
+                me.drawTokenToNode(e.id, e.NrOfTokens);
+        });
+    };
+    StateMachine.prototype.isExitNode = function (NodeID, links) {
+        var res = true;
+        links.forEach(function (e) {
+            if (e.from == NodeID && e.from != e.to)
+                res = false;
+        });
+        return res;
+    };
+    StateMachine.prototype.drawTokenToNode = function (state_id, text) {
+        // Get Position of Node
+        var pos = $("title").filter(function () {
+            return $(this).text() === 's' + state_id;
+        }).parents(".node");
+        // Find Text
+        var txt = pos.find("text");
+        var x = parseFloat(txt.attr("x"));
+        var y = parseFloat(txt.attr("y"));
+        y = y + 19;
+        // Add Badge
+        var existingContent = pos.html();
+        //x = x - 5 // (text.toString().length * 3) // center
+        text = text.toString();
+        var toInsert = '<g class="token"><circle class="token_bg" cx="' + x + '" cy="' + y + '" fill="#5599dd" r="8"></circle>' +
+            '<text class="token_txt" x="' + (x - (2.5 * text.length)) + '" y="' + (y + 3.5) + '" fill="white" font-size="8px">' + text + '</text></g>';
+        pos.html(existingContent + toInsert);
+    };
     return StateMachine;
 }());
-// Atomic Function for API Calls -> ensures Authorization 
-function sendRequest(command, params, callback) {
-    // TODO: Better use localStorage -> saves Bandwidth and does not expire
-    var cookie = document.cookie;
-    var token = cookie.split('token=')[1];
-    // Request (every Request is processed by this function)
-    $.ajax({
-        method: "POST",
-        url: gURL,
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-        },
-        contentType: 'json',
-        data: JSON.stringify({
-            cmd: command,
-            paramJS: params
-        }),
-        error: function (xhr, status) {
-            // Not Authorized
-            if (xhr.status == 401) {
-                document.location.assign('login.php'); // Redirect to Login-Page
-            }
-        }
-    }).done(function (response) {
-        callback(response);
-    });
-}
-var SortOrder;
-(function (SortOrder) {
-    SortOrder["ASC"] = "ASC";
-    SortOrder["DESC"] = "DESC";
-})(SortOrder || (SortOrder = {}));
+//==============================================================
+// Class: Table
+//==============================================================
 var Table = /** @class */ (function () {
     function Table(isFK, DOMselector, tablename, columns, hasSM, readonly) {
         if (hasSM === void 0) { hasSM = false; }
@@ -122,15 +235,13 @@ var Table = /** @class */ (function () {
         this.Form_Create = '';
         this.getFormCreate();
         if (hasSM)
-            this.SM = new StateMachine();
+            this.SM = new StateMachine(this.tablename);
         else
             this.SM = null;
         var me = this;
         this.countRows(function () { me.loadRows(); });
     }
-    //=================================================================================//
-    //  Helper functions                                                               //
-    //=================================================================================//
+    //=============  Helper functions
     Table.prototype.getRowByID = function (RowID) {
         var result = null;
         var me = this;
@@ -269,7 +380,7 @@ var Table = /** @class */ (function () {
             // Filter Button
             '&nbsp;<button class="btn btn-default" onclick="getTable(\'' + t.tablename + '\').loadRows()"><i class="fa fa-search"></i><span class="hidden-xs">&nbsp;Filter</span></button>' +
             // Workflow Button 
-            '&nbsp;<button class="btn btn-default" onclick="openSEPopup(\'' + t.tablename + '\')"' + (t.SM ? '' : ' disabled') + '>' +
+            '&nbsp;<button class="btn btn-default" onclick="showSE(\'' + t.tablename + '\')"' + (t.SM ? '' : ' disabled') + '>' +
             '<i class="fa fa-random"></i><span class="hidden-xs">&nbsp;Workflow</span></button>';
         // No Buttons if ReadOnly
         if (!t.ReadOnly) {
@@ -336,9 +447,7 @@ var Table = /** @class */ (function () {
             t.lastModifiedRowID = 0;
         }
     };
-    //=================================================================================//
-    //  Core functions                                                                 //
-    //=================================================================================//
+    //=============  CORE functions
     Table.prototype.getFormCreate = function () {
         var me = this;
         console.log("Request [getFormCreate]");
@@ -478,16 +587,21 @@ function createEntry(table_name) {
         var data = readDataFromForm('#' + MID, tablename);
         // Only if statemachine active,
         // otherwise conflict when creating an entry in tabe 'state'
+        /*
         if (getTable(tablename).SM)
-            data['state_id'] = '%!%PLACE_EP_HERE%!%';
+          data['state_id'] = '%!%PLACE_EP_HERE%!%';
+        */
         // RESPONSE
         function created(r) {
+            // Remove all Error Messages
+            $('#' + MID + ' .modal-body .alert').remove();
             //console.log("Create (RAW):", r)
             try {
                 var msgs = JSON.parse(r);
             }
             catch (err) {
-                console.log("Error:", r);
+                //console.log("Script Error:", r)
+                // Show Error        
                 $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
                     '<b>Script Error!</b>&nbsp;' + r +
                     '</div>');
@@ -497,8 +611,6 @@ function createEntry(table_name) {
             console.log("TransScript:", msgs);
             var counter = 0; // 0 = trans, 1 = in -- but only at Create!
             msgs.forEach(function (msg) {
-                // Remove all Error Messages
-                $('#' + MID + ' .modal-body .alert').remove();
                 // Show Message
                 if (msg.show_message)
                     showResult(msg.message, 'Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>');
@@ -538,6 +650,8 @@ function setState(btn, tablename, RowID, targetStateID) {
     t.transitRow(RowID, targetStateID, data, transitioned);
     // RESPONSE
     function transitioned(r) {
+        // Remove all Error Messages
+        $('#' + Mid + ' .modal-body .alert').remove();
         try {
             var msgs = JSON.parse(r);
         }
@@ -814,26 +928,23 @@ function getTable(table_name) {
     });
     return result;
 }
-// TODO: Put in class TableManager
-function initTables(callback) {
-    console.log('Initializing...');
-    sendRequest('init', '', function (r) {
-        if (r.length > 0) {
-            var resp = JSON.parse(r);
-            callback(resp);
-        }
-    });
-}
-initTables(function (data) {
-    // Init each table
-    Object.keys(data).forEach(function (t) {
-        // Create a new object and save it in global array
-        var newT = new Table(false, '.table_' + data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only);
-        gTables.push(newT);
-    });
-    // First Tab selection
-    $('.nav-tabs li:first').addClass('active');
-    $('.tab-content .tab-pane:first').addClass('active');
+/*====================================================================
+    I N I T I A L I Z E       T A B L E S
+====================================================================*/
+// TODO: Put in index-html file
+sendRequest('init', '', function (r) {
+    if (r.length > 0) {
+        var data = JSON.parse(r);
+        // Init Table Objects
+        Object.keys(data).forEach(function (t) {
+            // Create a new object and save it in global array
+            var newT = new Table(false, '.table_' + data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only);
+            gTables.push(newT);
+        });
+        // First Tab selection
+        $('.nav-tabs li:first').addClass('active');
+        $('.tab-content .tab-pane:first').addClass('active');
+    }
 });
 // Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {
@@ -844,10 +955,16 @@ $(document).on('show.bs.modal', '.modal', function () {
     }, 0);
 });
 // Autofocus first input
+/*
 $(document).on('shown.bs.modal', '.modal', function () {
-    //console.log("focus first element...");
-    $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
+  //console.log("focus first element...");
+  $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
 });
+*/
+function showSE(tablename) {
+    var t = getTable(tablename);
+    t.SM.openSEPopup();
+}
 function openFK(x, fk_table_name, originalKey) {
     var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
     // Modal
@@ -891,108 +1008,4 @@ function showResult(content, title) {
 function addClassToDataRow(jQuerySelector, id, classname) {
     $(jQuerySelector + ' .datarow').removeClass(classname);
     $(jQuerySelector + ' .row-' + id).addClass(classname);
-}
-//--------------------- Drawing Functions for StateMachine Render
-// TODO: Put in TS-Class
-function openSEPopup(table_name) {
-    var t = getTable(table_name);
-    if (!t)
-        return;
-    var smLinks, smNodes;
-    console.log("Request [getStates]");
-    sendRequest('getStates', { table: table_name }, function (r) {
-        smNodes = JSON.parse(r);
-        console.log("Request [smGetLinks]");
-        sendRequest('smGetLinks', { table: table_name }, function (r) {
-            smLinks = JSON.parse(r);
-            // Render the StateMachine JSON DATA in DOT Language
-            var strSVG = transpileSMtoDOT(smNodes, smLinks);
-            //drawTokens(t)
-            // Finally, when everything was loaded, show Modal
-            var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true);
-            var MID = M.DOM_ID;
-            $("#" + MID + " .statediagram").html(Viz(strSVG));
-            M.show();
-        });
-    });
-}
-function formatLabel(strLabel) {
-    var newstr = strLabel; //.replace(" ", "\n")
-    return newstr; //strLabel.replace(/(.{10})/g, "$&" + "\n")
-}
-function transpileSMtoDOT(smNodes, smLinks) {
-    var strLinks = "";
-    var strNodes = "";
-    var strExitNodes = "";
-    var strEP = "";
-    // Build Links-String
-    smLinks.forEach(function (e) {
-        if (e.from == e.to) {
-            // Loop
-            strLinks += "s" + e.from + ":e -> s" + e.to + ":w [penwidth=0.5];\n";
-        }
-        else {
-            if (isExitNode(e.to, smLinks)) {
-                // Link to exit
-                strLinks += "s" + e.from + ":e -> s" + e.to + ":w;\n";
-            }
-            else {
-                // Normal Link
-                strLinks += "s" + e.from + ":e -> s" + e.to + ";\n";
-            }
-        }
-    });
-    // Build-Nodes String
-    smNodes.forEach(function (e) {
-        // draw EntryPoint
-        if (e.entrypoint == 1)
-            strEP = "start:e -> s" + e.id + ":w;\n"; // [Start] -> EntryNode
-        // Check if is exit node
-        var extNd = isExitNode(e.id, smLinks); // Set flag
-        // Actual State
-        var strActState = "";
-        if (!extNd)
-            strNodes += 's' + e.id + ' [label="' + formatLabel(e.name) + '"' + strActState + '];\n';
-        else
-            strExitNodes += 's' + e.id + ' [label="" xlabel="' + formatLabel(e.name) + '" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n';
-    });
-    // Give back vaild DOT String
-    var result = "\n  digraph G {\n    # global\n    graph [ rankdir=LR, ranksep =\"0.7\" nodesep=0.5 outputorder=edgesfirst]\n    node [fontname=\"Tahoma\" style=\"filled\" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin=\"0.20,0.05\", shape=Mrecord, fontsize=8];\n    edge [arrowhead=\"vee\" color=gray60, fillcolor=gray60 tailport=e];\n    start [label=\"\" rank=\"source\" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];\n    # links\n    " + strEP + "\n    " + strLinks + "\n    # nodes\n    subgraph cluster_0 {\n      style=filled;\n      rank=same;\n      color=white;\n      " + strNodes + "\n    }\n    " + strExitNodes + "\n  }";
-    //console.log(result)
-    return result;
-}
-function drawTokens(tbl) {
-    // Clear all Tokens from SVG
-    $(".token").remove();
-    // Add Tokens
-    tbl.smNodes.forEach(function (e) {
-        if (e.NrOfTokens > 0)
-            drawTokenToNode(e.id, e.NrOfTokens);
-    });
-}
-function isExitNode(NodeID, links) {
-    var res = true;
-    links.forEach(function (e) {
-        if (e.from == NodeID && e.from != e.to)
-            res = false;
-    });
-    return res;
-}
-function drawTokenToNode(state_id, text) {
-    // Get Position of Node
-    var pos = $("title").filter(function () {
-        return $(this).text() === 's' + state_id;
-    }).parents(".node");
-    // Find Text
-    var txt = pos.find("text");
-    var x = parseFloat(txt.attr("x"));
-    var y = parseFloat(txt.attr("y"));
-    y = y + 19;
-    // Add Badge
-    var existingContent = pos.html();
-    //x = x - 5 // (text.toString().length * 3) // center
-    text = text.toString();
-    var toInsert = '<g class="token"><circle class="token_bg" cx="' + x + '" cy="' + y + '" fill="#5599dd" r="8"></circle>' +
-        '<text class="token_txt" x="' + (x - (2.5 * text.length)) + '" y="' + (y + 3.5) + '" fill="white" font-size="8px">' + text + '</text></g>';
-    pos.html(existingContent + toInsert);
 }

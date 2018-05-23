@@ -26,6 +26,18 @@
   $command = $paramData["cmd"];
   $param = $paramData["paramJS"];
 
+  /* TODO
+  // Check if has rights
+  if ($command == 'create') {
+    http_response_code(403); // Forbidden
+    exit();
+  }
+
+  if ($command == 'read') {
+    $param["where"] = 'a.account_id = '.$token->uid;
+  }
+  */
+
   // Handle the Requests
   if ($command != "") {
     $RH = new RequestHandler();
