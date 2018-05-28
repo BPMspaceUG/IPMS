@@ -193,7 +193,7 @@
       $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
-    private function getFormElement($key, $alias, $default, $data_type, $FKTable) {
+    private function getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol) {
       // Special case if $key == 'state_id'
       if ($key == 'state_id') {
         return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
@@ -204,10 +204,9 @@
       //----------------------------------
       if ($FKTable != '') {
         // FK
-        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
+        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\" class=\"inputFK\"/>\n".
           "<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static text-primary fKey\"".
-          "onclick=\"openFK(this, '$FKTable', '$key')\"><i class=\"fa fa-key\"></i> ".
+          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static text-primary fKey\"  onclick=\"selectForeignKey(this)\"><i class=\"fa fa-key\"></i> ".
           "<span class=\"fkval\">Select Foreign Key ...</span></p>\n\t</div>\n</div>\n";
       }
       else if (strtolower($data_type) == 'int') {
@@ -262,10 +261,11 @@
         $alias = $value['column_alias'];
         $data_type = $value['DATA_TYPE'];
         $FKTable = $value['foreignKey']['table'];
+        $substCol = $value['foreignKey']['col_subst'];
         $default = '';
         // Check if exclude
         if (!in_array($key, $excludeKeys))
-          $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable);
+          $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol);
       }
       return $header.$content.$footer;
     }
@@ -297,7 +297,7 @@
     	return $this->ID;
     }
     public function getStates() {
-      $query = "SELECT s.state_id AS 'id', s.name, s.entrypoint, (".
+      $query = "SELECT s.state_id AS 'id', s.name, s.name AS 'label', s.entrypoint, (".
         "SELECT COUNT(*) FROM $this->db_name.$this->table AS x WHERE x.state_id = s.state_id) as 'NrOfTokens'".
         "FROM $this->db_name.state AS s WHERE s.statemachine_id = $this->ID;";
       $res = $this->db->query($query);

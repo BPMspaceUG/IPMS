@@ -1,12 +1,12 @@
 // Global variables
 var gTables = [];
+var gConfig;
 // Path for API
 var path = window.location.pathname;
 var pathName = path.substring(0, path.lastIndexOf('/') + 1);
 var gURL = pathName + 'api/';
 // Plugins
 var $;
-var Viz;
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command, params, callback) {
     // TODO: Better use localStorage -> saves Bandwidth and does not expire
@@ -54,8 +54,14 @@ var Modal = /** @class */ (function () {
         while ($("#" + this.DOM_ID).length) {
             this.DOM_ID += "X";
         }
+        // Set Params
+        this.heading = heading;
+        this.content = content;
+        this.footer = footer;
+        this.isBig = isBig;
+        // Render and add to DOM-Tree
         var sizeType = '';
-        if (isBig)
+        if (this.isBig)
             sizeType = ' modal-lg';
         // Result
         var html = '<div id="' + this.DOM_ID + '" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="confirm-modal" aria-hidden="true">';
@@ -65,15 +71,15 @@ var Modal = /** @class */ (function () {
         html += '<button type="button" class="close" data-dismiss="modal" aria-label="Close">';
         html += '<span aria-hidden="true">&times;</span>';
         html += '</button>';
-        html += '<h4>' + heading + '</h4>';
+        html += '<h4>' + this.heading + '</h4>';
         html += '</div>';
         html += '<div class="modal-body" style="max-height: 600px; overflow:auto;">';
         // TODO: Maybe remove this and store in object instead
-        html += '<span style="display:none;" class="stored_data"></span>';
-        html += content;
+        //html += '<span style="display:none;" class="stored_data"></span>';
+        html += this.content;
         html += '</div>';
         html += '<div class="modal-footer">';
-        html += footer;
+        html += this.footer;
         html += '<span class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
         html += '</div>'; // content
         html += '</div>'; // dialog
@@ -85,6 +91,9 @@ var Modal = /** @class */ (function () {
             $(this).remove();
         });
     }
+    Modal.prototype.setFooter = function (html) {
+        $('#' + this.DOM_ID + ' .modal-footer').html(html);
+    };
     Modal.prototype.show = function () {
         $("#" + this.DOM_ID).modal();
         $("#" + this.DOM_ID).modal('show');
@@ -110,70 +119,101 @@ var StateMachine = /** @class */ (function () {
             console.log("Request [smGetLinks]");
             sendRequest('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
-                // Render the StateMachine JSON DATA in DOT Language
-                var strSVG = me.transpileSMtoDOT(smNodes, smLinks);
-                //drawTokens(t)
                 // Finally, when everything was loaded, show Modal
-                var M = new Modal('StateMachine', '<div class="statediagram" style="max-height: 600px; overflow: auto;"></div>', '', true);
+                var M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-default fitsm">Fit</button>', true);
                 var MID = M.DOM_ID;
-                $("#" + MID + " .statediagram").html(Viz(strSVG));
+                var container = document.getElementsByClassName('statediagram')[0];
+                var nodes = smNodes;
+                var edges = smLinks;
+                for (var i = 0; i < nodes.length; i++) {
+                    if (me.isExitNode(nodes[i].id, smLinks)) {
+                        nodes[i]['color'] = '#c55';
+                        nodes[i]['shape'] = 'dot';
+                        nodes[i]['size'] = 10;
+                    }
+                    if (nodes[i].entrypoint == 1) {
+                        // Add EntryPoint Node
+                        nodes.push({ id: 0, color: '#5c5', shape: 'dot', size: 10 });
+                        edges.push({ from: 0, to: nodes[i].id });
+                    }
+                }
+                var data = {
+                    nodes: nodes,
+                    edges: edges
+                };
+                var options = {
+                    edges: {
+                        //smooth: { 'type': 'straightCross', 'forceDirection': 'horizontal'},
+                        color: '#3598DC',
+                        shadow: true,
+                        length: 100,
+                        arrows: 'to',
+                        arrowStrikethrough: true,
+                        dashes: false,
+                        smooth: {
+                            //'enabled': true,
+                            "type": "cubicBezier",
+                            "forceDirection": "horizontal",
+                            "roundness": 1 // 0.2
+                        }
+                    },
+                    nodes: {
+                        shape: 'box',
+                        //color: {background: 'white', border: '#333'},
+                        margin: 20,
+                        heightConstraint: {
+                            minimum: 40
+                        },
+                        widthConstraint: {
+                            minimum: 80,
+                            maximum: 200
+                        },
+                        borderWidth: 2,
+                        size: 24,
+                        color: {
+                            border: '#3598DC',
+                            background: '#fff'
+                        },
+                        font: {
+                            color: '#888888',
+                            size: 16
+                        },
+                        shapeProperties: {
+                            useBorderWithImage: false
+                        },
+                        scaling: {
+                            min: 10,
+                            max: 30
+                        },
+                        fixed: {
+                            x: false,
+                            y: false
+                        }
+                    },
+                    layout: {
+                        hierarchical: {
+                            enabled: true,
+                            direction: 'LR',
+                            nodeSpacing: 150,
+                            levelSeparation: 200,
+                            sortMethod: 'directed'
+                        }
+                    },
+                    physics: {
+                        enabled: false
+                    },
+                    interaction: {
+                        /*zoomView:false,*/
+                        dragNodes: false
+                        /*dragView: false*/
+                    }
+                };
+                var network = new vis.Network(container, data, options);
                 M.show();
+                $('.fitsm').click(function () {
+                    network.fit({ scale: 1, offset: { x: 0, y: 0 }, animation: { duration: 1000, easingFunction: 'easeInOutQuad' } });
+                });
             });
-        });
-    };
-    StateMachine.prototype.formatLabel = function (strLabel) {
-        var newstr = strLabel; //.replace(" ", "\n")
-        return newstr; //strLabel.replace(/(.{10})/g, "$&" + "\n")
-    };
-    StateMachine.prototype.transpileSMtoDOT = function (smNodes, smLinks) {
-        var strLinks = "";
-        var strNodes = "";
-        var strExitNodes = "";
-        var strEP = "";
-        var me = this;
-        // Build Links-String
-        smLinks.forEach(function (e) {
-            if (e.from == e.to) {
-                // Loop
-                strLinks += "s" + e.from + ":e -> s" + e.to + ":w [penwidth=0.5];\n";
-            }
-            else {
-                if (me.isExitNode(e.to, smLinks)) {
-                    // Link to exit
-                    strLinks += "s" + e.from + ":e -> s" + e.to + ":w;\n";
-                }
-                else {
-                    // Normal Link
-                    strLinks += "s" + e.from + ":e -> s" + e.to + ";\n";
-                }
-            }
-        });
-        // Build-Nodes String
-        smNodes.forEach(function (e) {
-            // draw EntryPoint
-            if (e.entrypoint == 1)
-                strEP = "start:e -> s" + e.id + ":w;\n"; // [Start] -> EntryNode
-            // Check if is exit node
-            var extNd = me.isExitNode(e.id, smLinks); // Set flag
-            // Actual State
-            var strActState = "";
-            if (!extNd)
-                strNodes += 's' + e.id + ' [label="' + me.formatLabel(e.name) + '"' + strActState + '];\n';
-            else
-                strExitNodes += 's' + e.id + ' [label="" xlabel="' + me.formatLabel(e.name) + '" rank="sink" shape=doublecircle labeldistance = 1, color=gray20 fixedsize=true fillcolor=gray20 width=0.1 height=0.1 margin = "0,0.8"];\n';
-        });
-        // Give back vaild DOT String
-        var result = "\n    digraph G {\n      # global\n      graph [ rankdir=LR, ranksep =\"0.7\" nodesep=0.5 outputorder=edgesfirst]\n      node [fontname=\"Tahoma\" style=\"filled\" penwidth = 1, fillcolor=white, height = 0.5, color=gray20 margin=\"0.20,0.05\", shape=Mrecord, fontsize=8];\n      edge [arrowhead=\"vee\" color=gray60, fillcolor=gray60 tailport=e];\n      start [label=\"\" rank=\"source\" shape=circle color=gray20 fillcolor=gray20 fixedsize=true width=0.15 height=0.15];\n      # links\n      " + strEP + "\n      " + strLinks + "\n      # nodes\n      subgraph cluster_0 {\n        style=filled;\n        rank=same;\n        color=white;\n        " + strNodes + "\n      }\n      " + strExitNodes + "\n    }";
-        return result;
-    };
-    StateMachine.prototype.drawTokens = function (tbl) {
-        var me = this;
-        // Clear all Tokens from SVG
-        $(".token").remove();
-        // Add Tokens
-        tbl.smNodes.forEach(function (e) {
-            if (e.NrOfTokens > 0)
-                me.drawTokenToNode(e.id, e.NrOfTokens);
         });
     };
     StateMachine.prototype.isExitNode = function (NodeID, links) {
@@ -184,62 +224,48 @@ var StateMachine = /** @class */ (function () {
         });
         return res;
     };
-    StateMachine.prototype.drawTokenToNode = function (state_id, text) {
-        // Get Position of Node
-        var pos = $("title").filter(function () {
-            return $(this).text() === 's' + state_id;
-        }).parents(".node");
-        // Find Text
-        var txt = pos.find("text");
-        var x = parseFloat(txt.attr("x"));
-        var y = parseFloat(txt.attr("y"));
-        y = y + 19;
-        // Add Badge
-        var existingContent = pos.html();
-        //x = x - 5 // (text.toString().length * 3) // center
-        text = text.toString();
-        var toInsert = '<g class="token"><circle class="token_bg" cx="' + x + '" cy="' + y + '" fill="#5599dd" r="8"></circle>' +
-            '<text class="token_txt" x="' + (x - (2.5 * text.length)) + '" y="' + (y + 3.5) + '" fill="white" font-size="8px">' + text + '</text></g>';
-        pos.html(existingContent + toInsert);
-    };
     return StateMachine;
 }());
 //==============================================================
 // Class: Table
 //==============================================================
 var Table = /** @class */ (function () {
-    function Table(isFK, DOMselector, tablename, columns, hasSM, readonly) {
-        if (hasSM === void 0) { hasSM = false; }
-        if (readonly === void 0) { readonly = false; }
+    function Table(tablename, DOMSelector) {
         this.AscDesc = SortOrder.DESC;
         this.PageLimit = 10;
         this.PageIndex = 0;
         this.jQSelector = '';
+        var data = gConfig[tablename]; // Load data from global config
         this.tablename = tablename;
-        this.jQSelector = DOMselector;
+        this.jQSelector = DOMSelector;
         this.PageIndex = 0;
         this.actRowCount = 0;
-        this.Columns = columns;
-        this.ReadOnly = readonly;
-        this.isFK = isFK;
+        this.Columns = data.columns;
+        this.ReadOnly = data.is_read_only;
         // Get the Primary column name
         var PriCol;
-        Object.keys(columns).forEach(function (col) {
-            if (columns[col].EXTRA == 'auto_increment')
+        var SortCol = ''; // first visible Column
+        Object.keys(data.columns).forEach(function (col) {
+            if (data.columns[col].is_in_menu && SortCol == '')
+                SortCol = col;
+            if (data.columns[col].EXTRA == 'auto_increment')
                 PriCol = col;
         });
         this.PrimaryColumn = PriCol;
-        this.OrderBy = PriCol; // DEFAULT: Sort that newest element is on top
+        this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
         this.Filter = '';
         this.Filter_Old = '';
         this.Form_Create = '';
         this.getFormCreate();
-        if (hasSM)
+        // Initialize StateMachine for the Table
+        if (data.se_active)
             this.SM = new StateMachine(this.tablename);
         else
             this.SM = null;
         var me = this;
-        this.countRows(function () { me.loadRows(); });
+        this.countRows(function () {
+            me.loadRows();
+        });
     }
     //=============  Helper functions
     Table.prototype.getRowByID = function (RowID) {
@@ -351,23 +377,20 @@ var Table = /** @class */ (function () {
         // Data Rows
         Object.keys(t.Columns).forEach(function (col) {
             if (t.Columns[col].is_in_menu) {
-                ths += '<th onclick="getTable(\'' + t.tablename + '\').toggleSort(\'' + col + '\')" class="datatbl_header' +
+                ths += '<th onclick="getTableByjQSel(\'' + jQSelector + '\').toggleSort(\'' + col + '\')" class="datatbl_header' +
                     (col == t.OrderBy ? ' sorted' : '') + '">' +
                     t.Columns[col].column_alias +
                     (col == t.OrderBy ? '&nbsp;' + (t.AscDesc == SortOrder.ASC ? '⭣' : (t.AscDesc == SortOrder.DESC ? '⭡' : '')) + '' : '');
                 '</th>';
             }
         });
-        // This is required, otherwise the pagination does not work after searching anymore
-        if (!t.Filter)
-            t.Filter = ''; // Set Filter to empty-string
         var pgntn = '';
         var PaginationButtons = t.getPaginationButtons();
         // Only Display Buttons, when more than one Button exists
         if (PaginationButtons.length > 1)
             PaginationButtons.forEach(function (btnIndex) {
                 pgntn += '<li' + (t.PageIndex == t.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="' +
-                    'getTable(\'' + t.tablename + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
+                    'getTableByjQSel(\'' + jQSelector + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
                     (t.PageIndex + 1 + btnIndex) +
                     '</a></li>';
             });
@@ -376,17 +399,15 @@ var Table = /** @class */ (function () {
         var header = '<div class="element">' +
             '<p class="form-inline">' +
             '<input class="form-control filterText" style="max-width: 300px" placeholder="Filter..."' +
-            'onkeydown="javascript: if(event.keyCode == 13) getTable(\'' + t.tablename + '\').loadRows();">' +
-            // Filter Button
-            '&nbsp;<button class="btn btn-default" onclick="getTable(\'' + t.tablename + '\').loadRows()"><i class="fa fa-search"></i><span class="hidden-xs">&nbsp;Filter</span></button>' +
+            'onkeydown="javascript: if(event.keyCode == 13) { var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).val(); t.loadRows(); }">' +
             // Workflow Button 
-            '&nbsp;<button class="btn btn-default" onclick="showSE(\'' + t.tablename + '\')"' + (t.SM ? '' : ' disabled') + '>' +
+            '&nbsp;<button class="btn btn-default" onclick="showSE(\'' + jQSelector + '\')"' + (t.SM ? '' : ' disabled') + '>' +
             '<i class="fa fa-random"></i><span class="hidden-xs">&nbsp;Workflow</span></button>';
         // No Buttons if ReadOnly
         if (!t.ReadOnly) {
             header +=
                 // Create Button
-                '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + t.tablename + '\')">' +
+                '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + jQSelector + '\')">' +
                     '<i class="fa fa-plus"></i><span class="hidden-xs">&nbsp;Create</span></button>';
         }
         header += '</p><div class="datatbl"><table class="table table-hover tableCont"><thead><tr>' + ths + '</tr></thead><tbody>';
@@ -407,7 +428,7 @@ var Table = /** @class */ (function () {
             if (!t.ReadOnly) {
                 data_string = '<td class="controllcoulm">' +
                     '<i class="fa fa-pencil"></i>' +
-                    '<i class="fa fa-trash" onclick="delRow(\'' + t.tablename + '\', ' + row[t.PrimaryColumn] + ')"></i>' +
+                    '<i class="fa fa-trash" onclick="delRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')"></i>' +
                     '</td>';
             }
             // Loop Columns
@@ -417,9 +438,9 @@ var Table = /** @class */ (function () {
                 if (t.Columns[col].is_in_menu) {
                     // Build edit String TODO: optimize with callback
                     var modRowStr = '';
-                    if (!t.ReadOnly) {
-                        modRowStr = 'modifyRow(\'' + t.jQSelector + '\',\'' + t.tablename + '\', ' + row[t.PrimaryColumn] + ')';
-                    }
+                    //if (!t.ReadOnly) {
+                    modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')';
+                    //}
                     // check Cell-Value
                     if (value) {
                         // Truncate Cell if Content is too long
@@ -441,10 +462,15 @@ var Table = /** @class */ (function () {
         });
         // GUI
         $(jQSelector).append(header + tds + footer);
+        // Autofocus Filter
         $(jQSelector + ' .filterText').focus().val('').val(t.Filter);
-        if (t.lastModifiedRowID != 0) {
-            addClassToDataRow(jQSelector, t.lastModifiedRowID, 'info');
-            t.lastModifiedRowID = 0;
+        // Mark last modified Row
+        if (t.lastModifiedRowID) {
+            console.log(t.lastModifiedRowID);
+            if (t.lastModifiedRowID != 0) {
+                addClassToDataRow(jQSelector, t.lastModifiedRowID, 'info');
+                t.lastModifiedRowID = 0;
+            }
         }
     };
     //=============  CORE functions
@@ -534,10 +560,12 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.loadRows = function () {
         var me = this;
+        var FilterEvent = false;
         // Check Filter event -> jmp to page 1
-        this.Filter = $(this.jQSelector + " .filterText").val();
-        if ((this.Filter != this.Filter_Old) && this.PageIndex != 0)
+        if (this.Filter != this.Filter_Old) {
             this.PageIndex = 0;
+            FilterEvent = true;
+        }
         var joins = this.buildJoinPart(this);
         var data = {
             table: this.tablename,
@@ -557,52 +585,47 @@ var Table = /** @class */ (function () {
             var resp = JSON.parse(r);
             me.Rows = resp;
             // Reset Filter Event
-            if (me.Filter) {
-                if (me.Filter.length > 0)
+            if (FilterEvent) {
+                // Count Entries again and then render Table        
+                me.countRows(function () {
+                    me.renderHTML();
                     me.Filter_Old = me.Filter;
+                });
             }
-            me.renderHTML();
+            else {
+                // Render Table
+                me.renderHTML();
+            }
         });
     };
     return Table;
 }());
 // TODO:  Put the folowing functions in the classes, or reduce them
 // BUTTON Create
-function createEntry(table_name) {
-    var htmlForm = getTable(table_name).Form_Create;
-    var SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button">' +
-        '<i class="fa fa-plus"></i>&nbsp;Create</button>';
-    var M = new Modal('Create Entry', htmlForm, SaveBtn, true);
+function createEntry(jQSel) {
+    var t = getTableByjQSel(jQSel);
+    var SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+    var M = new Modal('Create Entry', t.Form_Create, SaveBtn, true);
     var ModalID = M.DOM_ID;
-    // save hidden data in modal
-    var data = { mid: ModalID, tablename: table_name };
-    $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
+    // Save origin Table in all FKeys
+    console.log("Set data ", t.tablename);
+    $('#' + ModalID + ' .inputFK').data('origintable', t.tablename);
     // Bind Buttonclick
     $('#' + ModalID + ' .btnCreateEntry').click(function () {
-        // Recover hidden data from modal
-        var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
-        var tablename = Xdata.tablename;
-        var MID = Xdata.mid;
         // Read out all input fields with {key:value}
-        var data = readDataFromForm('#' + MID, tablename);
-        // Only if statemachine active,
-        // otherwise conflict when creating an entry in tabe 'state'
-        /*
-        if (getTable(tablename).SM)
-          data['state_id'] = '%!%PLACE_EP_HERE%!%';
-        */
+        var data = readDataFromForm('#' + ModalID, t.tablename);
+        // REQUEST
+        t.createRow(data, created);
         // RESPONSE
         function created(r) {
             // Remove all Error Messages
-            $('#' + MID + ' .modal-body .alert').remove();
-            //console.log("Create (RAW):", r)
+            $('#' + ModalID + ' .modal-body .alert').remove();
             try {
                 var msgs = JSON.parse(r);
             }
             catch (err) {
-                //console.log("Script Error:", r)
                 // Show Error        
-                $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+                $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
                     '<b>Script Error!</b>&nbsp;' + r +
                     '</div>');
                 return;
@@ -617,8 +640,7 @@ function createEntry(table_name) {
                 // Check
                 if (msg.element_id) {
                     if (msg.element_id > 0) {
-                        $('#' + MID).modal('hide');
-                        var t = getTable(tablename);
+                        $('#' + ModalID).modal('hide');
                         t.lastModifiedRowID = msg.element_id;
                         t.loadRows();
                     }
@@ -626,7 +648,7 @@ function createEntry(table_name) {
                 else {
                     // ElementID has to be 0! otherwise the transscript aborted
                     if (msg.element_id == 0) {
-                        $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+                        $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
                             '<b>Database Error!</b>&nbsp;' + msg.errormsg +
                             '</div>');
                     }
@@ -634,40 +656,35 @@ function createEntry(table_name) {
                 counter++;
             });
         }
-        // REQUEST
-        getTable(tablename).createRow(data, created);
     });
     M.show();
 }
 // TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
-function setState(btn, tablename, RowID, targetStateID) {
-    var Xdata = JSON.parse($(btn).parent().parent().find('.stored_data').html());
-    var Mid = Xdata.mid;
-    var t = getTable(tablename);
-    // Read out all input fields with {key:value}
-    var data = readDataFromForm('#' + Mid, tablename);
+function setState(MID, jQSel, RowID, targetStateID) {
+    var t = getTableByjQSel(jQSel);
+    var data = readDataFromForm('#' + MID, jQSel); // Read out all input fields with {key:value}
     // REQUEST
     t.transitRow(RowID, targetStateID, data, transitioned);
     // RESPONSE
     function transitioned(r) {
         // Remove all Error Messages
-        $('#' + Mid + ' .modal-body .alert').remove();
+        $('#' + MID + ' .modal-body .alert').remove();
         try {
             var msgs = JSON.parse(r);
         }
         catch (err) {
             console.log("Error:", r);
-            $('#' + Mid + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+            $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
                 '<b>Script Error!</b>&nbsp;' + r +
                 '</div>');
             return;
         }
         // Handle Transition Feedback
-        console.log("TransScript:", msgs);
+        console.log("Script-Results:", msgs);
         var counter = 0;
         msgs.forEach(function (msg) {
             // Remove all Error Messages
-            $('#' + Mid + ' .modal-body .alert').remove();
+            $('#' + MID + ' .modal-body .alert').remove();
             // Show Message
             if (msg.show_message) {
                 var info = "";
@@ -679,11 +696,15 @@ function setState(btn, tablename, RowID, targetStateID) {
                     info = 'IN-Script';
                 showResult(msg.message, 'Feedback <small>' + info + '</small>');
             }
+            // !!!!!!!!!!!!!!!!
+            // TODO:!!!! optimize -> Row does not get higlighted
+            // !!!!!!!!!!!!!!!!
             // Check
             /*if (msg) {
               if (msg > 0) {*/
-            $('#' + Mid).modal('hide');
-            t.lastModifiedRowID = msg.element_id;
+            $('#' + MID).modal('hide'); // TODO: Hide only if reached IN-Script
+            if (RowID != 0)
+                t.lastModifiedRowID = RowID;
             t.loadRows();
             /*  }
             } else {
@@ -696,23 +717,13 @@ function setState(btn, tablename, RowID, targetStateID) {
             }*/
             counter++;
         });
-        /*
-            if (r.length > 0) {
-              // Messages ausgeben
-              var msgs = JSON.parse(r); // TODO: Try..catch
-              msgs.forEach(msg => {
-                if (msg.show_message)
-                  showResult(msg.message)
-              });
-              // Close Edit Window
-              $('#'+Mid).modal('hide')
-              t.lastModifiedRowID = RowID
-              t.loadRows()
-            */
     }
 }
-function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
+function renderEditForm(Table, RowID, htmlForm, nextStates) {
     var row = Table.getRowByID(RowID);
+    // Modal
+    var M = new Modal('Edit Entry', htmlForm, '', true);
+    var EditMID = M.DOM_ID;
     // state Buttons
     var btns = '';
     var actStateID = row.state_id[0]; // ID
@@ -720,24 +731,20 @@ function renderEditForm(Table, RowID, PrimaryColumn, htmlForm, nextStates) {
         var btn_text = s.name;
         if (actStateID == s.id)
             btn_text = '<i class="fa fa-floppy-o"></i> Save';
-        var btn = '<button class="btn btn-primary" onclick="setState(this, \''
-            + Table.tablename + '\', ' + RowID + ', ' + s.id + ')">' + btn_text + '</button>';
+        var btn = '<button class="btn btn-primary" onclick="setState(\'' + EditMID + '\', \'' + Table.jQSelector + '\', ' + RowID + ', ' + s.id + ')">' + btn_text + '</button>';
         btns += btn;
     });
-    // Modal
-    var M = new Modal('Edit Entry', htmlForm, btns, true);
-    var EditMID = M.DOM_ID;
-    // save hidden data in modal
-    var data = { mid: EditMID, tablename: Table.tablename };
-    $('#' + EditMID + ' .stored_data').html(JSON.stringify(data));
+    M.setFooter(btns);
+    // Save origin Table in all FKeys
+    $('#' + M.DOM_ID + ' .inputFK').data('origintable', Table.tablename);
     // Load data from row and write to input fields with {key:value}
-    writeDataToForm('#' + EditMID, row, Table.tablename);
+    writeDataToForm('#' + EditMID, row, Table.jQSelector);
     // Add PrimaryID in stored Data
-    $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + RowID + '">');
+    $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + Table.PrimaryColumn + '" value="' + RowID + '">');
     M.show();
 }
-function readDataFromForm(jQSel, tablename) {
-    var inputs = $(jQSel + ' :input');
+function readDataFromForm(Mid, jQSel) {
+    var inputs = $(Mid + ' :input');
     var data = {};
     inputs.each(function () {
         var e = $(this);
@@ -745,7 +752,7 @@ function readDataFromForm(jQSel, tablename) {
         if (key) {
             var column = null;
             try {
-                column = getTable(tablename).Columns[key];
+                column = getTableByjQSel(jQSel).Columns[key];
             }
             catch (error) {
                 // Column doesnt exist in current Table
@@ -778,8 +785,8 @@ function readDataFromForm(jQSel, tablename) {
     });
     return data;
 }
-function writeDataToForm(jQSel, data, tablename) {
-    var inputs = $(jQSel + ' :input');
+function writeDataToForm(Mid, data, jQSel) {
+    var inputs = $(Mid + ' :input');
     inputs.each(function () {
         var e = $(this);
         var col = e.attr('name');
@@ -803,8 +810,7 @@ function writeDataToForm(jQSel, data, tablename) {
         else {
             //--- Normal
             if (col) {
-                //console.log("---------------", col, tablename)
-                var DataType = getTable(tablename).Columns[col].DATA_TYPE.toLowerCase();
+                var DataType = getTableByjQSel(jQSel).Columns[col].DATA_TYPE.toLowerCase();
                 if (DataType == 'datetime') {
                     if (e.attr('type') == 'date')
                         e.val(value.split(" ")[0]);
@@ -817,17 +823,10 @@ function writeDataToForm(jQSel, data, tablename) {
         }
     });
 }
-// TODO: Find Table by jQSel
-function modifyRow(jQSel, table_name, id) {
-    var t = getTable(table_name);
-    // Indicate which row is getting modified
-    addClassToDataRow(jQSel, id, 'warning');
-    // if is in a FK-Modal return selected Row
-    // TODO: not the best solution...
-    //console.log("modifyRow [",jQSel,"]", table_name)
+function modifyRow(jQSel, id) {
+    var t = getTableByjQSel(jQSel);
+    // ForeignKey
     if (jQSel.indexOf('foreignTable') > 0) {
-        //console.log("FK selection took place", t)
-        // ForeignKey
         t.selectedIDs = [];
         t.selectedIDs.push(id);
         // If is only 1 select then instant close window
@@ -835,6 +834,11 @@ function modifyRow(jQSel, table_name, id) {
         return;
     }
     else {
+        // Exit if it is a ReadOnly Table
+        if (t.ReadOnly)
+            return;
+        // Indicate which row is getting modified
+        addClassToDataRow(jQSel, id, 'warning');
         // Set Form
         if (t.SM) {
             var PrimaryColumn = t.PrimaryColumn;
@@ -846,7 +850,7 @@ function modifyRow(jQSel, table_name, id) {
                     t.getNextStates(data, function (re) {
                         if (re.length > 0) {
                             var nextstates = JSON.parse(re);
-                            renderEditForm(t, id, PrimaryColumn, htmlForm, nextstates);
+                            renderEditForm(t, id, htmlForm, nextstates);
                         }
                     });
                 }
@@ -854,30 +858,27 @@ function modifyRow(jQSel, table_name, id) {
         }
         else {
             // EDIT-Modal WITHOUT StateMachine
-            var htmlForm = t.Form_Create;
-            var PrimaryColumn = t.PrimaryColumn;
+            var M = new Modal('Edit Entry', t.Form_Create, '', true);
+            // Save origin Table in all FKeys
+            $('#' + M.DOM_ID + ' .inputFK').data('origintable', t.tablename);
             // Save buttons
-            var btn = '<button class="btn btn-primary" onclick="saveEntry(this, false)" type="button">Save</button>';
-            btn += '<button class="btn btn-primary" onclick="saveEntry(this)" type="button">Save &amp; Close</button>';
-            // Modal
-            var M = new Modal('Edit Entry', htmlForm, btn, true);
-            var dataxx = { mid: M.DOM_ID, tablename: table_name };
-            $('#' + M.DOM_ID + ' .stored_data').html(JSON.stringify(dataxx));
-            $('#' + M.DOM_ID + ' .modal-body').append('<input type="hidden" name="' + PrimaryColumn + '" value="' + id + '">');
+            var btn = '<button class="btn btn-primary" onclick="saveEntry(\'' + M.DOM_ID + '\', \'' + jQSel + '\', false)" type="button">Save</button>';
+            btn += '<button class="btn btn-primary" onclick="saveEntry(\'' + M.DOM_ID + '\', \'' + jQSel + '\')" type="button">Save &amp; Close</button>';
+            M.setFooter(btn);
+            // Add the Primary RowID
+            $('#' + M.DOM_ID + ' .modal-body').append('<input type="hidden" name="' + t.PrimaryColumn + '" value="' + id + '">');
             // Write all input fields with {key:value}
-            writeDataToForm('#' + M.DOM_ID, t.getRowByID(id), table_name);
+            writeDataToForm('#' + M.DOM_ID, t.getRowByID(id), t.jQSelector);
             M.show();
         }
     }
 }
 // BUTTON SAVE + Close
-function saveEntry(x, closeModal) {
+function saveEntry(MID, jQSel, closeModal) {
     if (closeModal === void 0) { closeModal = true; }
-    var Xdata = JSON.parse($(x).parent().parent().find('.stored_data').html());
-    var mid = Xdata.mid;
-    var t = getTable(Xdata.tablename);
+    var t = getTableByjQSel(jQSel);
     // Read out all input fields with {key:value}
-    var inputs = $('#' + mid + ' :input');
+    var inputs = $('#' + MID + ' :input');
     var data = {};
     inputs.each(function () {
         var e = $(this);
@@ -885,15 +886,12 @@ function saveEntry(x, closeModal) {
             data[e.attr('name')] = e.val();
     });
     // REQUEST
-    t.updateRow(data[t.PrimaryColumn], data, updated);
-    // RESPONSE
-    function updated(r) {
-        //console.log(r)
+    t.updateRow(data[t.PrimaryColumn], data, function (r) {
         if (r.length > 0) {
             if (r != "0") {
                 // Success
                 if (closeModal)
-                    $('#' + mid).modal('hide');
+                    $('#' + MID).modal('hide');
                 t.lastModifiedRowID = data[t.PrimaryColumn];
                 t.loadRows();
             }
@@ -902,27 +900,29 @@ function saveEntry(x, closeModal) {
                 alert("Element could not be updated!");
             }
         }
-    }
+    });
 }
-function delRow(tablename, id) {
+function delRow(jQSel, id) {
     // Ask 
     var IsSure = confirm("Do you really want to delete this entry?");
     if (!IsSure)
         return;
     // REQUEST
-    getTable(tablename).deleteRow(id, deleted);
-    // RESPONSE
-    function deleted(r) {
-        console.log("Deleted Row", r);
+    var t = getTableByjQSel(jQSel);
+    t.deleteRow(id, function (r) {
         if (r == "1") {
-            addClassToDataRow(getTable(tablename).jQSelector, id, 'danger');
+            console.log("Deleted Row", r);
+            addClassToDataRow(t.jQSelector, id, 'danger');
         }
-    }
+        else {
+            console.log("Could not delete Row", r);
+        }
+    });
 }
-function getTable(table_name) {
+function getTableByjQSel(SelStr) {
     var result;
     gTables.forEach(function (t) {
-        if (t.tablename === table_name) {
+        if (t.jQSelector === SelStr) {
             result = t;
         }
     });
@@ -935,18 +935,21 @@ function getTable(table_name) {
 sendRequest('init', '', function (r) {
     if (r.length > 0) {
         var data = JSON.parse(r);
+        gConfig = data;
         // Init Table Objects
         Object.keys(data).forEach(function (t) {
             // Create a new object and save it in global array
-            var newT = new Table(false, '.table_' + data[t].table_name, data[t].table_name, data[t].columns, data[t].se_active, data[t].is_read_only);
-            gTables.push(newT);
+            if (gConfig[t].is_in_menu) {
+                var newT = new Table(t, '.table_' + t);
+                gTables.push(newT);
+            }
         });
         // First Tab selection
         $('.nav-tabs li:first').addClass('active');
         $('.tab-content .tab-pane:first').addClass('active');
     }
 });
-// Overlay of many Modal windows (newest on top)
+// Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {
     var zIndex = 1040 + (10 * $('.modal:visible').length);
     $(this).css('z-index', zIndex);
@@ -961,45 +964,40 @@ $(document).on('shown.bs.modal', '.modal', function () {
   $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
 });
 */
-function showSE(tablename) {
-    var t = getTable(tablename);
-    t.SM.openSEPopup();
+// This function is called from FormData
+function selectForeignKey(inp) {
+    var inp = $(inp).parent().parent().find('input');
+    // Extract relevant Variables
+    var originTable = inp.data('origintable');
+    var originColumn = inp.attr('name');
+    var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table;
+    var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id;
+    var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst;
+    // New Table Instance
+    openTableInModal(foreignTable, function (selRows) {
+        inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
+        inp.parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
+    });
 }
-function openFK(x, fk_table_name, originalKey) {
-    var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
+function openTableInModal(tablename, callback) {
+    if (callback === void 0) { callback = function (e) { }; }
     // Modal
-    var M = new Modal('Select Foreign Key', '<div class="foreignTable"></div>', SelectBtn, true);
-    var ModalID = M.DOM_ID;
-    // Load Table
-    var t = getTable(fk_table_name);
-    var DOMsel = '#' + ModalID + ' .foreignTable';
-    var t = new Table(true, DOMsel, fk_table_name, getTable(fk_table_name).Columns, (getTable(fk_table_name).SM !== null), false);
-    // save hidden data in modal
-    var stdata_caller = JSON.parse($(x).parent().parent().parent().parent().find('.stored_data').html());
-    var callerMID = stdata_caller.mid;
-    var data = { mid: ModalID, tablename: fk_table_name, orgKey: originalKey, fromMID: callerMID, originTable: stdata_caller.tablename };
-    $('#' + ModalID + ' .stored_data').html(JSON.stringify(data));
+    var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
+    var newFKTableClass = 'foreignTable_hsdjkfjhjktgrehgjkd'; // TODO: Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
+    var M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
+    var t = new Table(tablename, '.' + newFKTableClass);
+    gTables.push(t); // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed
     // Bind Buttonclick
-    $('#' + ModalID + ' .btnSelectFK').click(function () {
-        // Recover hidden data from modal
-        var Xdata = JSON.parse($(this).parent().parent().find('.stored_data').html());
-        var tablename = Xdata.tablename;
-        var FKMID = Xdata.mid;
-        var FKS = getTable(tablename).getSelectedRows();
-        var orgKey = Xdata.orgKey;
-        var callerMID = Xdata.fromMID;
-        // Hide FK Modal
-        $('#' + FKMID).modal('hide');
-        // Find Edit Entry Modal and set Rows
-        var element = $('#' + callerMID + ' input[name=\'' + orgKey + '\'');
-        element.val(FKS); // Set value in hidden field
-        var ForeignRow = getTable(fk_table_name).getRowByID(FKS);
-        var col_subst = getTable(Xdata.originTable).Columns[orgKey].foreignKey.col_subst;
-        var val_subst = ForeignRow[col_subst];
-        element.parent().find('.fkval').text(val_subst); // Set GUI
+    $('#' + M.DOM_ID + ' .btnSelectFK').click(function () {
+        var selectedRowID = t.getSelectedRows(); // TODO: Make Array for multiselect
+        var ForeignRow = t.getRowByID(selectedRowID);
+        callback(ForeignRow);
+        // Hide Modal
+        $('#' + M.DOM_ID).modal('hide');
     });
     M.show();
 }
+// TODO: obsolete?
 function showResult(content, title) {
     if (title === void 0) { title = 'StateMachine Feedback'; }
     var M = new Modal(title, content);
@@ -1008,4 +1006,8 @@ function showResult(content, title) {
 function addClassToDataRow(jQuerySelector, id, classname) {
     $(jQuerySelector + ' .datarow').removeClass(classname);
     $(jQuerySelector + ' .row-' + id).addClass(classname);
+}
+function showSE(jQSel) {
+    // TODO: First show the modal and then draw the StateMachine
+    getTableByjQSel(jQSel).SM.openSEPopup();
 }

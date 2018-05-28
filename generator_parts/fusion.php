@@ -162,7 +162,7 @@
   define("DB_NAME", "'.$db_name.'");
 
   // AuthKey
-  define("AUTH_KEY", "secretkeybpmspace_'.time().sha1(time()).'");
+  define("AUTH_KEY", "secretkeybpmspace_'.sha1('test').'");
 
   // Structure Configuration Data
   $config_tables_json = \''.$json.'\';
