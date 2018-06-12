@@ -1,3 +1,4 @@
+// TODO: Do not use Global variables
 // Global variables
 var gTables = [];
 var gConfig;
@@ -9,16 +10,17 @@ var gURL = pathName + 'api/';
 var $;
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command, params, callback) {
-    // TODO: Better use localStorage -> saves Bandwidth and does not expire
-    var cookie = document.cookie;
-    var token = cookie.split('token=')[1];
+    // use localStorage -> saves Bandwidth and does not expire
+    var token = localStorage.token;
     // Request (every Request is processed by this function)
     $.ajax({
         method: "POST",
         url: gURL,
+        /*
         beforeSend: function (xhr) {
-            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+          xhr.setRequestHeader('Authorization', 'Bearer '+token);
         },
+        */
         contentType: 'json',
         data: JSON.stringify({
             cmd: command,
@@ -64,23 +66,21 @@ var Modal = /** @class */ (function () {
         if (this.isBig)
             sizeType = ' modal-lg';
         // Result
-        var html = '<div id="' + this.DOM_ID + '" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="confirm-modal" aria-hidden="true">';
-        html += '<div class="modal-dialog' + sizeType + '">';
+        var html = '<div id="' + this.DOM_ID + '" class="modal fade" tabindex="-1" role="dialog">';
+        html += '<div class="modal-dialog' + sizeType + '" role="document">';
         html += '<div class="modal-content">';
         html += '<div class="modal-header">';
-        html += '<button type="button" class="close" data-dismiss="modal" aria-label="Close">';
-        html += '<span aria-hidden="true">&times;</span>';
-        html += '</button>';
-        html += '<h4>' + this.heading + '</h4>';
+        html += '  <h5 class="modal-title">' + this.heading + '</h5>';
+        html += '  <button type="button" class="close" data-dismiss="modal" aria-label="Close">';
+        html += '    <span aria-hidden="true">&times;</span>';
+        html += '  </button>';
         html += '</div>';
         html += '<div class="modal-body" style="max-height: 600px; overflow:auto;">';
-        // TODO: Maybe remove this and store in object instead
-        //html += '<span style="display:none;" class="stored_data"></span>';
         html += this.content;
         html += '</div>';
         html += '<div class="modal-footer">';
-        html += this.footer;
-        html += '<span class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
+        html += '  <span class="customfooter">' + this.footer + '</span>';
+        html += '  <span class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
         html += '</div>'; // content
         html += '</div>'; // dialog
         html += '</div>'; // footer
@@ -92,7 +92,7 @@ var Modal = /** @class */ (function () {
         });
     }
     Modal.prototype.setFooter = function (html) {
-        $('#' + this.DOM_ID + ' .modal-footer').html(html);
+        $('#' + this.DOM_ID + ' .customfooter').html(html);
     };
     Modal.prototype.show = function () {
         $("#" + this.DOM_ID).modal();
@@ -107,9 +107,6 @@ var StateMachine = /** @class */ (function () {
     function StateMachine(tablename) {
         this.tablename = tablename;
     }
-    StateMachine.prototype.getHTML = function () {
-        return "";
-    };
     StateMachine.prototype.openSEPopup = function () {
         var smLinks, smNodes;
         var me = this;
@@ -120,7 +117,7 @@ var StateMachine = /** @class */ (function () {
             sendRequest('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
                 // Finally, when everything was loaded, show Modal
-                var M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-default fitsm">Fit</button>', true);
+                var M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-secondary fitsm">Fit</button>', true);
                 var MID = M.DOM_ID;
                 var container = document.getElementsByClassName('statediagram')[0];
                 var nodes = smNodes;
@@ -230,7 +227,8 @@ var StateMachine = /** @class */ (function () {
 // Class: Table
 //==============================================================
 var Table = /** @class */ (function () {
-    function Table(tablename, DOMSelector) {
+    function Table(tablename, DOMSelector, selectableOne) {
+        if (selectableOne === void 0) { selectableOne = false; }
         this.AscDesc = SortOrder.DESC;
         this.PageLimit = 10;
         this.PageIndex = 0;
@@ -242,6 +240,7 @@ var Table = /** @class */ (function () {
         this.actRowCount = 0;
         this.Columns = data.columns;
         this.ReadOnly = data.is_read_only;
+        this.selOne = selectableOne;
         // Get the Primary column name
         var PriCol;
         var SortCol = ''; // first visible Column
@@ -343,21 +342,37 @@ var Table = /** @class */ (function () {
         return pages;
     };
     Table.prototype.formatCell = function (cellStr) {
+        var entityMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        };
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"'`=\/]/g, function (s) {
+                return entityMap[s];
+            });
+        }
         var trunc_len = 30;
         if (typeof cellStr == 'string') {
             // String, and longer than X chars
             if (cellStr.length >= trunc_len)
-                return cellStr.substr(0, 30) + "\u2026";
+                return escapeHtml(cellStr.substr(0, 30) + "\u2026");
         }
         else if (Array.isArray(cellStr)) {
             // Foreign Key
             if (cellStr[1] !== null)
-                return cellStr[1];
+                return escapeHtml(cellStr[1]);
             else
                 return '';
         }
         return cellStr;
     };
+    // TODO: Remove param?
     Table.prototype.getHTMLStatusText = function (t) {
         if (t.actRowCount > 0)
             return 'Showing Entries ' + ((t.PageIndex * t.PageLimit) + 1) + '-' +
@@ -371,16 +386,18 @@ var Table = /** @class */ (function () {
         console.log("Render HTML for Table", t.tablename, " @ ", jQSelector);
         $(jQSelector).empty(); // GUI: Clear entries
         var ths = '';
-        if (!t.ReadOnly) {
-            ths = '<th></th>'; // Pre fill with 1 because of selector
-        }
+        //if (!t.ReadOnly) {
+        ths = '<th></th>'; // Pre fill with 1 because of selector
+        //}
         // Data Rows
         Object.keys(t.Columns).forEach(function (col) {
             if (t.Columns[col].is_in_menu) {
                 ths += '<th onclick="getTableByjQSel(\'' + jQSelector + '\').toggleSort(\'' + col + '\')" class="datatbl_header' +
                     (col == t.OrderBy ? ' sorted' : '') + '">' +
                     t.Columns[col].column_alias +
-                    (col == t.OrderBy ? '&nbsp;' + (t.AscDesc == SortOrder.ASC ? '⭣' : (t.AscDesc == SortOrder.DESC ? '⭡' : '')) + '' : '');
+                    (col == t.OrderBy ? '&nbsp;' + (t.AscDesc == SortOrder.ASC ?
+                        '<i class="fa fa-sort-asc">' : (t.AscDesc == SortOrder.DESC ?
+                        '<i class="fa fa-sort-desc">' : '')) + '' : '');
                 '</th>';
             }
         });
@@ -389,32 +406,37 @@ var Table = /** @class */ (function () {
         // Only Display Buttons, when more than one Button exists
         if (PaginationButtons.length > 1)
             PaginationButtons.forEach(function (btnIndex) {
-                pgntn += '<li' + (t.PageIndex == t.PageIndex + btnIndex ? ' class="active"' : '') + '><a onclick="' +
+                pgntn += '<li class="page-item' + (t.PageIndex == t.PageIndex + btnIndex ? ' active' : '') + '"><a class="page-link" onclick="' +
                     'getTableByjQSel(\'' + jQSelector + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
                     (t.PageIndex + 1 + btnIndex) +
                     '</a></li>';
             });
         else
-            pgntn += '<li><a style="background-color: #ddd; cursor: default;">&nbsp;</a></li>';
+            pgntn += '';
         var header = '<div class="element">' +
-            '<p class="form-inline">' +
-            '<input class="form-control filterText" style="max-width: 300px" placeholder="Filter..."' +
-            'onkeydown="javascript: if(event.keyCode == 13) { var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).val(); t.loadRows(); }">' +
-            // Workflow Button 
-            '&nbsp;<button class="btn btn-default" onclick="showSE(\'' + jQSelector + '\')"' + (t.SM ? '' : ' disabled') + '>' +
-            '<i class="fa fa-random"></i><span class="hidden-xs">&nbsp;Workflow</span></button>';
-        // No Buttons if ReadOnly
-        if (!t.ReadOnly) {
-            header +=
-                // Create Button
-                '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + jQSelector + '\')">' +
-                    '<i class="fa fa-plus"></i><span class="hidden-xs">&nbsp;Create</span></button>';
+            '<p class="form-inline"><div class="row">';
+        // Filter
+        header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">';
+        header += '<input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="javascript: ' +
+            'if(event.keyCode == 13) {var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).val(); t.loadRows();}">';
+        header += '<div class="input-group-append">';
+        header += '<button class="btn btn-secondary" onclick="if (true) {var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).parent().parent().find(\'.filterText\').val(); t.loadRows();}" type="button"><i class="fa fa-search"></i></button>';
+        header += '</div></div>';
+        header += '<div class="col-12 col-sm-6 col-lg-9">';
+        // Workflow Button
+        if (t.SM) {
+            header += '<button class="btn btn-secondary" onclick="showSE(\'' + jQSelector + '\')"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
         }
-        header += '</p><div class="datatbl"><table class="table table-hover tableCont"><thead><tr>' + ths + '</tr></thead><tbody>';
+        // Create Button
+        if (!t.ReadOnly) {
+            header += '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + jQSelector + '\')"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+        }
+        header += '</div></div></p>';
+        header += '<div class="datatbl"><table class="table table-hover table-sm table-responsive-sm tableCont"><thead><tr>' + ths + '</tr></thead><tbody>';
         var footer = '</tbody></table></div>' +
-            '<div class="footer">' +
+            '<div>' +
             '<p class="pull-left">' + t.getHTMLStatusText(t) + '</p>' +
-            '<ul class="pagination pull-right">' + pgntn + '</ul>' +
+            '<nav class="pull-right"><ul class="pagination">' + pgntn + '</ul></nav>' +
             '<div class="clearfix"></div>' +
             '</div>' +
             '</div>';
@@ -423,38 +445,61 @@ var Table = /** @class */ (function () {
         if (!t.Rows)
             return;
         t.Rows.forEach(function (row) {
+            var modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')'; // Build edit String
             var data_string = '';
             // Control column
-            if (!t.ReadOnly) {
-                data_string = '<td class="controllcoulm">' +
-                    '<i class="fa fa-pencil"></i>' +
-                    '<i class="fa fa-trash" onclick="delRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')"></i>' +
-                    '</td>';
+            //if (!t.ReadOnly) {
+            data_string = '<td class="controllcoulm" onclick="' + modRowStr + '">';
+            if (t.selOne) {
+                // Selectable
+                data_string += '<i class="fa fa-square-o" style="margin-top: 3px;"></i>';
             }
+            else {
+                // Editable
+                if (!t.ReadOnly)
+                    data_string += '<i class="fa fa-pencil" style="margin-top: 3px;"></i>';
+            }
+            //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
+            data_string += '</td>';
+            //}
             // Loop Columns
             Object.keys(t.Columns).forEach(function (col) {
                 var value = row[col];
                 // Check if it is displayed
                 if (t.Columns[col].is_in_menu) {
-                    // Build edit String TODO: optimize with callback
-                    var modRowStr = '';
-                    //if (!t.ReadOnly) {
-                    modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')';
-                    //}
                     // check Cell-Value
                     if (value) {
                         // Truncate Cell if Content is too long
-                        value = t.formatCell(value);
-                        // Check for statemachine
-                        if (col == 'state_id' && t.tablename != 'state') {
-                            data_string += '<td onclick="' + modRowStr + '">' +
-                                '<span class="label label-state state' + row['state_id'][0] + '">' + value + '</span></td>';
+                        if (t.Columns[col].DATA_TYPE == 'date') {
+                            var tmp = new Date(value);
+                            if (!isNaN(tmp.getTime()))
+                                value = tmp.toLocaleDateString();
+                            else
+                                value = '';
+                        }
+                        else if (t.Columns[col].DATA_TYPE == 'datetime') {
+                            var tmp = new Date(value);
+                            if (!isNaN(tmp.getTime()))
+                                value = tmp.toLocaleString();
+                            else
+                                value = '';
+                        }
+                        else if (t.Columns[col].DATA_TYPE == 'tinyint') {
+                            value = parseInt(value) !== 0 ? '<i class="fa fa-check text-center"></i>&nbsp;' : '';
                         }
                         else
-                            data_string += '<td onclick="' + modRowStr + '">' + value + '</td>';
+                            value = t.formatCell(value);
+                        // Check for statemachine
+                        if (col == 'state_id' && t.tablename != 'state') {
+                            // Modulo 12 --> see in css file (12 colors)
+                            data_string += '<td><span class="badge label-state state' + (row['state_id'][0] % 12) + '">' + value + '</span></td>';
+                        }
+                        else
+                            data_string += '<td>' + value + '</td>';
                     }
                     else {
-                        data_string += '<td onclick="' + modRowStr + '">&nbsp;</td>'; // Add empty cell
+                        // Add empty cell (null)
+                        data_string += '<td>&nbsp;</td>';
                     }
                 }
             });
@@ -468,7 +513,7 @@ var Table = /** @class */ (function () {
         if (t.lastModifiedRowID) {
             console.log(t.lastModifiedRowID);
             if (t.lastModifiedRowID != 0) {
-                addClassToDataRow(jQSelector, t.lastModifiedRowID, 'info');
+                addClassToDataRow(jQSelector, t.lastModifiedRowID, 'table-info');
                 t.lastModifiedRowID = 0;
             }
         }
@@ -536,7 +581,7 @@ var Table = /** @class */ (function () {
             callback(response);
         });
     };
-    // TODO: Only call this function once at [init] and then only on [create] and [delete] and at [filter]
+    // Call this function only at [init] and then only on [create] and [delete] and at [filter]
     Table.prototype.countRows = function (callback) {
         var me = this;
         var joins = this.buildJoinPart(this);
@@ -552,7 +597,7 @@ var Table = /** @class */ (function () {
                 var resp = JSON.parse(r);
                 if (resp.length > 0) {
                     me.actRowCount = parseInt(resp[0].cnt);
-                    // Call callback function
+                    // Callback method
                     callback();
                 }
             }
@@ -613,7 +658,7 @@ function createEntry(jQSel) {
     // Bind Buttonclick
     $('#' + ModalID + ' .btnCreateEntry').click(function () {
         // Read out all input fields with {key:value}
-        var data = readDataFromForm('#' + ModalID, t.tablename);
+        var data = readDataFromForm('#' + ModalID, jQSel);
         // REQUEST
         t.createRow(data, created);
         // RESPONSE
@@ -696,25 +741,12 @@ function setState(MID, jQSel, RowID, targetStateID) {
                     info = 'IN-Script';
                 showResult(msg.message, 'Feedback <small>' + info + '</small>');
             }
-            // !!!!!!!!!!!!!!!!
-            // TODO:!!!! optimize -> Row does not get higlighted
-            // !!!!!!!!!!!!!!!!
-            // Check
-            /*if (msg) {
-              if (msg > 0) {*/
-            $('#' + MID).modal('hide'); // TODO: Hide only if reached IN-Script
-            if (RowID != 0)
-                t.lastModifiedRowID = RowID;
-            t.loadRows();
-            /*  }
-            } else {
-              // ElementID has to be 0! otherwise the transscript aborted
-              if (msg.element_id == 0) {
-                $('#' + Mid + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
-                  '<b>Database Error!</b>&nbsp;'+ msg.errormsg +
-                  '</div>')
-              }
-            }*/
+            if (counter >= 2) {
+                $('#' + MID).modal('hide'); // Hide only if reached IN-Script
+                if (RowID != 0)
+                    t.lastModifiedRowID = RowID;
+                t.loadRows();
+            }
             counter++;
         });
     }
@@ -725,15 +757,16 @@ function renderEditForm(Table, RowID, htmlForm, nextStates) {
     var M = new Modal('Edit Entry', htmlForm, '', true);
     var EditMID = M.DOM_ID;
     // state Buttons
-    var btns = '';
+    var btns = '<div class="btn-group" role="group">';
     var actStateID = row.state_id[0]; // ID
     nextStates.forEach(function (s) {
         var btn_text = s.name;
         if (actStateID == s.id)
             btn_text = '<i class="fa fa-floppy-o"></i> Save';
-        var btn = '<button class="btn btn-primary" onclick="setState(\'' + EditMID + '\', \'' + Table.jQSelector + '\', ' + RowID + ', ' + s.id + ')">' + btn_text + '</button>';
+        var btn = '<button class="btn btn-primary state' + (s.id % 12) + '" onclick="setState(\'' + EditMID + '\', \'' + Table.jQSelector + '\', ' + RowID + ', ' + s.id + ')">' + btn_text + '</button>';
         btns += btn;
     });
+    btns += '</div>';
     M.setFooter(btns);
     // Save origin Table in all FKeys
     $('#' + M.DOM_ID + ' .inputFK').data('origintable', Table.tablename);
@@ -746,31 +779,38 @@ function renderEditForm(Table, RowID, htmlForm, nextStates) {
 function readDataFromForm(Mid, jQSel) {
     var inputs = $(Mid + ' :input');
     var data = {};
+    console.log('---------------readDataFromForm--------------');
     inputs.each(function () {
         var e = $(this);
         var key = e.attr('name');
         if (key) {
+            console.log(key, jQSel);
             var column = null;
             try {
                 column = getTableByjQSel(jQSel).Columns[key];
             }
             catch (error) {
-                // Column doesnt exist in current Table
-                column = null;
+                column = null; // Column doesnt exist in current Table
             }
             if (column) {
                 if (e.val() == '' && column.foreignKey.table != '') {
-                    // if empty and FK then value should be NULL
+                    // [FK] if empty and FK then value should be NULL
                     data[key] = null;
                 }
                 else {
+                    // [NO FK]
                     var DataType = column.DATA_TYPE.toLowerCase();
+                    console.log('############', DataType, e);
                     if (DataType == 'datetime') {
                         // For DATETIME
                         if (e.attr('type') == 'date')
                             data[key] = e.val(); // overwrite
                         else if (e.attr('type') == 'time')
                             data[key] += ' ' + e.val(); // append
+                    }
+                    else if (DataType == 'tinyint') {
+                        // Boolean
+                        data[key] = e.prop('checked');
                     }
                     else {
                         data[key] = e.val();
@@ -792,33 +832,39 @@ function writeDataToForm(Mid, data, jQSel) {
         var col = e.attr('name');
         var value = data[col];
         // isFK?
-        if (Array.isArray(value)) {
-            //--- ForeignKey
-            if (col == 'state_id') {
-                // Special case if name = 'state_id'
-                var label = e.parent().find('.label');
-                label.addClass('state' + value[0]);
-                label.text(value[1]);
+        if (value) {
+            if (Array.isArray(value)) {
+                //--- ForeignKey
+                if (col == 'state_id') {
+                    // Special case if name = 'state_id'
+                    var label = e.parent().find('.label');
+                    label.addClass('state' + value[0]);
+                    label.text(value[1]);
+                }
+                else {
+                    // GUI Foreign Key
+                    e.parent().parent().find('.fkval').text(value[1]);
+                }
+                // Save in hidden input
+                e.val(value[0]);
             }
             else {
-                // GUI Foreign Key
-                e.parent().find('.fkval').text(value[1]);
-            }
-            // Save in hidden input
-            e.val(value[0]);
-        }
-        else {
-            //--- Normal
-            if (col) {
-                var DataType = getTableByjQSel(jQSel).Columns[col].DATA_TYPE.toLowerCase();
-                if (DataType == 'datetime') {
-                    if (e.attr('type') == 'date')
-                        e.val(value.split(" ")[0]);
-                    else if (e.attr('type') == 'time')
-                        e.val(value.split(" ")[1]);
+                //--- Normal
+                if (col) {
+                    var DataType = getTableByjQSel(jQSel).Columns[col].DATA_TYPE.toLowerCase();
+                    if (DataType == 'datetime') {
+                        if (e.attr('type') == 'date')
+                            e.val(value.split(" ")[0]);
+                        else if (e.attr('type') == 'time')
+                            e.val(value.split(" ")[1]);
+                    }
+                    else if (DataType == 'tinyint') {
+                        console.log('Checkbox = ', value);
+                        e.prop('checked', parseInt(value) !== 0); // Boolean
+                    }
+                    else
+                        e.val(value);
                 }
-                else
-                    e.val(value);
             }
         }
     });
@@ -826,7 +872,8 @@ function writeDataToForm(Mid, data, jQSel) {
 function modifyRow(jQSel, id) {
     var t = getTableByjQSel(jQSel);
     // ForeignKey
-    if (jQSel.indexOf('foreignTable') > 0) {
+    if (t.selOne) {
+        // Select One
         t.selectedIDs = [];
         t.selectedIDs.push(id);
         // If is only 1 select then instant close window
@@ -838,7 +885,7 @@ function modifyRow(jQSel, id) {
         if (t.ReadOnly)
             return;
         // Indicate which row is getting modified
-        addClassToDataRow(jQSel, id, 'warning');
+        addClassToDataRow(jQSel, id, 'table-warning');
         // Set Form
         if (t.SM) {
             var PrimaryColumn = t.PrimaryColumn;
@@ -862,8 +909,10 @@ function modifyRow(jQSel, id) {
             // Save origin Table in all FKeys
             $('#' + M.DOM_ID + ' .inputFK').data('origintable', t.tablename);
             // Save buttons
-            var btn = '<button class="btn btn-primary" onclick="saveEntry(\'' + M.DOM_ID + '\', \'' + jQSel + '\', false)" type="button">Save</button>';
+            var btn = '<div class="btn-group" role="group">';
+            btn += '<button class="btn btn-primary" onclick="saveEntry(\'' + M.DOM_ID + '\', \'' + jQSel + '\', false)" type="button"><i class="fa fa-floppy-o"></i> Save</button>';
             btn += '<button class="btn btn-primary" onclick="saveEntry(\'' + M.DOM_ID + '\', \'' + jQSel + '\')" type="button">Save &amp; Close</button>';
+            btn += '</div>';
             M.setFooter(btn);
             // Add the Primary RowID
             $('#' + M.DOM_ID + ' .modal-body').append('<input type="hidden" name="' + t.PrimaryColumn + '" value="' + id + '">');
@@ -877,14 +926,7 @@ function modifyRow(jQSel, id) {
 function saveEntry(MID, jQSel, closeModal) {
     if (closeModal === void 0) { closeModal = true; }
     var t = getTableByjQSel(jQSel);
-    // Read out all input fields with {key:value}
-    var inputs = $('#' + MID + ' :input');
-    var data = {};
-    inputs.each(function () {
-        var e = $(this);
-        if (e.attr('name'))
-            data[e.attr('name')] = e.val();
-    });
+    var data = readDataFromForm('#' + MID, jQSel);
     // REQUEST
     t.updateRow(data[t.PrimaryColumn], data, function (r) {
         if (r.length > 0) {
@@ -912,7 +954,7 @@ function delRow(jQSel, id) {
     t.deleteRow(id, function (r) {
         if (r == "1") {
             console.log("Deleted Row", r);
-            addClassToDataRow(t.jQSelector, id, 'danger');
+            addClassToDataRow(t.jQSelector, id, 'table-danger');
         }
         else {
             console.log("Could not delete Row", r);
@@ -945,7 +987,7 @@ sendRequest('init', '', function (r) {
             }
         });
         // First Tab selection
-        $('.nav-tabs li:first').addClass('active');
+        $('.nav-tabs .nav-link:first').addClass('active');
         $('.tab-content .tab-pane:first').addClass('active');
     }
 });
@@ -966,7 +1008,7 @@ $(document).on('shown.bs.modal', '.modal', function () {
 */
 // This function is called from FormData
 function selectForeignKey(inp) {
-    var inp = $(inp).parent().parent().find('input');
+    var inp = $(inp).parent().find('input');
     // Extract relevant Variables
     var originTable = inp.data('origintable');
     var originColumn = inp.attr('name');
@@ -976,16 +1018,17 @@ function selectForeignKey(inp) {
     // New Table Instance
     openTableInModal(foreignTable, function (selRows) {
         inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
-        inp.parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
+        inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
     });
 }
 function openTableInModal(tablename, callback) {
     if (callback === void 0) { callback = function (e) { }; }
     // Modal
     var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
-    var newFKTableClass = 'foreignTable_hsdjkfjhjktgrehgjkd'; // TODO: Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
+    var timestr = (new Date()).getTime();
+    var newFKTableClass = 'foreignTable_abcdef' + timestr; // Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
     var M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
-    var t = new Table(tablename, '.' + newFKTableClass);
+    var t = new Table(tablename, '.' + newFKTableClass, true);
     gTables.push(t); // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed
     // Bind Buttonclick
     $('#' + M.DOM_ID + ' .btnSelectFK').click(function () {
@@ -997,14 +1040,14 @@ function openTableInModal(tablename, callback) {
     });
     M.show();
 }
-// TODO: obsolete?
+// TODO: obsolete functions?
 function showResult(content, title) {
     if (title === void 0) { title = 'StateMachine Feedback'; }
     var M = new Modal(title, content);
     M.show();
 }
 function addClassToDataRow(jQuerySelector, id, classname) {
-    $(jQuerySelector + ' .datarow').removeClass(classname);
+    $(jQuerySelector + ' .datarow').removeClass(classname); // Remove class from all other rows
     $(jQuerySelector + ' .row-' + id).addClass(classname);
 }
 function showSE(jQSel) {

@@ -191,11 +191,10 @@ class JWT
 			: 'Unknown JSON error: ' . $errno
 		);
 	}
-
-
 	/** 
 	 * Get header Authorization
 	 * */
+	/*
 	public static function getAuthorizationHeader(){
 		$headers = null;
 		if (isset($_SERVER['Authorization'])) {
@@ -214,9 +213,6 @@ class JWT
 		}
 		return $headers;
 	}
-	/**
-	* get access token from header
-	* */
 	public static function getBearerToken() {
 		$headers = JWT::getAuthorizationHeader();
 		// HEADER: Get the access token from the header
@@ -227,6 +223,12 @@ class JWT
 		}
 		return null;
 	}
-
+	*/
+	// Get Token from Cookie
+	public static function getBearerToken() {
+		if (isset($_COOKIE['token']))
+			return $_COOKIE['token'];
+	  	return null;
+	}
 }
 ?>

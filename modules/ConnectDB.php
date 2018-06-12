@@ -1,5 +1,5 @@
 <?php
-	error_reporting(-1);
+	//error_reporting(-1);
 
   // Check if Request Method is POST
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && empty($_POST)) {
@@ -13,9 +13,9 @@
   $port = isset($params['port']) ? $params['port'] : null;
   $user = isset($params['user']) ? $params['user'] : null;
   $pwd = isset($params['pwd']) ? $params['pwd'] : null;
+  $x_table = isset($params['x_table']) ? $params['x_table'] : null;
 
-  // Create new connection
-  $con = new mysqli();
+
 
   // If all relevant params are available
   if (isset($host) && isset($user) && isset($pwd)) {
@@ -26,15 +26,25 @@
     else*/ 
       $con = new mysqli($host, $user, $pwd);
     
+
     // Connection Error ?
     if ($con->connect_error) {
       die("\n\nCould not connect: ERROR NO. " . $con->connect_errno . " : " . $con->connect_error);
     }
     else {
-      // Return output
-      $json = getData($con);
-      header('Content-Type: application/json');
-      echo json_encode($json);
+
+      if (!is_null($x_table)) {
+        // Return output [Tables, Specific Schema/DB]
+        $json = getTables($con, $x_table);
+        header('Content-Type: application/json');
+        echo json_encode($json);
+      } else {
+        // Return output [Schemata/Databases]
+        $json = getData($con);
+        header('Content-Type: application/json');
+        echo json_encode($json);
+      }
+      // Close Connection
       $con->close();
     }
   }
@@ -49,9 +59,10 @@
       $dbName = $row['Database'];
       // Filter information_schema to save resources
       if (strtolower($dbName) != "information_schema") {
+        //var_dump($dbName);
         array_push($res, array(
             "database" => $dbName,
-            "tables" => getTables($con, $dbName)
+            "tables" => array() //getTables($con, $dbName)
           )
         );
       }

@@ -1,21 +1,15 @@
   <!--  Footer -->
-  <div class="container">
-    <div class="footer">
-      <div class="row text-center">
-        <small>
-          <ul class="list-inline">
-            <li><b>replaceDBName</b></li>
-            <li>using</li>
-            <li><a target="_blank" href="http://getbootstrap.com/">Bootstrap</a></li>
-            <li><a target="_blank" href="https://jquery.com/">jQuery</a></li>
-            <li><a target="_blank" href="http://php.net/">PHP</a></li>
-            <li><a target="_blank" href="https://github.com/peredurabefrog/phpSecureLogin">phpSecureLogin</a></li>
-            <li><a target="_blank" href="https://github.com/mdaines/viz.js">viz.js</a></li>
-          </ul>
-        </small>
-      </div>
+  <footer class="footer">
+    <div class="container">
+      <span class="text-muted">
+        <b>replaceDBName</b> is using
+        <a target="_blank" href="http://php.net/">PHP</a>,&nbsp;
+        <a target="_blank" href="http://getbootstrap.com/">Bootstrap4</a>,&nbsp;
+        <a target="_blank" href="https://jquery.com/">jQuery</a>,&nbsp;
+        <a target="_blank" href="http://visjs.org/">visjs</a>
+      </span>
     </div>
-  </div>
+  </footer>
   <!-- JS -->
   <script src="js/muster.js"></script>
 </body>

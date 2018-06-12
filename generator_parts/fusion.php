@@ -40,13 +40,12 @@
     $tablename = $table["table_name"];
     @$se_active = (bool)$table["se_active"];
 
-
     //--- Create HTML Content
     if ($table["is_in_menu"]) {
       // Tabs
       $content_tabs .= "            ".
-            "<li>
-              <a href=\"#$tablename\" data-toggle=\"tab\">
+            "<li class=\"nav-item\">
+              <a class=\"nav-link\" href=\"#$tablename\" data-toggle=\"tab\">
                 <i class=\"".$table["table_icon"]."\"></i>&nbsp;
                 <span class=\"table_alias\">".$table["table_alias"]."</span>
               </a>
@@ -57,7 +56,6 @@
         "<div class=\"table_$tablename\"></div></div>\n";
     }
     //---/
-
 
     // TODO: Check if the "table" is no view
 

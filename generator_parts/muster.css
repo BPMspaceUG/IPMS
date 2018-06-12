@@ -1,122 +1,58 @@
+html {
+    position: relative;
+    min-height: 100%;
+}
+body {
+    margin-bottom: 60px; /* Margin bottom by footer height */
+}
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px; /* Set the fixed height of the footer here */
+    line-height: 60px; /* Vertically center the text there */
+    background-color: #f5f5f5;
+    font-size: 12px;
+}
+  
+/* Table */
+.datatbl {font-size: .85em;}
 thead tr {background-color: #eee;}
 /*.controllcoulm {min-width: 100px; width: 100px; background-color: #eee;}*/
-.controllcoulm {min-width: 50px; width: 50px; background-color: #eee;}
-/**********************************************************/
+.controllcoulm {text-align: center; min-width: 50px; width: 50px; background-color: #eee;}
+.controllcoulm:hover {background-color: #007bff; cursor: pointer;}
 
-.panel-table .panel-body { padding:0; margin:0;}
-.panel-table .panel-body .table-bordered { border-style: none; margin:0;}
-.panel-table .panel-body .table-bordered > thead > tr > th:last-of-type,
-.panel-table .panel-body .table-bordered > tbody > tr > td:last-of-type { border-right: 0px;}
-.panel-table .panel-body .table-bordered > thead > tr > th:first-of-type,
-.panel-table .panel-body .table-bordered > tbody > tr > td:first-of-type { border-left: 0px; text-align: center; width: 60px; background-color: #eee; }
-.panel-table .panel-body .table-bordered > tbody > tr:first-of-type > td { border-bottom: 0px; }
-.panel-table .panel-body .table-bordered > thead > tr:first-of-type > th { border-top: 0px; }
-
-.panel-table .panel-footer .pagination{ margin:0; }
-.panel-table .panel-footer .col{ line-height: 34px; height: 34px; }
-.panel-table .panel-heading .col h3{ line-height: 30px; height: 30px; }
-.panel-table .panel-body .table-bordered > tbody > tr > td{ line-height: 34px; }
-
-
-.panel.with-nav-tabs .panel-heading{
-    padding: 5px 5px 0 5px;
-}
-.panel.with-nav-tabs .nav-tabs{
-	border-bottom: none;
-}
-.panel.with-nav-tabs .nav-justified{
-	margin-bottom: -1px;
-}
-/********************************************************************/
-/*** PANEL DEFAULT ***/
-.with-nav-tabs.panel-default .nav-tabs > li > a,
-.with-nav-tabs.panel-default .nav-tabs > li > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > li > a:focus {
-    color: #777;
-}
-.with-nav-tabs.panel-default .nav-tabs > .open > a,
-.with-nav-tabs.panel-default .nav-tabs > .open > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > .open > a:focus,
-.with-nav-tabs.panel-default .nav-tabs > li > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > li > a:focus {
-    color: #777;
-	background-color: #ddd;
-	border-color: transparent;
-}
-.with-nav-tabs.panel-default .nav-tabs > li.active > a,
-.with-nav-tabs.panel-default .nav-tabs > li.active > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > li.active > a:focus {
-	color: #555;
-	background-color: #fff;
-	border-color: #ddd;
-	border-bottom-color: transparent;
-}
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu {
-    background-color: #f5f5f5;
-    border-color: #ddd;
-}
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > li > a {
-    color: #777;   
-}
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > li > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > li > a:focus {
-    background-color: #ddd;
-}
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > .active > a,
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > .active > a:hover,
-.with-nav-tabs.panel-default .nav-tabs > li.dropdown .dropdown-menu > .active > a:focus {
-    color: #fff;
-    background-color: #555;
-}
-
-/* Table */
-.element .datatbl {overflow: auto;}
-.element .footer {margin: 0; padding: .5em; font-size: 12px; background: #ddd;}
-.element .footer p {padding: 0; margin: 0; margin-top: 7px; margin-left: 6px;}
-.element .pagination {margin: 0; padding: 0;}
-.element .pagination a {cursor: pointer;}
-.tableCont {margin: 0; padding: 0;}
+/*.element .datatbl {overflow: auto;}*/
 .tableCont th, tr td {white-space: nowrap; }
 .tableCont th {cursor: pointer;}
 .tableCont .datatbl_header:hover {background-color: #ddd; color: steelblue;}
-/*.tableCont .datatbl_header:hover {color: #333; background-color: #eee; cursor: auto;}*/
 .tableCont .sorted {background-color: #ddd; color: steelblue;}
-.tableCont .datarow:hover {cursor: pointer;}
-/* .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
-    cursor: pointer;
-}*/
-
+.tableCont .datarow:hover {cursor: auto;}
 .fKey:hover {color: #33a; cursor: pointer;}
-.editor {font-family: 'Courier New', 'Courier', 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;}
+.editor {font-family: 'Courier New', 'Courier', 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace; font-size: .8em;}
 
 /*********************************************/
 
 /* State Engine */
-.stateBtn {cursor: pointer; font-weight: bold;}
+/*.stateBtn {cursor: pointer; font-weight: bold;}*/
 /* TODO: Optimize... not every stateID is that low value */
-.label-state {background-color: #333;}
+.label-state {background-color: #333; color: white; margin-top:3px;}
 .state1 {background-color: darkgreen;}
 .state2 {background-color: steelblue;}
-.state3 {background-color: red;}
+.state3 {background-color: DarkRed ;}
 .state4 {background-color: orange;}
-.state5 {background-color: lightblue;}
+.state5 {background-color: CornflowerBlue ;}
 .state6 {background-color: darkmagenta;}
-.state7 {background-color: steelblue;}
-.state8 {background-color: brown;}
+.state7 {background-color: BlueViolet;}
+.state8 {background-color: DarkSlateBlue;}
 .state9 {background-color: mediumorchid;}
-.state10 {background-color: tan;}
-.state11 {background-color: wheat;}
+.state10 {background-color: FireBrick ;}
+.state11 {background-color: DarkGoldenRod ;}
 .state12 {background-color: darksalmon;}
-.state13 {background-color: orange;}
-.state14 {background-color: darkgreen;}
-.state15 {background-color: brown;}
-.state16 {background-color: mediumorchid;}
-.state17 {background-color: steelblue;}
-.state18 {background-color: darkmagenta;}
-.state19 {background-color: tan;}
-.state20 {background-color: red;}
-.state21 {background-color: wheat;}
 
-/* Token functions */
+
+/* Tokens */
+/*
 .token:hover {cursor: pointer;}
 .token:hover circle {fill: #f44;}
+*/

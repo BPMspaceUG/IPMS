@@ -16,10 +16,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.configFileWasFound = false
 
 
-  $scope.test = function() {
-    console.log("---------Test---------")
-  }
-
   $scope.refreshConfig = function(data) {
       // Select correct DB
       $scope.dbNames.model = data.DBName
@@ -68,7 +64,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
 
       $scope.tables = result
   }
-
 
   $scope.loadConfigByName = function() {
     $scope.isLoading = true
@@ -120,7 +115,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     $scope.isLoading = true
     $scope.isError = false
 
-    //console.log('POST an '+$scope.path+':')
+    console.log('POST an '+$scope.path+':')
     $http({
       url: $scope.path,
       method: "POST",
@@ -149,7 +144,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
           return x.database
         })
       }
-      $scope.handleresult(data)
+      //$scope.handleresult(data)
       $scope.updateTables()
       //console.log('"Connect"-Response data: ');
       //console.log(data);
@@ -162,6 +157,9 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     });
   }
 
+
+
+
   $scope.openProject = function(){
     // Build new URL and execute in new Tab
     url = window.location.href.replace("IPMS", "IPMS_test")
@@ -171,7 +169,36 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.changeSelection = function() {
     $scope.configFileWasFound = false
     $scope.configFileWasNotFound = false
-    $scope.updateTables($scope.dbNames.model)
+
+    // Read the current configuration from Server
+    $scope.isLoading = true
+    $scope.isError = false
+    console.log('Load Database - POST an '+$scope.path+':')
+    $http({
+      url: $scope.path,
+      method: "POST",
+      data: {
+        x_table: $scope.dbNames.model,
+        host: $scope.sqlServer,
+        port: $scope.sqlPort,
+        user: $scope.username,
+        pwd: $scope.pw
+      }
+    })
+    .success(function(data, status, headers, config) {      
+      //console.log('----> update tables', $scope.dbNames.model)
+      //console.log('-->', $scope.resultData)
+
+      $scope.tables = data
+      // Set Icons
+      Object.keys($scope.tables).forEach(function(t){
+        $scope.tables[t].table_icon = getRandomicon()
+      })
+      // Stop Loading Icon
+      $scope.isLoading = false
+    });
+
+    
   }
 
   $scope.toggle_kids = function(tbl) {
@@ -181,20 +208,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     }
     tbl.showKids = !tbl.showKids;
   }
-
-  /*
-  define tables for manipulation, also set success signal and icons
-  */
-  $scope.handleresult = function(result) {
-    var result = result || null
-    if (result != null) {
-      scsSignal(true)
-      $scope.updateTables()
-    } else { // set red circle icon for fail
-      scsSignal(false)
-    }
-  }
-
   $scope.tbl_toggle_sel_all = function() {
     $scope.tables.forEach(function(t){
       t.is_in_menu = !t.is_in_menu;
@@ -206,13 +219,14 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   */
   $scope.updateTables = function(param){
   	console.log("UPDATE TABLES", param)
-    var param = param || $scope.dbNames.model  
+    var param = param || $scope.dbNames.model
 
     $scope.db = $scope.resultData.find(function(db){
       return db.database == param
     })
 
     $scope.tables = $scope.db.tables
+
     Object.keys($scope.tables).forEach(function(tbl){
       $scope.tables[tbl].table_icon = getRandomicon()
     })

@@ -1,22 +1,19 @@
 <!-- body content starts here  -->
-<div class="container" id="content" style="width: 100%">
-  <div class="row">
-    <div class="col-xs-12">
-      <div class="panel panel-default panel-table">
-        <!-- Panel Header -->
-        <div class="panel-heading">
-          <ul class="nav nav-tabs">
-###TABS###
-          </ul>
+<!--<div class="container" id="content" style="width: 100%">-->
+<h1>&nbsp;</h1>
+<main role="main">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+          ###TABS###
+        </ul>
+      </div>
+      <div class="card-body">
+        <div class="tab-content">
+          ###TAB_PANELS###
         </div>
-        <!-- Panel Body -->
-        <div class="panel-body">
-          <div class="tab-content">
-###TAB_PANELS###
-          </div>
-        </div>
-        <!-- /Panel Body -->
-      </div>      
+      </div>
     </div>
   </div>
-</div>
+</main>

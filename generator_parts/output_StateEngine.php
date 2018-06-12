@@ -193,10 +193,17 @@
       $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
+    private function getFormElementStd($label, $content, $fk = '') {
+      return "<div class=\"form-group row\">$fk\n\t".
+        "<label class=\"col-sm-3 col-form-label\">".$label."</label>\n\t".
+        "<div class=\"col-sm-9\">\n\t\t".$content."\n\t".
+        "</div>\n</div>\n";
+    }
     private function getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol) {
+
       // Special case if $key == 'state_id'
       if ($key == 'state_id') {
-        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
+        return "<div class=\"form-group row\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
           "<label class=\"col-sm-2 control-label\">".
           $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static\">".
           "<span class=\"label label-primary status\"></span></p>\n\t</div>\n</div>\n";
@@ -204,55 +211,61 @@
       //----------------------------------
       if ($FKTable != '') {
         // FK
-        return "<div class=\"form-group\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\" class=\"inputFK\"/>\n".
+        /* TODO: 
+        return $this->getFormElementStd($alias, '<input type="number" class="form-control" name="'.$key.'">');
+        '<input type="text" readonly class="form-control-plaintext fKey" name="'.$key.'" value="'.$default.'">'
+        // '<input type="hidden" name="'.$key.'" value="$default" class="inputFK"/>'
+        */
+      
+        return $this->getFormElementStd($alias, '<div class="input-group">
+          <div class="input-group-prepend">
+            <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
+            <button class="btn btn-outline-secondary fKey" type="button" onclick="selectForeignKey(this)">Select...</button>
+          </div>
+          <div class="input-group-append">
+            <span class="input-group-text fkval"></span>
+          </div>
+        </div>');
+        
+
+        return "<div class=\"form-group row\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\" class=\"inputFK\"/>\n".
           "<label class=\"col-sm-2 control-label\">".
           $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static text-primary fKey\"  onclick=\"selectForeignKey(this)\"><i class=\"fa fa-key\"></i> ".
           "<span class=\"fkval\">Select Foreign Key ...</span></p>\n\t</div>\n</div>\n";
       }
       else if (strtolower($data_type) == 'int') {
         // Number
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"number\" class=\"form-control\" name=\"".
-          $key."\">\n\t</div>\n</div>\n";
+        return $this->getFormElementStd($alias, '<input type="number" class="form-control" name="'.$key.'">');
+      }
+      else if (strtolower($data_type) == 'tinyint') {
+        // Boolean
+        return $this->getFormElementStd($alias, '<div class="custom-control custom-checkbox">'.
+          '<input type="checkbox" class="custom-control-input" id="customCheck1" name="'.$key.'"><label class="custom-control-label" for="customCheck1">&nbsp;</label></div>');
       }
       else if (strtolower($data_type) == 'longtext') {
-        // TextEditor
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<textarea rows=\"4\" class=\"form-control editor\" name=\"".
-          $key."\">$default</textarea>\n\t</div>\n</div>\n";
+        // TextEditor (Code)
+        return $this->getFormElementStd($alias, '<textarea rows="4" class="form-control editor" name="'.$key.'">'.$default.'</textarea>');
       }
       else if (strtolower($data_type) == 'time') {
         // TIME
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"time\" class=\"form-control\" name=\"".
-          $key."\">"
-          ."\n\t</div>\n</div>\n";
+        return $this->getFormElementStd($alias, '<input type="time" class="form-control" name="'.$key.'">');
       }
       else if (strtolower($data_type) == 'date') {
         // DATE
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"date\" class=\"form-control\" name=\"".
-          $key."\">"
-          ."\n\t</div>\n</div>\n";
+        return $this->getFormElementStd($alias, '<input type="date" class="form-control" name="'.$key.'">');
       }
-      else if (strtolower($data_type) == 'datetime') {
+      else if (strtolower($data_type) == 'datetime') {        
         // DATETIME
-        return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t".
-          // TODO:
-          "<div class=\"row\">\n".
-          "  <div class=\"col-xs-6\"><input type=\"date\" class=\"form-control\" name=\"".$key."\"></div>\n". // DATE
-          "  <div class=\"col-xs-6\"><input type=\"time\" class=\"form-control\" name=\"".$key."\"></div>\n". // TIME
-          "</div>".
-          //"<textarea rows=\"4\" class=\"form-control editor\" name=\"".$key."\">$default</textarea>".
-          "\n\t</div>\n</div>\n";
+        return $this->getFormElementStd($alias, "<div class=\"row\">\n".
+        "  <div class=\"col-7\"><input type=\"date\" class=\"form-control\" name=\"".$key."\"></div>\n". // DATE
+        "  <div class=\"col-5\"><input type=\"time\" class=\"form-control\" name=\"".$key."\"></div>\n". // TIME
+        "</div>");
       }
-      return "<div class=\"form-group\">\n\t<label class=\"col-sm-2 control-label\">".
-        $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<input type=\"text\" class=\"form-control\" name=\"".
-        $key."\" value=\"$default\">\n\t</div>\n</div>\n";
+      // Standard = TEXT
+      return $this->getFormElementStd($alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
     }
     public function getBasicFormDataByColumns($colData, $excludeKeys) {
-      $header = "<form class=\"form-horizontal\">\n";
+      $header = "<form>\n";
       $footer = "</form>";
       $content = '';
       // Loop every column
@@ -269,6 +282,8 @@
       }
       return $header.$content.$footer;
     }
+
+
     public function getFormDataByStateID($StateID) {
       if (!($this->ID > 0)) return "";
       settype($StateID, 'integer');
