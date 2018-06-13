@@ -24,11 +24,13 @@
   }
 
   //---------------> Token vaild    
+
   echo "Hello "/*.var_export($token, true)*/."! ";
   if (property_exists($token, "exp"))
     echo "Your Token will expire in ".number_format((($token->exp - time()) / 60), 2, ',', '.')."min. To log out, clear the cookies.";
   else
     echo "Your Token will never be expiring.";
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -38,16 +40,19 @@
   <!-- Title -->
   <title>replaceDBName - [IPMSProject]</title>
   <!-- CSS via CDN -->
-  <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">-->
+  <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">-->
   <link rel="stylesheet" href="https://bootswatch.com/4/cosmo/bootstrap.min.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css"/>
   <link rel="stylesheet" href="css/muster.css">
+  <style>
+    html {position: relative; min-height: 100%;}
+    body {margin-bottom: 60px;}
+    .footer {position: absolute; bottom: 0; width: 100%; height: 60px; line-height: 60px; background-color: #f5f5f5; font-size: 12px;}
+  </style>
   <!-- JS via CDN -->
   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-  <!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>-->
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
 </head>

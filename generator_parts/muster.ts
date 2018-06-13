@@ -1,15 +1,20 @@
 // TODO: Do not use Global variables
 
+// Plugins
+var $: any;
 // Global variables
 var gTables: Array<Table> = []
 var gConfig: any;
+var gOptions = {
+  showWorkflowButton: true,
+  showFilter: true,
+  smallestTimeUnitMins: true,
+  EntriesPerPage: 15
+}
 // Path for API
 var path = window.location.pathname
 var pathName = path.substring(0, path.lastIndexOf('/') + 1);
 const gURL =  pathName + 'api/'
-
-// Plugins
-var $: any;
 
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command: string, params: any, callback): void {
@@ -19,11 +24,6 @@ function sendRequest(command: string, params: any, callback): void {
   $.ajax({
     method: "POST",
     url: gURL,
-    /*
-    beforeSend: function (xhr) {
-      xhr.setRequestHeader('Authorization', 'Bearer '+token);
-    },
-    */
     contentType: 'json',
     data: JSON.stringify({
       cmd: command,
@@ -124,10 +124,10 @@ class StateMachine {
     var smLinks, smNodes
     var me = this
   
-    console.log("Request [getStates]")
+    //console.log("Request [getStates]")
     sendRequest('getStates', {table: me.tablename}, function(r) {
       smNodes = JSON.parse(r)
-      console.log("Request [smGetLinks]")
+      //console.log("Request [smGetLinks]")
       sendRequest('smGetLinks', {table: me.tablename}, function(r) {
         smLinks = JSON.parse(r)
 
@@ -251,16 +251,16 @@ class StateMachine {
 //==============================================================
 class Table {
   Columns: any;
-  Rows: any;
+  private Rows: any;
   Filter: string;
-  Filter_Old: string;
-  OrderBy: string;
+  private Filter_Old: string;
+  private OrderBy: string;
   PrimaryColumn: string;
-  AscDesc: SortOrder = SortOrder.DESC;
+  private AscDesc: SortOrder = SortOrder.DESC;
   tablename: string;
-  PageLimit: number = 10;
-  PageIndex: number = 0;
-  actRowCount: number; // Count total
+  private PageLimit: number;
+  private PageIndex: number = 0;
+  private actRowCount: number; // Count total
   jQSelector: string = '';
   selectedIDs: number[];
   Form_Create: string;
@@ -269,7 +269,7 @@ class Table {
   lastModifiedRowID: number;
   selOne: boolean;
 
-  constructor(tablename: string, DOMSelector: string, selectableOne: boolean = false) {
+  constructor(tablename: string, DOMSelector: string, selectableOne: boolean = false, callback: any = function(){}) {
     var data = gConfig[tablename]; // Load data from global config
     this.tablename = tablename;
     this.jQSelector = DOMSelector;
@@ -278,6 +278,7 @@ class Table {
     this.Columns = data.columns;
     this.ReadOnly = data.is_read_only;
     this.selOne = selectableOne
+    this.PageLimit = gOptions.EntriesPerPage || 10;
 
     // Get the Primary column name
     var PriCol: string;
@@ -294,16 +295,19 @@ class Table {
     this.Filter = '';
     this.Filter_Old = '';
     this.Form_Create = '';
-    this.getFormCreate();
-    // Initialize StateMachine for the Table
-    if (data.se_active)
-      this.SM = new StateMachine(this.tablename);
-    else
-      this.SM = null;
 
     var me = this
-    this.countRows(function(){
-      me.loadRows();
+    me.getFormCreate();
+    // Initialize StateMachine for the Table
+    if (data.se_active)
+      me.SM = new StateMachine(me.tablename);
+    else
+      me.SM = null;
+    // Download data from server
+    me.countRows(function(){
+      me.loadRows(function(){
+        callback();
+      });
     })
   }
 
@@ -340,7 +344,7 @@ class Table {
     return joins
   }
   setPageIndex(targetIndex: number): void {
-    console.log("Set PageIndex", targetIndex)
+    console.log("Set PageIndex to", targetIndex)
     var newIndex = targetIndex
     var lastPageIndex = this.getNrOfPages() - 1
     // Check borders
@@ -410,27 +414,24 @@ class Table {
       else
         return '';
     }
-    return cellStr
+    return escapeHtml(cellStr)
   }
-  // TODO: Remove param?
-  getHTMLStatusText(t: Table): string {
-    if (t.actRowCount > 0)
-      return 'Showing Entries '+((t.PageIndex*t.PageLimit)+1)+'-'+
-        ((t.PageIndex*t.PageLimit)+t.Rows.length)+' of '+t.actRowCount+' Entries';
+  getHTMLStatusText(): string {
+    if (this.actRowCount > 0)
+      return 'Showing Entries '+((this.PageIndex * this.PageLimit) + 1)+'-'+
+        ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of '+ this.actRowCount + ' Entries';
     else
       return 'No Entries';
   }
   renderHTML(): void {
     var t = this
     var jQSelector: string = t.jQSelector
-    console.log("Render HTML for Table", t.tablename, " @ ", jQSelector)
-    
+    //console.log("Render HTML for Table", t.tablename, " @ ", jQSelector)
     $(jQSelector).empty() // GUI: Clear entries
   
-    var ths: string = ''
-    //if (!t.ReadOnly) {
-      ths = '<th></th>'; // Pre fill with 1 because of selector
-    //}
+
+    var ths: string = '<th></th>'; // Pre fill with 1 because of selector
+
     // Data Rows
     Object.keys(t.Columns).forEach(function(col) {
       if (t.Columns[col].is_in_menu) {
@@ -458,80 +459,95 @@ class Table {
     else
     pgntn += '';
   
-    var header: string = '<div class="element">'+
-      '<p class="form-inline"><div class="row">';
+    var header: string = '<div class="element"><div class="row">';
 
     // Filter
-    header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'
-    header += '<input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="javascript: '+
-    'if(event.keyCode == 13) {var t = getTableByjQSel(\''+jQSelector+'\'); t.Filter = $(this).val(); t.loadRows();}">'
-    header += '<div class="input-group-append">'
-    header += '<button class="btn btn-secondary" onclick="if (true) {var t = getTableByjQSel(\''+jQSelector+'\'); t.Filter = $(this).parent().parent().find(\'.filterText\').val(); t.loadRows();}" type="button"><i class="fa fa-search"></i></button>'
-    header += '</div></div>'
+    if (gOptions.showFilter) {
+      header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'    
+      header += '  <input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="'+
+      'if(event.keyCode == 13) { filterTable(\''+jQSelector+'\'); }">'
+      header += '  <div class="input-group-append">'
+      header += '    <button class="btn btn-secondary" onclick="if (true) { filterTable(\''+jQSelector+'\'); }" type="button"><i class="fa fa-search"></i></button>'
+      header += '  </div>'
+      header += '</div>'
+    }
 
-    header += '<div class="col-12 col-sm-6 col-lg-9">'
+    header += '<div class="col-12 col-sm-6 col-lg-9 mb-3">'
     // Workflow Button
-    if (t.SM) {
+    if (t.SM && gOptions.showWorkflowButton) {
       header += '<button class="btn btn-secondary" onclick="showSE(\''+jQSelector+'\')"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
     }
     // Create Button
     if (!t.ReadOnly) {
       header += '&nbsp;<button class="btn btn-success" onclick="createEntry(\''+jQSelector+'\')"><i class="fa fa-plus"></i>&nbsp;Create</button>';
     }
-    header += '</div></div></p>';
-    header += '<div class="datatbl"><table class="table table-hover table-sm table-responsive-sm tableCont"><thead><tr>'+ths+'</tr></thead><tbody>';
+    header += '</div></div>';
+    header += '<table class="table table-hover table-sm table-responsive-sm datatbl"><thead><tr>'+ths+'</tr></thead><tbody>';
   
-    var footer: string = '</tbody></table></div>'+
+    var footer: string = '</tbody></table>'+
       '<div>'+
-        '<p class="pull-left">'+t.getHTMLStatusText(t)+'</p>'+
+        '<p class="pull-left"><small>'+t.getHTMLStatusText()+'</small></p>'+
         '<nav class="pull-right"><ul class="pagination">'+pgntn+'</ul></nav>'+
         '<div class="clearfix"></div>'+
       '</div>'+
       '</div>'
   
+    //============================== data
+
     var tds: string = '';
-  
+
     // Loop Rows
     if (!t.Rows) return
-
     t.Rows.forEach(function(row){
-      var modRowStr = 'modifyRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')'; // Build edit String
-      var data_string: string = '';
 
+      // Build edit String
+      var modRowStr = 'modifyRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')';
       // Control column
-      //if (!t.ReadOnly) {
-        data_string = '<td class="controllcoulm" onclick="'+modRowStr+'">'
-        if (t.selOne) {
-          // Selectable
-          data_string += '<i class="fa fa-square-o" style="margin-top: 3px;"></i>';
-        } else {
-          // Editable
-          if (!t.ReadOnly)
-            data_string += '<i class="fa fa-pencil" style="margin-top: 3px;"></i>'
-        }
-        //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
-        data_string += '</td>'
-      //}
+      var data_string: string = '<td class="controllcoulm" onclick="'+modRowStr+'">'
+      // Entries are selectable?
+      if (t.selOne) {
+        data_string += '<i class="fa fa-square-o"></i>';
+      } else {
+        // Entries are editable
+        if (!t.ReadOnly) data_string += '<i class="fa fa-pencil"></i>'
+      }
+      //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
+      data_string += '</td>'
+
       // Loop Columns
       Object.keys(t.Columns).forEach(function(col) {
         var value = row[col]
         // Check if it is displayed
-        if (t.Columns[col].is_in_menu) {          
+        if (t.Columns[col].is_in_menu) {
           // check Cell-Value
           if (value) {
             // Truncate Cell if Content is too long
             if (t.Columns[col].DATA_TYPE == 'date') {
               var tmp = new Date(value)
               if(!isNaN(tmp.getTime()))
-                value = tmp.toLocaleDateString()
+                value = tmp.toLocaleDateString('de-DE')
               else
                 value = ''
             }
+            else if(t.Columns[col].DATA_TYPE == 'time') {
+              // Remove seconds from TimeString
+              if (gOptions.smallestTimeUnitMins) {
+                var timeArr = value.split(':');
+                timeArr.pop();
+                value = timeArr.join(':')
+              }
+            }
             else if (t.Columns[col].DATA_TYPE == 'datetime') {
               var tmp = new Date(value)
-              if(!isNaN(tmp.getTime()))
-                value = tmp.toLocaleString()
-              else
+              if(!isNaN(tmp.getTime())) {
+                value = tmp.toLocaleString('de-DE')
+                // Remove seconds from TimeString
+                if (gOptions.smallestTimeUnitMins) {
+                  var timeArr = value.split(':');
+                  timeArr.pop();
+                  value = timeArr.join(':')
+                }             
+              } else
                 value = ''
             }
             else if (t.Columns[col].DATA_TYPE == 'tinyint') {
@@ -553,15 +569,18 @@ class Table {
           }
         }
       })
+      // Add row to table
       tds += '<tr class="datarow row-'+row[t.PrimaryColumn]+'">'+data_string+'</tr>'
     })
     // GUI
     $(jQSelector).append(header+tds+footer)    
     // Autofocus Filter
+    if (t.Filter.length > 0)
     $(jQSelector+' .filterText').focus().val('').val(t.Filter)
+    else
+      $(jQSelector+' .filterText').val(t.Filter)
     // Mark last modified Row
     if (t.lastModifiedRowID) {
-      console.log(t.lastModifiedRowID)
       if (t.lastModifiedRowID != 0) {
         addClassToDataRow(jQSelector, t.lastModifiedRowID, 'table-info')
         t.lastModifiedRowID = 0;
@@ -653,7 +672,7 @@ class Table {
       }
     })
   }
-  loadRows(): void {
+  loadRows(callback: any = function(){}): void {
     var me: Table = this;
     var FilterEvent: boolean = false;
 
@@ -687,16 +706,16 @@ class Table {
         me.countRows(function(){
           me.renderHTML()
           me.Filter_Old = me.Filter
+          callback()
         })
       } else {
         // Render Table
         me.renderHTML()
+        callback()
       }      
     })
   }
 }
-
-
 
 
 
@@ -722,12 +741,10 @@ function createEntry(jQSel: string): void {
   var ModalID = M.DOM_ID
 
   // Save origin Table in all FKeys
-  console.log("Set data ", t.tablename);
+  //console.log("Set data ", t.tablename);
   $('#'+ModalID+' .inputFK').data('origintable', t.tablename);
-
   // Bind Buttonclick
   $('#'+ModalID+' .btnCreateEntry').click(function(){
-
     // Read out all input fields with {key:value}
     var data = readDataFromForm('#'+ModalID, jQSel)
     // REQUEST
@@ -772,16 +789,12 @@ function createEntry(jQSel: string): void {
       });
     }
   })
-
   M.show()
 }
-
 // TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
 function setState(MID: string, jQSel: string, RowID: number, targetStateID: number): void {
-
-  var t = getTableByjQSel(jQSel)  
-  var data = readDataFromForm('#'+MID, jQSel) // Read out all input fields with {key:value}
-
+  var t = getTableByjQSel(jQSel);
+  var data = readDataFromForm('#'+MID, jQSel); // Read out all input fields with {key:value}
   // REQUEST
   t.transitRow(RowID, targetStateID, data, transitioned)
   // RESPONSE
@@ -825,8 +838,6 @@ function setState(MID: string, jQSel: string, RowID: number, targetStateID: numb
     });
   }
 }
-
-
 function renderEditForm(Table: Table, RowID: number, htmlForm: string, nextStates: any) {
   var row = Table.getRowByID(RowID)
   // Modal
@@ -854,16 +865,14 @@ function renderEditForm(Table: Table, RowID: number, htmlForm: string, nextState
   $('#'+EditMID+' .modal-body').append('<input type="hidden" name="'+Table.PrimaryColumn+'" value="'+RowID+'">')
   M.show()
 }
-
 function readDataFromForm(Mid: string, jQSel: string): any {
   var inputs = $(Mid+' :input')
   var data = {}
-  console.log('---------------readDataFromForm--------------')
+
   inputs.each(function(){
     var e = $(this);
     var key = e.attr('name')
     if (key) {
-      console.log(key, jQSel)
       var column = null
       try {
         column = getTableByjQSel(jQSel).Columns[key]
@@ -872,13 +881,12 @@ function readDataFromForm(Mid: string, jQSel: string): any {
       }
 
       if (column) {
-        if (e.val() == '' && column.foreignKey.table != '') {
-          // [FK] if empty and FK then value should be NULL
+        var DataType = column.DATA_TYPE.toLowerCase()
+        //  if empty then value should be NULL
+        if (e.val() == '' && (DataType.indexOf('text') < 0 || column.foreignKey.table != '')) {
           data[key] = null
         } else {
-          // [NO FK]
-          var DataType = column.DATA_TYPE.toLowerCase()
-          console.log('############', DataType, e)
+          // [NO FK]          
           if (DataType == 'datetime') {
             // For DATETIME
             if (e.attr('type') == 'date')
@@ -888,7 +896,7 @@ function readDataFromForm(Mid: string, jQSel: string): any {
           }
           else if (DataType == 'tinyint') {
             // Boolean
-            data[key] = e.prop('checked')
+            data[key] = e.prop('checked') ? '1' : '0';
           }
           else {
             data[key] = e.val()
@@ -931,13 +939,30 @@ function writeDataToForm(Mid: string, data: any, jQSel: string): void {
           var DataType = getTableByjQSel(jQSel).Columns[col].DATA_TYPE.toLowerCase()
 
           if (DataType == 'datetime') {
+            // DateTime -> combine vals
             if (e.attr('type') == 'date')
               e.val(value.split(" ")[0])
-            else if (e.attr('type') == 'time')
+            else if (e.attr('type') == 'time') {
+              // Remove seconds from TimeString
+              if (gOptions.smallestTimeUnitMins) {
+                var timeArr = value.split(':');
+                timeArr.pop();
+                value = timeArr.join(':')
+              }
               e.val(value.split(" ")[1])
+            }
+          }
+          else if (DataType == 'time') {
+            // Remove seconds from TimeString
+            if (gOptions.smallestTimeUnitMins) {
+              var timeArr = value.split(':');
+              timeArr.pop();
+              value = timeArr.join(':')
+            }
+            e.val(value)
           }
           else if (DataType == 'tinyint') {
-            console.log('Checkbox = ', value)
+            // Checkbox
             e.prop('checked', parseInt(value) !== 0); // Boolean
           } else
             e.val(value)
@@ -946,7 +971,6 @@ function writeDataToForm(Mid: string, data: any, jQSel: string): void {
     }
   })
 }
-
 function modifyRow(jQSel: string, id: number) { 
   var t: Table = getTableByjQSel(jQSel);
 
@@ -964,6 +988,8 @@ function modifyRow(jQSel: string, id: number) {
     if (t.ReadOnly) return
     // Indicate which row is getting modified
     addClassToDataRow(jQSel, id, 'table-warning')
+    $(jQSel+' .datarow .controllcoulm').html('<i class="fa fa-pencil"></i>'); // for all
+    $(jQSel+' .row-'+id+' .controllcoulm').html('<i class="fa fa-arrow-right"></i>');
     // Set Form
     if (t.SM) {
       var PrimaryColumn: string = t.PrimaryColumn;
@@ -1002,6 +1028,13 @@ function modifyRow(jQSel: string, id: number) {
     }
   }
 }
+function filterTable(jQSel: string) {
+  var t: Table = getTableByjQSel(jQSel);
+  var filterText = $(jQSel + ' .filterText').val();
+  console.log('Filter Table ', t.tablename, ' with ', filterText)
+  t.Filter = filterText
+  t.loadRows()
+}
 // BUTTON SAVE + Close
 function saveEntry(MID: string, jQSel: string, closeModal: boolean = true){
   var t: Table = getTableByjQSel(jQSel)
@@ -1029,7 +1062,7 @@ function delRow(jQSel: string, id: number) {
   var t = getTableByjQSel(jQSel)
   t.deleteRow(id, function(r) {
     if (r == "1") {
-      console.log("Deleted Row", r)
+      //console.log("Deleted Row", r)
       addClassToDataRow(t.jQSelector, id, 'table-danger')
     } else {
       console.log("Could not delete Row", r)
@@ -1043,64 +1076,6 @@ function getTableByjQSel(SelStr: string): Table {
   }})
   return result
 }
-
-
-/*====================================================================
-    I N I T I A L I Z E       T A B L E S
-====================================================================*/
-// TODO: Put in index-html file
-sendRequest('init', '', function(r){
-  if (r.length > 0) {
-    var data = JSON.parse(r)
-    gConfig = data
-    // Init Table Objects
-    Object.keys(data).forEach(function(t){
-      // Create a new object and save it in global array
-      if (gConfig[t].is_in_menu) {
-        var newT = new Table(t, '.table_'+t)
-        gTables.push(newT)
-      }
-    })
-    // First Tab selection
-    $('.nav-tabs .nav-link:first').addClass('active')
-    $('.tab-content .tab-pane:first').addClass('active')
-  }
-})
-
-
-
-// Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
-$(document).on('show.bs.modal', '.modal', function () {
-  var zIndex = 1040 + (10 * $('.modal:visible').length);
-  $(this).css('z-index', zIndex);
-  setTimeout(function() {
-      $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
-  }, 0);
-});
-// Autofocus first input
-/*
-$(document).on('shown.bs.modal', '.modal', function () {
-  //console.log("focus first element...");
-  $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
-});
-*/
-
-// This function is called from FormData
-function selectForeignKey(inp){
-  var inp = $(inp).parent().find('input');
-  // Extract relevant Variables
-  var originTable = inp.data('origintable');
-  var originColumn = inp.attr('name');
-  var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table
-  var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id
-  var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst
-  // New Table Instance
-  openTableInModal(foreignTable, function(selRows){
-    inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
-    inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]) // Set Substituted Column
-  })
-}
-
 function openTableInModal(tablename: string, callback = function(e){}) {
   // Modal
   var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
@@ -1120,10 +1095,34 @@ function openTableInModal(tablename: string, callback = function(e){}) {
   })
   M.show()
 }
+// This function is called from FormData
+function selectForeignKey(inp){
+  var inp = $(inp).parent().find('input');
+  // Extract relevant Variables
+  var originTable = inp.data('origintable');
+  var originColumn = inp.attr('name');
+  var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table
+  var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id
+  var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst
+  // New Table Instance
+  openTableInModal(foreignTable, function(selRows){
+    inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
+    inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]) // Set Substituted Column
+  })
+}
 
 
-
-
+// Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
+$(document).on('show.bs.modal', '.modal', function () {
+  //-- Autofocus first input in modal
+  //$(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
+  //-- Stack modals correctly  
+  var zIndex = 2040 + (10 * $('.modal:visible').length);
+  $(this).css('z-index', zIndex);
+  setTimeout(function() {
+      $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+  }, 0);
+});
 // TODO: obsolete functions?
 function showResult(content: string, title: string = 'StateMachine Feedback'): void {
   var M = new Modal(title, content)
@@ -1136,4 +1135,34 @@ function addClassToDataRow(jQuerySelector: string, id: number, classname: string
 function showSE(jQSel) {
   // TODO: First show the modal and then draw the StateMachine
   getTableByjQSel(jQSel).SM.openSEPopup();
+}
+//--------------------------------------------------------------------------
+// Initialize Tables (call from HTML)
+
+async function initTables(callback: any = function(){}) {
+  var promises = []
+  sendRequest('init', '', async function(r){    
+    gConfig = JSON.parse(r);
+    var tables = Object.keys(gConfig);
+    // Init Table Objects
+    tables.map(function(t){
+      var p = new Promise(function(resolve){
+        // Create a new object and save it in global array
+        if (gConfig[t].is_in_menu) {
+          var newT = new Table(t, '.table_'+t, false, function(){
+            resolve();
+          })
+          gTables.push(newT)
+        }
+      })
+      promises.push(p);
+    })
+    await Promise.all(promises);
+    // First Tab selection
+    $('.nav-tabs .nav-link:first').addClass('active')
+    $('.tab-content .tab-pane:first').addClass('active')
+    callback()
+  })
+
+  
 }

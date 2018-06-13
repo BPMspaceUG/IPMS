@@ -12,5 +12,12 @@
   </footer>
   <!-- JS -->
   <script src="js/muster.js"></script>
+  <script>
+    $(document).ready(function() {
+      initTables(function(){
+        console.log('Everything ready!')
+      });
+    });    
+  </script>
 </body>
 </html>

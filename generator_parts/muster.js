@@ -1,13 +1,27 @@
 // TODO: Do not use Global variables
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+// Plugins
+var $;
 // Global variables
 var gTables = [];
 var gConfig;
+var gOptions = {
+    showWorkflowButton: true,
+    showFilter: true,
+    smallestTimeUnitMins: true,
+    EntriesPerPage: 15
+};
 // Path for API
 var path = window.location.pathname;
 var pathName = path.substring(0, path.lastIndexOf('/') + 1);
-var gURL = pathName + 'api/';
-// Plugins
-var $;
+const gURL = pathName + 'api/';
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command, params, callback) {
     // use localStorage -> saves Bandwidth and does not expire
@@ -16,11 +30,6 @@ function sendRequest(command, params, callback) {
     $.ajax({
         method: "POST",
         url: gURL,
-        /*
-        beforeSend: function (xhr) {
-          xhr.setRequestHeader('Authorization', 'Bearer '+token);
-        },
-        */
         contentType: 'json',
         data: JSON.stringify({
             cmd: command,
@@ -47,10 +56,8 @@ var SortOrder;
 //==============================================================
 // Class: Modal
 //==============================================================
-var Modal = /** @class */ (function () {
-    function Modal(heading, content, footer, isBig) {
-        if (footer === void 0) { footer = ''; }
-        if (isBig === void 0) { isBig = false; }
+class Modal {
+    constructor(heading, content, footer = '', isBig = false) {
         this.DOM_ID = 'msgBx';
         // Check if ID exists then add Number -> like 'idStrxxx'
         while ($("#" + this.DOM_ID).length) {
@@ -91,29 +98,28 @@ var Modal = /** @class */ (function () {
             $(this).remove();
         });
     }
-    Modal.prototype.setFooter = function (html) {
+    setFooter(html) {
         $('#' + this.DOM_ID + ' .customfooter').html(html);
-    };
-    Modal.prototype.show = function () {
+    }
+    show() {
         $("#" + this.DOM_ID).modal();
         $("#" + this.DOM_ID).modal('show');
-    };
-    return Modal;
-}());
+    }
+}
 //==============================================================
 // Class: StateMachine
 //==============================================================
-var StateMachine = /** @class */ (function () {
-    function StateMachine(tablename) {
+class StateMachine {
+    constructor(tablename) {
         this.tablename = tablename;
     }
-    StateMachine.prototype.openSEPopup = function () {
+    openSEPopup() {
         var smLinks, smNodes;
         var me = this;
-        console.log("Request [getStates]");
+        //console.log("Request [getStates]")
         sendRequest('getStates', { table: me.tablename }, function (r) {
             smNodes = JSON.parse(r);
-            console.log("Request [smGetLinks]");
+            //console.log("Request [smGetLinks]")
             sendRequest('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
                 // Finally, when everything was loaded, show Modal
@@ -173,7 +179,7 @@ var StateMachine = /** @class */ (function () {
                         },
                         font: {
                             color: '#888888',
-                            size: 16
+                            size: 16,
                         },
                         shapeProperties: {
                             useBorderWithImage: false
@@ -212,25 +218,22 @@ var StateMachine = /** @class */ (function () {
                 });
             });
         });
-    };
-    StateMachine.prototype.isExitNode = function (NodeID, links) {
+    }
+    isExitNode(NodeID, links) {
         var res = true;
         links.forEach(function (e) {
             if (e.from == NodeID && e.from != e.to)
                 res = false;
         });
         return res;
-    };
-    return StateMachine;
-}());
+    }
+}
 //==============================================================
 // Class: Table
 //==============================================================
-var Table = /** @class */ (function () {
-    function Table(tablename, DOMSelector, selectableOne) {
-        if (selectableOne === void 0) { selectableOne = false; }
+class Table {
+    constructor(tablename, DOMSelector, selectableOne = false, callback = function () { }) {
         this.AscDesc = SortOrder.DESC;
-        this.PageLimit = 10;
         this.PageIndex = 0;
         this.jQSelector = '';
         var data = gConfig[tablename]; // Load data from global config
@@ -241,6 +244,7 @@ var Table = /** @class */ (function () {
         this.Columns = data.columns;
         this.ReadOnly = data.is_read_only;
         this.selOne = selectableOne;
+        this.PageLimit = gOptions.EntriesPerPage || 10;
         // Get the Primary column name
         var PriCol;
         var SortCol = ''; // first visible Column
@@ -255,19 +259,22 @@ var Table = /** @class */ (function () {
         this.Filter = '';
         this.Filter_Old = '';
         this.Form_Create = '';
-        this.getFormCreate();
+        var me = this;
+        me.getFormCreate();
         // Initialize StateMachine for the Table
         if (data.se_active)
-            this.SM = new StateMachine(this.tablename);
+            me.SM = new StateMachine(me.tablename);
         else
-            this.SM = null;
-        var me = this;
-        this.countRows(function () {
-            me.loadRows();
+            me.SM = null;
+        // Download data from server
+        me.countRows(function () {
+            me.loadRows(function () {
+                callback();
+            });
         });
     }
     //=============  Helper functions
-    Table.prototype.getRowByID = function (RowID) {
+    getRowByID(RowID) {
         var result = null;
         var me = this;
         this.Rows.forEach(function (row) {
@@ -276,17 +283,17 @@ var Table = /** @class */ (function () {
             }
         });
         return result;
-    };
-    Table.prototype.toggleSort = function (ColumnName) {
+    }
+    toggleSort(ColumnName) {
         this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC;
         this.OrderBy = ColumnName;
         // Refresh
         this.loadRows();
-    };
-    Table.prototype.getSelectedRows = function () {
+    }
+    getSelectedRows() {
         return this.selectedIDs[0];
-    };
-    Table.prototype.buildJoinPart = function (t) {
+    }
+    buildJoinPart(t) {
         var joins = [];
         Object.keys(t.Columns).forEach(function (col) {
             // Check if there is a substitute for the column
@@ -296,9 +303,9 @@ var Table = /** @class */ (function () {
             }
         });
         return joins;
-    };
-    Table.prototype.setPageIndex = function (targetIndex) {
-        console.log("Set PageIndex", targetIndex);
+    }
+    setPageIndex(targetIndex) {
+        console.log("Set PageIndex to", targetIndex);
         var newIndex = targetIndex;
         var lastPageIndex = this.getNrOfPages() - 1;
         // Check borders
@@ -310,12 +317,12 @@ var Table = /** @class */ (function () {
         this.PageIndex = newIndex;
         // Refresh
         this.loadRows();
-    };
-    Table.prototype.getNrOfPages = function () {
+    }
+    getNrOfPages() {
         return Math.ceil(this.actRowCount / this.PageLimit);
-    };
-    Table.prototype.getPaginationButtons = function () {
-        var MaxNrOfButtons = 5;
+    }
+    getPaginationButtons() {
+        const MaxNrOfButtons = 5;
         var NrOfPages = this.getNrOfPages();
         // Pages are less then NrOfBtns => display all
         if (NrOfPages <= MaxNrOfButtons) {
@@ -340,8 +347,8 @@ var Table = /** @class */ (function () {
             }
         }
         return pages;
-    };
-    Table.prototype.formatCell = function (cellStr) {
+    }
+    formatCell(cellStr) {
         var entityMap = {
             '&': '&amp;',
             '<': '&lt;',
@@ -370,25 +377,21 @@ var Table = /** @class */ (function () {
             else
                 return '';
         }
-        return cellStr;
-    };
-    // TODO: Remove param?
-    Table.prototype.getHTMLStatusText = function (t) {
-        if (t.actRowCount > 0)
-            return 'Showing Entries ' + ((t.PageIndex * t.PageLimit) + 1) + '-' +
-                ((t.PageIndex * t.PageLimit) + t.Rows.length) + ' of ' + t.actRowCount + ' Entries';
+        return escapeHtml(cellStr);
+    }
+    getHTMLStatusText() {
+        if (this.actRowCount > 0)
+            return 'Showing Entries ' + ((this.PageIndex * this.PageLimit) + 1) + '-' +
+                ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of ' + this.actRowCount + ' Entries';
         else
             return 'No Entries';
-    };
-    Table.prototype.renderHTML = function () {
+    }
+    renderHTML() {
         var t = this;
         var jQSelector = t.jQSelector;
-        console.log("Render HTML for Table", t.tablename, " @ ", jQSelector);
+        //console.log("Render HTML for Table", t.tablename, " @ ", jQSelector)
         $(jQSelector).empty(); // GUI: Clear entries
-        var ths = '';
-        //if (!t.ReadOnly) {
-        ths = '<th></th>'; // Pre fill with 1 because of selector
-        //}
+        var ths = '<th></th>'; // Pre fill with 1 because of selector
         // Data Rows
         Object.keys(t.Columns).forEach(function (col) {
             if (t.Columns[col].is_in_menu) {
@@ -405,7 +408,7 @@ var Table = /** @class */ (function () {
         var PaginationButtons = t.getPaginationButtons();
         // Only Display Buttons, when more than one Button exists
         if (PaginationButtons.length > 1)
-            PaginationButtons.forEach(function (btnIndex) {
+            PaginationButtons.forEach(btnIndex => {
                 pgntn += '<li class="page-item' + (t.PageIndex == t.PageIndex + btnIndex ? ' active' : '') + '"><a class="page-link" onclick="' +
                     'getTableByjQSel(\'' + jQSelector + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
                     (t.PageIndex + 1 + btnIndex) +
@@ -413,55 +416,56 @@ var Table = /** @class */ (function () {
             });
         else
             pgntn += '';
-        var header = '<div class="element">' +
-            '<p class="form-inline"><div class="row">';
+        var header = '<div class="element"><div class="row">';
         // Filter
-        header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">';
-        header += '<input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="javascript: ' +
-            'if(event.keyCode == 13) {var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).val(); t.loadRows();}">';
-        header += '<div class="input-group-append">';
-        header += '<button class="btn btn-secondary" onclick="if (true) {var t = getTableByjQSel(\'' + jQSelector + '\'); t.Filter = $(this).parent().parent().find(\'.filterText\').val(); t.loadRows();}" type="button"><i class="fa fa-search"></i></button>';
-        header += '</div></div>';
-        header += '<div class="col-12 col-sm-6 col-lg-9">';
+        if (gOptions.showFilter) {
+            header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">';
+            header += '  <input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="' +
+                'if(event.keyCode == 13) { filterTable(\'' + jQSelector + '\'); }">';
+            header += '  <div class="input-group-append">';
+            header += '    <button class="btn btn-secondary" onclick="if (true) { filterTable(\'' + jQSelector + '\'); }" type="button"><i class="fa fa-search"></i></button>';
+            header += '  </div>';
+            header += '</div>';
+        }
+        header += '<div class="col-12 col-sm-6 col-lg-9 mb-3">';
         // Workflow Button
-        if (t.SM) {
+        if (t.SM && gOptions.showWorkflowButton) {
             header += '<button class="btn btn-secondary" onclick="showSE(\'' + jQSelector + '\')"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
         }
         // Create Button
         if (!t.ReadOnly) {
             header += '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + jQSelector + '\')"><i class="fa fa-plus"></i>&nbsp;Create</button>';
         }
-        header += '</div></div></p>';
-        header += '<div class="datatbl"><table class="table table-hover table-sm table-responsive-sm tableCont"><thead><tr>' + ths + '</tr></thead><tbody>';
-        var footer = '</tbody></table></div>' +
+        header += '</div></div>';
+        header += '<table class="table table-hover table-sm table-responsive-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';
+        var footer = '</tbody></table>' +
             '<div>' +
-            '<p class="pull-left">' + t.getHTMLStatusText(t) + '</p>' +
+            '<p class="pull-left"><small>' + t.getHTMLStatusText() + '</small></p>' +
             '<nav class="pull-right"><ul class="pagination">' + pgntn + '</ul></nav>' +
             '<div class="clearfix"></div>' +
             '</div>' +
             '</div>';
+        //============================== data
         var tds = '';
         // Loop Rows
         if (!t.Rows)
             return;
         t.Rows.forEach(function (row) {
-            var modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')'; // Build edit String
-            var data_string = '';
+            // Build edit String
+            var modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')';
             // Control column
-            //if (!t.ReadOnly) {
-            data_string = '<td class="controllcoulm" onclick="' + modRowStr + '">';
+            var data_string = '<td class="controllcoulm" onclick="' + modRowStr + '">';
+            // Entries are selectable?
             if (t.selOne) {
-                // Selectable
-                data_string += '<i class="fa fa-square-o" style="margin-top: 3px;"></i>';
+                data_string += '<i class="fa fa-square-o"></i>';
             }
             else {
-                // Editable
+                // Entries are editable
                 if (!t.ReadOnly)
-                    data_string += '<i class="fa fa-pencil" style="margin-top: 3px;"></i>';
+                    data_string += '<i class="fa fa-pencil"></i>';
             }
             //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
             data_string += '</td>';
-            //}
             // Loop Columns
             Object.keys(t.Columns).forEach(function (col) {
                 var value = row[col];
@@ -473,14 +477,29 @@ var Table = /** @class */ (function () {
                         if (t.Columns[col].DATA_TYPE == 'date') {
                             var tmp = new Date(value);
                             if (!isNaN(tmp.getTime()))
-                                value = tmp.toLocaleDateString();
+                                value = tmp.toLocaleDateString('de-DE');
                             else
                                 value = '';
                         }
+                        else if (t.Columns[col].DATA_TYPE == 'time') {
+                            // Remove seconds from TimeString
+                            if (gOptions.smallestTimeUnitMins) {
+                                var timeArr = value.split(':');
+                                timeArr.pop();
+                                value = timeArr.join(':');
+                            }
+                        }
                         else if (t.Columns[col].DATA_TYPE == 'datetime') {
                             var tmp = new Date(value);
-                            if (!isNaN(tmp.getTime()))
-                                value = tmp.toLocaleString();
+                            if (!isNaN(tmp.getTime())) {
+                                value = tmp.toLocaleString('de-DE');
+                                // Remove seconds from TimeString
+                                if (gOptions.smallestTimeUnitMins) {
+                                    var timeArr = value.split(':');
+                                    timeArr.pop();
+                                    value = timeArr.join(':');
+                                }
+                            }
                             else
                                 value = '';
                         }
@@ -503,45 +522,48 @@ var Table = /** @class */ (function () {
                     }
                 }
             });
+            // Add row to table
             tds += '<tr class="datarow row-' + row[t.PrimaryColumn] + '">' + data_string + '</tr>';
         });
         // GUI
         $(jQSelector).append(header + tds + footer);
         // Autofocus Filter
-        $(jQSelector + ' .filterText').focus().val('').val(t.Filter);
+        if (t.Filter.length > 0)
+            $(jQSelector + ' .filterText').focus().val('').val(t.Filter);
+        else
+            $(jQSelector + ' .filterText').val(t.Filter);
         // Mark last modified Row
         if (t.lastModifiedRowID) {
-            console.log(t.lastModifiedRowID);
             if (t.lastModifiedRowID != 0) {
                 addClassToDataRow(jQSelector, t.lastModifiedRowID, 'table-info');
                 t.lastModifiedRowID = 0;
             }
         }
-    };
+    }
     //=============  CORE functions
-    Table.prototype.getFormCreate = function () {
+    getFormCreate() {
         var me = this;
         console.log("Request [getFormCreate]");
         sendRequest('getFormCreate', { table: me.tablename }, function (response) {
             if (response.length > 0)
                 me.Form_Create = response;
         });
-    };
-    Table.prototype.getFormModify = function (data, callback) {
+    }
+    getFormModify(data, callback) {
         var me = this;
         console.log("Request [getFormData]");
         sendRequest('getFormData', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
-    };
-    Table.prototype.getNextStates = function (data, callback) {
+    }
+    getNextStates(data, callback) {
         var me = this;
         console.log("Request [getNextStates]");
         sendRequest('getNextStates', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
-    };
-    Table.prototype.createRow = function (data, callback) {
+    }
+    createRow(data, callback) {
         var me = this;
         console.log("Request [create]", data);
         sendRequest('create', { table: me.tablename, row: data }, function (r) {
@@ -549,8 +571,8 @@ var Table = /** @class */ (function () {
                 callback(r);
             });
         });
-    };
-    Table.prototype.deleteRow = function (RowID, callback) {
+    }
+    deleteRow(RowID, callback) {
         var me = this;
         var data = {};
         data[this.PrimaryColumn] = RowID;
@@ -560,15 +582,14 @@ var Table = /** @class */ (function () {
                 callback(response);
             });
         });
-    };
-    Table.prototype.updateRow = function (RowID, new_data, callback) {
+    }
+    updateRow(RowID, new_data, callback) {
         console.log("Request [update] for ID", RowID, new_data);
         sendRequest('update', { table: this.tablename, row: new_data }, function (response) {
             callback(response);
         });
-    };
-    Table.prototype.transitRow = function (RowID, TargetStateID, trans_data, callback) {
-        if (trans_data === void 0) { trans_data = null; }
+    }
+    transitRow(RowID, TargetStateID, trans_data = null, callback) {
         var data = { state_id: 0 };
         if (trans_data)
             data = trans_data;
@@ -580,9 +601,9 @@ var Table = /** @class */ (function () {
         sendRequest('makeTransition', { table: this.tablename, row: data }, function (response) {
             callback(response);
         });
-    };
+    }
     // Call this function only at [init] and then only on [create] and [delete] and at [filter]
-    Table.prototype.countRows = function (callback) {
+    countRows(callback) {
         var me = this;
         var joins = this.buildJoinPart(this);
         var data = {
@@ -602,8 +623,8 @@ var Table = /** @class */ (function () {
                 }
             }
         });
-    };
-    Table.prototype.loadRows = function () {
+    }
+    loadRows(callback = function () { }) {
         var me = this;
         var FilterEvent = false;
         // Check Filter event -> jmp to page 1
@@ -635,16 +656,17 @@ var Table = /** @class */ (function () {
                 me.countRows(function () {
                     me.renderHTML();
                     me.Filter_Old = me.Filter;
+                    callback();
                 });
             }
             else {
                 // Render Table
                 me.renderHTML();
+                callback();
             }
         });
-    };
-    return Table;
-}());
+    }
+}
 // TODO:  Put the folowing functions in the classes, or reduce them
 // BUTTON Create
 function createEntry(jQSel) {
@@ -653,7 +675,7 @@ function createEntry(jQSel) {
     var M = new Modal('Create Entry', t.Form_Create, SaveBtn, true);
     var ModalID = M.DOM_ID;
     // Save origin Table in all FKeys
-    console.log("Set data ", t.tablename);
+    //console.log("Set data ", t.tablename);
     $('#' + ModalID + ' .inputFK').data('origintable', t.tablename);
     // Bind Buttonclick
     $('#' + ModalID + ' .btnCreateEntry').click(function () {
@@ -678,7 +700,7 @@ function createEntry(jQSel) {
             // Handle Transition Feedback
             console.log("TransScript:", msgs);
             var counter = 0; // 0 = trans, 1 = in -- but only at Create!
-            msgs.forEach(function (msg) {
+            msgs.forEach(msg => {
                 // Show Message
                 if (msg.show_message)
                     showResult(msg.message, 'Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>');
@@ -727,7 +749,7 @@ function setState(MID, jQSel, RowID, targetStateID) {
         // Handle Transition Feedback
         console.log("Script-Results:", msgs);
         var counter = 0;
-        msgs.forEach(function (msg) {
+        msgs.forEach(msg => {
             // Remove all Error Messages
             $('#' + MID + ' .modal-body .alert').remove();
             // Show Message
@@ -779,12 +801,10 @@ function renderEditForm(Table, RowID, htmlForm, nextStates) {
 function readDataFromForm(Mid, jQSel) {
     var inputs = $(Mid + ' :input');
     var data = {};
-    console.log('---------------readDataFromForm--------------');
     inputs.each(function () {
         var e = $(this);
         var key = e.attr('name');
         if (key) {
-            console.log(key, jQSel);
             var column = null;
             try {
                 column = getTableByjQSel(jQSel).Columns[key];
@@ -793,14 +813,13 @@ function readDataFromForm(Mid, jQSel) {
                 column = null; // Column doesnt exist in current Table
             }
             if (column) {
-                if (e.val() == '' && column.foreignKey.table != '') {
-                    // [FK] if empty and FK then value should be NULL
+                var DataType = column.DATA_TYPE.toLowerCase();
+                //  if empty then value should be NULL
+                if (e.val() == '' && (DataType.indexOf('text') < 0 || column.foreignKey.table != '')) {
                     data[key] = null;
                 }
                 else {
-                    // [NO FK]
-                    var DataType = column.DATA_TYPE.toLowerCase();
-                    console.log('############', DataType, e);
+                    // [NO FK]          
                     if (DataType == 'datetime') {
                         // For DATETIME
                         if (e.attr('type') == 'date')
@@ -810,7 +829,7 @@ function readDataFromForm(Mid, jQSel) {
                     }
                     else if (DataType == 'tinyint') {
                         // Boolean
-                        data[key] = e.prop('checked');
+                        data[key] = e.prop('checked') ? '1' : '0';
                     }
                     else {
                         data[key] = e.val();
@@ -853,13 +872,30 @@ function writeDataToForm(Mid, data, jQSel) {
                 if (col) {
                     var DataType = getTableByjQSel(jQSel).Columns[col].DATA_TYPE.toLowerCase();
                     if (DataType == 'datetime') {
+                        // DateTime -> combine vals
                         if (e.attr('type') == 'date')
                             e.val(value.split(" ")[0]);
-                        else if (e.attr('type') == 'time')
+                        else if (e.attr('type') == 'time') {
+                            // Remove seconds from TimeString
+                            if (gOptions.smallestTimeUnitMins) {
+                                var timeArr = value.split(':');
+                                timeArr.pop();
+                                value = timeArr.join(':');
+                            }
                             e.val(value.split(" ")[1]);
+                        }
+                    }
+                    else if (DataType == 'time') {
+                        // Remove seconds from TimeString
+                        if (gOptions.smallestTimeUnitMins) {
+                            var timeArr = value.split(':');
+                            timeArr.pop();
+                            value = timeArr.join(':');
+                        }
+                        e.val(value);
                     }
                     else if (DataType == 'tinyint') {
-                        console.log('Checkbox = ', value);
+                        // Checkbox
                         e.prop('checked', parseInt(value) !== 0); // Boolean
                     }
                     else
@@ -886,6 +922,8 @@ function modifyRow(jQSel, id) {
             return;
         // Indicate which row is getting modified
         addClassToDataRow(jQSel, id, 'table-warning');
+        $(jQSel + ' .datarow .controllcoulm').html('<i class="fa fa-pencil"></i>'); // for all
+        $(jQSel + ' .row-' + id + ' .controllcoulm').html('<i class="fa fa-arrow-right"></i>');
         // Set Form
         if (t.SM) {
             var PrimaryColumn = t.PrimaryColumn;
@@ -922,9 +960,15 @@ function modifyRow(jQSel, id) {
         }
     }
 }
+function filterTable(jQSel) {
+    var t = getTableByjQSel(jQSel);
+    var filterText = $(jQSel + ' .filterText').val();
+    console.log('Filter Table ', t.tablename, ' with ', filterText);
+    t.Filter = filterText;
+    t.loadRows();
+}
 // BUTTON SAVE + Close
-function saveEntry(MID, jQSel, closeModal) {
-    if (closeModal === void 0) { closeModal = true; }
+function saveEntry(MID, jQSel, closeModal = true) {
     var t = getTableByjQSel(jQSel);
     var data = readDataFromForm('#' + MID, jQSel);
     // REQUEST
@@ -953,7 +997,7 @@ function delRow(jQSel, id) {
     var t = getTableByjQSel(jQSel);
     t.deleteRow(id, function (r) {
         if (r == "1") {
-            console.log("Deleted Row", r);
+            //console.log("Deleted Row", r)
             addClassToDataRow(t.jQSelector, id, 'table-danger');
         }
         else {
@@ -970,59 +1014,7 @@ function getTableByjQSel(SelStr) {
     });
     return result;
 }
-/*====================================================================
-    I N I T I A L I Z E       T A B L E S
-====================================================================*/
-// TODO: Put in index-html file
-sendRequest('init', '', function (r) {
-    if (r.length > 0) {
-        var data = JSON.parse(r);
-        gConfig = data;
-        // Init Table Objects
-        Object.keys(data).forEach(function (t) {
-            // Create a new object and save it in global array
-            if (gConfig[t].is_in_menu) {
-                var newT = new Table(t, '.table_' + t);
-                gTables.push(newT);
-            }
-        });
-        // First Tab selection
-        $('.nav-tabs .nav-link:first').addClass('active');
-        $('.tab-content .tab-pane:first').addClass('active');
-    }
-});
-// Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
-$(document).on('show.bs.modal', '.modal', function () {
-    var zIndex = 1040 + (10 * $('.modal:visible').length);
-    $(this).css('z-index', zIndex);
-    setTimeout(function () {
-        $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
-    }, 0);
-});
-// Autofocus first input
-/*
-$(document).on('shown.bs.modal', '.modal', function () {
-  //console.log("focus first element...");
-  $(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
-});
-*/
-// This function is called from FormData
-function selectForeignKey(inp) {
-    var inp = $(inp).parent().find('input');
-    // Extract relevant Variables
-    var originTable = inp.data('origintable');
-    var originColumn = inp.attr('name');
-    var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table;
-    var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id;
-    var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst;
-    // New Table Instance
-    openTableInModal(foreignTable, function (selRows) {
-        inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
-        inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
-    });
-}
-function openTableInModal(tablename, callback) {
-    if (callback === void 0) { callback = function (e) { }; }
+function openTableInModal(tablename, callback = function (e) { }) {
     // Modal
     var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
     var timestr = (new Date()).getTime();
@@ -1040,9 +1032,34 @@ function openTableInModal(tablename, callback) {
     });
     M.show();
 }
+// This function is called from FormData
+function selectForeignKey(inp) {
+    var inp = $(inp).parent().find('input');
+    // Extract relevant Variables
+    var originTable = inp.data('origintable');
+    var originColumn = inp.attr('name');
+    var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table;
+    var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id;
+    var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst;
+    // New Table Instance
+    openTableInModal(foreignTable, function (selRows) {
+        inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
+        inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
+    });
+}
+// Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
+$(document).on('show.bs.modal', '.modal', function () {
+    //-- Autofocus first input in modal
+    //$(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
+    //-- Stack modals correctly  
+    var zIndex = 2040 + (10 * $('.modal:visible').length);
+    $(this).css('z-index', zIndex);
+    setTimeout(function () {
+        $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+    }, 0);
+});
 // TODO: obsolete functions?
-function showResult(content, title) {
-    if (title === void 0) { title = 'StateMachine Feedback'; }
+function showResult(content, title = 'StateMachine Feedback') {
     var M = new Modal(title, content);
     M.show();
 }
@@ -1053,4 +1070,35 @@ function addClassToDataRow(jQuerySelector, id, classname) {
 function showSE(jQSel) {
     // TODO: First show the modal and then draw the StateMachine
     getTableByjQSel(jQSel).SM.openSEPopup();
+}
+//--------------------------------------------------------------------------
+// Initialize Tables (call from HTML)
+function initTables(callback = function () { }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var promises = [];
+        sendRequest('init', '', function (r) {
+            return __awaiter(this, void 0, void 0, function* () {
+                gConfig = JSON.parse(r);
+                var tables = Object.keys(gConfig);
+                // Init Table Objects
+                tables.map(function (t) {
+                    var p = new Promise(function (resolve) {
+                        // Create a new object and save it in global array
+                        if (gConfig[t].is_in_menu) {
+                            var newT = new Table(t, '.table_' + t, false, function () {
+                                resolve();
+                            });
+                            gTables.push(newT);
+                        }
+                    });
+                    promises.push(p);
+                });
+                yield Promise.all(promises);
+                // First Tab selection
+                $('.nav-tabs .nav-link:first').addClass('active');
+                $('.tab-content .tab-pane:first').addClass('active');
+                callback();
+            });
+        });
+    });
 }

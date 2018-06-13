@@ -220,12 +220,12 @@
       }
 
       // SEARCH / Filter
-      if (trim($where) <> "" && $filter == "") {
-        $where = " WHERE ".trim($where);
+      if ($where <> "" && $filter == "") {
+        $where = " WHERE ".$where;
       }
-      else if (trim($filter) <> "") {
+      else if ($filter <> "") {
         // Get columns from the table
-        $res = DB::getInstance()->getConnection()->query("SHOW COLUMNS FROM ".$tablename.";");
+        $res = DB::getInstance()->getConnection()->query("SHOW COLUMNS FROM $tablename;");
         $k = [];
         while ($row = $res->fetch_array()) { $k[] = $row[0]; } 
         $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
@@ -235,12 +235,15 @@
           $prefix = "";
           // if no "." in string then refer to first table
           if (strpos($key, ".") === FALSE) $prefix = "a.";
-          $q_str .= " ".$prefix.$key." LIKE '%".$filter."%' OR ";
+          $q_str .= " ".$prefix.$key." LIKE '%$filter%' OR ";
         }
         // Remove last 'OR '
         $q_str = substr($q_str, 0, -3);
         // Build WHERE String
-        $where = " WHERE ".trim($where)." ".$q_str;
+        if ($where == '')
+          $where = " WHERE $q_str";
+        else
+          $where = " WHERE $where AND ($q_str)";
         //$where = " WHERE ".$q_str;
       }
 

@@ -1,6 +1,5 @@
 <!-- body content starts here  -->
-<!--<div class="container" id="content" style="width: 100%">-->
-<h1>&nbsp;</h1>
+<!--<h1>&nbsp;</h1>-->
 <main role="main">
   <div class="container-fluid">
     <div class="card">

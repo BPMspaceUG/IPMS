@@ -97,12 +97,16 @@
           $column_name = $row2["COLUMN_NAME"];
           // Additional information
 
+
           // Pre fill foreign keys
           if ($column_name == "state_id_FROM" || $column_name == "state_id_TO") {
+            $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "name");
+          } else if ($column_name == "state_id" && $table != 'state'){
             $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "name");
           } else {
             $fk = array("table" => "", "col_id" => "", "col_subst" => "");
           }
+
 
           // Table Has StateMachine?
           if ($column_name == "state_id" && $table != "state")
