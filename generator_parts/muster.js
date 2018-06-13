@@ -1090,6 +1090,8 @@ function initTables(callback = function () { }) {
                             });
                             gTables.push(newT);
                         }
+                        else
+                            resolve();
                     });
                     promises.push(p);
                 });

@@ -1153,7 +1153,7 @@ async function initTables(callback: any = function(){}) {
             resolve();
           })
           gTables.push(newT)
-        }
+        } else resolve();
       })
       promises.push(p);
     })
