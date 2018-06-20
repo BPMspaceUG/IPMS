@@ -2,7 +2,7 @@
 AngularJS - Controller
 */
 var IPMS = angular.module('IPMS', []);
-IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angularjs.org/api/ngSanitize/service/$sanitize
+IPMS.controller('IPMScontrol', function ($scope, $http) {
 
   // initial definitions
   $scope.path = 'modules/ConnectDB.php'
@@ -15,54 +15,34 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
   $scope.configFileWasNotFound = false
   $scope.configFileWasFound = false
 
-
+  
   $scope.refreshConfig = function(data) {
-      // Select correct DB
-      $scope.dbNames.model = data.DBName
-      $scope.updateTables($scope.dbNames.model)
+    // Parse data
+    let oldConfig = JSON.parse(data.data)
+    let newConfig = $scope.tables
+    // The new Config has always a higher priority
+    /*
+    console.log("-----------------Comparison NEW, OLD")
+    console.log("NEW:", newConfig)
+    console.log("OLD:", oldConfig)
+    */
+    // LOOP New Tables
+    function rec_test(obj, b) {
+      let keys = Object.keys(obj);
+      keys.forEach(function(key) {
+        let value = obj[key];
+        if (b.hasOwnProperty(key)) {
+          // Convert
+          if (typeof value === 'object') 
+            rec_test(obj[key], b[key]);
+          else
+            obj[key] = b[key];
+        }
+      });
+    }
+    rec_test(newConfig, oldConfig)
 
-      // Parse data
-      var oldConfig = JSON.parse(data.data)
-      var newConfig = $scope.tables
-
-      // The new Config has always a higher priority
-      
-      console.log("Comparison NEW, OLD")
-      console.log("NEW:", newConfig)
-      console.log("OLD:", oldConfig)
-
-      // LOOP New Tables
-      function rec_test(obj, b) {
-        var keys = Object.keys(obj);
-        keys.forEach(function(key) {
-
-          var value = obj[key];
-          var valueNEW = b[key];
-
-          console.log(key, typeof value, value, ">>" + valueNEW + "<<")
-
-          if (b.hasOwnProperty(key)) {
-            // Convert
-            if (typeof value === 'object') {
-              rec_test(obj[key], b[key]);
-            }
-            else {
-              obj[key] = b[key];
-            }
-
-          }
-
-        });
-      }
-      rec_test(newConfig, oldConfig)
-
-      var result = newConfig
-
-      //var result = angular.extend(dst, newConfig, oldConfig)
-      //var dst = {}
-      //var result = angular.merge(dst, newConfig, oldConfig)
-
-      $scope.tables = result
+    $scope.tables = newConfig
   }
 
   $scope.loadConfigByName = function() {
@@ -78,7 +58,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       }
     })
     .success(function(data) {
-      //console.log("---->", data)
       if (data) {
         $scope.configFileWasFound = true
         $scope.configFileWasNotFound = false
@@ -91,31 +70,28 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     })
   }
 
-  $scope.loadconfig = function(text){    
+  $scope.loadconfig = function(text){
     $scope.isLoading = true
     $scope.isError = false
-
+    // Send Request
     $http({
       url: 'modules/parseConfig.php',
       method: "POST",
-      data: {
-        config_data: text
-      }
+      data: {config_data: text}
     })
     .success(function(data) {
       $scope.refreshConfig(data)
       $scope.isLoading = false
     })
   }
-
   /*
   send fetch database info order for user to ConnectDB.php
   */
   $scope.connectToDB = function(){
     $scope.isLoading = true
     $scope.isError = false
-
-    console.log('POST an '+$scope.path+':')
+    console.log('Loading all DBs via '+$scope.path+':')
+    // Send Request
     $http({
       url: $scope.path,
       method: "POST",
@@ -135,7 +111,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
         return
       }
 
-      console.log("Response:", data)
+      console.log("Successfully loaded all DBs:", data)
 
       $scope.resultData = data
       $scope.dbNames = {
@@ -157,15 +133,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     });
   }
 
-
-
-
-  $scope.openProject = function(){
-    // Build new URL and execute in new Tab
-    url = window.location.href.replace("IPMS", "IPMS_test")
-    window.open(url + $scope.dbNames.model+"/")
-  }
-
   $scope.changeSelection = function() {
     $scope.configFileWasFound = false
     $scope.configFileWasNotFound = false
@@ -173,7 +140,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     // Read the current configuration from Server
     $scope.isLoading = true
     $scope.isError = false
-    console.log('Load Database - POST an '+$scope.path+':')
+    console.log('Loading Tables from Database ('+$scope.dbNames.model+') via '+$scope.path+':')
     $http({
       url: $scope.path,
       method: "POST",
@@ -185,10 +152,8 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
         pwd: $scope.pw
       }
     })
-    .success(function(data, status, headers, config) {      
-      //console.log('----> update tables', $scope.dbNames.model)
-      //console.log('-->', $scope.resultData)
-
+    .success(function(data, status, headers, config) {
+      console.log('Table-Data loaded successfully.')
       $scope.tables = data
       // Set Icons
       Object.keys($scope.tables).forEach(function(t){
@@ -197,23 +162,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       // Stop Loading Icon
       $scope.isLoading = false
     });
-
-    
   }
-
-  $scope.toggle_kids = function(tbl) {
-    if (!tbl.showKids) {
-      tbl.showKids = true
-      return
-    }
-    tbl.showKids = !tbl.showKids;
-  }
-  $scope.tbl_toggle_sel_all = function() {
-    $scope.tables.forEach(function(t){
-      t.is_in_menu = !t.is_in_menu;
-    })
-  }
-
   /*
   (re)define recent selected database
   */
@@ -224,14 +173,12 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     $scope.db = $scope.resultData.find(function(db){
       return db.database == param
     })
-
     $scope.tables = $scope.db.tables
 
     Object.keys($scope.tables).forEach(function(tbl){
       $scope.tables[tbl].table_icon = getRandomicon()
     })
   }
-
   /*
   send script-create order to fusion, also print out Script on bottom page
   */
@@ -244,7 +191,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       db_name: $scope.dbNames.model,
       data: $scope.tables
     }
-      
     $http({
       url: 'generator_parts/fusion.php',
       method: "POST",
@@ -252,7 +198,6 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
     })
     .success(function(data, status, headers, config) {
       //console.log('\nScript generated success.'); 
-      // console.log(data);
       $('#bpm-code').empty();
       $('#bpm-code').html('<pre></pre>');
       $('#bpm-code pre').text(data);
@@ -261,7 +206,25 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {    //https://docs.angu
       $scope.status = status;
       console.log('Error-Status: '+JSON.stringify(status));
     });
+  }
 
+  // GUI------------------------------------
+
+  $scope.openProject = function(){ // Build new URL and execute in new Tab
+    url = window.location.href.replace("IPMS", "IPMS_test")
+    window.open(url + $scope.dbNames.model+"/")
+  }
+  $scope.toggle_kids = function(tbl) {
+    if (!tbl.showKids) {
+      tbl.showKids = true
+      return
+    }
+    tbl.showKids = !tbl.showKids;
+  }
+  $scope.tbl_toggle_sel_all = function() {
+    $scope.tables.forEach(function(t){
+      t.is_in_menu = !t.is_in_menu;
+    })
   }
 
 });/*End Controller*/
@@ -338,7 +301,7 @@ function scsSignal(bool){
   if (bool) {
     $('.fa-minus-circle').css({ display: 'none' });
     $('.fa-check').css({ display: 'inline-block' });
-  }else{
+  } else{
     $('.fa-minus-circle').css({ display: 'inline-block' });
     $('.fa-check').css({ display: 'none' });
   }
