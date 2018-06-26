@@ -69,16 +69,20 @@
       // Add Basic Form Data for each state
       $colData = $table["columns"];
       $excludeKeys = RequestHandler::getPrimaryColByTablename($data, $tablename);
+      
+      // write the formdata into the column if empty (TRANSITION)
+      $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
+      $query = "UPDATE $db_name.state SET form_data = '$form_data' WHERE ".
+      "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
+      $con->query($query);
+      
+      // write the formdata into the column if empty (CREATE)
       $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the create Form
       $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
-
-      // write the formdata into the column if empty      
       $query = "UPDATE $db_name.state_machines SET form_data = '$form_data' WHERE ".
                "tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL;";
-      $con->query($query);      
-      $query = "UPDATE $db_name.state SET form_data = '$form_data' WHERE ".
-               "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
       $con->query($query);
+
       
       $queries1 = $SM->getQueryLog();
       // Clean up

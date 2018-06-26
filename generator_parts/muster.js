@@ -16,6 +16,7 @@ var gOptions = {
     showWorkflowButton: true,
     showFilter: true,
     smallestTimeUnitMins: true,
+    showControlColumn: true,
     EntriesPerPage: 15
 };
 // Path for API
@@ -24,8 +25,6 @@ var pathName = path.substring(0, path.lastIndexOf('/') + 1);
 const gURL = pathName + 'api/';
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command, params, callback) {
-    // use localStorage -> saves Bandwidth and does not expire
-    var token = localStorage.token;
     // Request (every Request is processed by this function)
     $.ajax({
         method: "POST",
@@ -116,10 +115,8 @@ class StateMachine {
     openSEPopup() {
         var smLinks, smNodes;
         var me = this;
-        //console.log("Request [getStates]")
         sendRequest('getStates', { table: me.tablename }, function (r) {
             smNodes = JSON.parse(r);
-            //console.log("Request [smGetLinks]")
             sendRequest('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
                 // Finally, when everything was loaded, show Modal
@@ -245,6 +242,7 @@ class Table {
         this.ReadOnly = data.is_read_only;
         this.selOne = selectableOne;
         this.PageLimit = gOptions.EntriesPerPage || 10;
+        this.showControlColumn = gOptions.showControlColumn;
         // Get the Primary column name
         var PriCol;
         var SortCol = ''; // first visible Column
@@ -305,7 +303,6 @@ class Table {
         return joins;
     }
     setPageIndex(targetIndex) {
-        console.log("Set PageIndex to", targetIndex);
         var newIndex = targetIndex;
         var lastPageIndex = this.getNrOfPages() - 1;
         // Check borders
@@ -389,10 +386,11 @@ class Table {
     renderHTML() {
         var t = this;
         var jQSelector = t.jQSelector;
-        //console.log("Render HTML for Table", t.tablename, " @ ", jQSelector)
-        $(jQSelector).empty(); // GUI: Clear entries
-        var ths = '<th></th>'; // Pre fill with 1 because of selector
-        // Data Rows
+        $(jQSelector).empty(); // GUI: Clear entries  
+        var ths = '';
+        if (t.showControlColumn)
+            ths = '<th></th>'; // Pre fill with 1 because of selector
+        // Table Headers
         Object.keys(t.Columns).forEach(function (col) {
             if (t.Columns[col].is_in_menu) {
                 ths += '<th onclick="getTableByjQSel(\'' + jQSelector + '\').toggleSort(\'' + col + '\')" class="datatbl_header' +
@@ -404,6 +402,7 @@ class Table {
                 '</th>';
             }
         });
+        // Pagination
         var pgntn = '';
         var PaginationButtons = t.getPaginationButtons();
         // Only Display Buttons, when more than one Button exists
@@ -437,8 +436,8 @@ class Table {
             header += '&nbsp;<button class="btn btn-success" onclick="createEntry(\'' + jQSelector + '\')"><i class="fa fa-plus"></i>&nbsp;Create</button>';
         }
         header += '</div></div>';
-        header += '<table class="table table-hover table-sm table-responsive-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';
-        var footer = '</tbody></table>' +
+        header += '<div class="tablewrapper"><table class="table table-hover table-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';
+        var footer = '</tbody></table></div>' +
             '<div>' +
             '<p class="pull-left"><small>' + t.getHTMLStatusText() + '</small></p>' +
             '<nav class="pull-right"><ul class="pagination">' + pgntn + '</ul></nav>' +
@@ -454,18 +453,21 @@ class Table {
             // Build edit String
             var modRowStr = 'modifyRow(\'' + jQSelector + '\', ' + row[t.PrimaryColumn] + ')';
             // Control column
-            var data_string = '<td class="controllcoulm" onclick="' + modRowStr + '">';
-            // Entries are selectable?
-            if (t.selOne) {
-                data_string += '<i class="fa fa-square-o"></i>';
+            var data_string = '';
+            if (t.showControlColumn) {
+                data_string = '<td class="controllcoulm" onclick="' + modRowStr + '">';
+                // Entries are selectable?
+                if (t.selOne) {
+                    data_string += '<i class="fa fa-square-o"></i>';
+                }
+                else {
+                    // Entries are editable
+                    if (!t.ReadOnly)
+                        data_string += '<i class="fa fa-pencil"></i>';
+                }
+                //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
+                data_string += '</td>';
             }
-            else {
-                // Entries are editable
-                if (!t.ReadOnly)
-                    data_string += '<i class="fa fa-pencil"></i>';
-            }
-            //data_string += '<!--<i class="fa fa-trash" onclick="delRow(\''+jQSelector+'\', '+row[t.PrimaryColumn]+')"></i>-->';
-            data_string += '</td>';
             // Loop Columns
             Object.keys(t.Columns).forEach(function (col) {
                 var value = row[col];
@@ -523,7 +525,14 @@ class Table {
                 }
             });
             // Add row to table
-            tds += '<tr class="datarow row-' + row[t.PrimaryColumn] + '">' + data_string + '</tr>';
+            if (t.showControlColumn) {
+                // Edit via first column
+                tds += '<tr class="datarow row-' + row[t.PrimaryColumn] + '">' + data_string + '</tr>';
+            }
+            else {
+                // Edit via click on full Row
+                tds += '<tr class="datarow row-' + row[t.PrimaryColumn] + ' editFullRow" onclick="' + modRowStr + '">' + data_string + '</tr>';
+            }
         });
         // GUI
         $(jQSelector).append(header + tds + footer);
@@ -543,7 +552,6 @@ class Table {
     //=============  CORE functions
     getFormCreate() {
         var me = this;
-        console.log("Request [getFormCreate]");
         sendRequest('getFormCreate', { table: me.tablename }, function (response) {
             if (response.length > 0)
                 me.Form_Create = response;
@@ -551,21 +559,18 @@ class Table {
     }
     getFormModify(data, callback) {
         var me = this;
-        console.log("Request [getFormData]");
         sendRequest('getFormData', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
     }
     getNextStates(data, callback) {
         var me = this;
-        console.log("Request [getNextStates]");
         sendRequest('getNextStates', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
     }
     createRow(data, callback) {
         var me = this;
-        console.log("Request [create]", data);
         sendRequest('create', { table: me.tablename, row: data }, function (r) {
             me.countRows(function () {
                 callback(r);
@@ -576,7 +581,6 @@ class Table {
         var me = this;
         var data = {};
         data[this.PrimaryColumn] = RowID;
-        console.log("Request [delete]", RowID);
         sendRequest('delete', { table: this.tablename, row: data }, function (response) {
             me.countRows(function () {
                 callback(response);
@@ -584,7 +588,6 @@ class Table {
         });
     }
     updateRow(RowID, new_data, callback) {
-        console.log("Request [update] for ID", RowID, new_data);
         sendRequest('update', { table: this.tablename, row: new_data }, function (response) {
             callback(response);
         });
@@ -597,7 +600,6 @@ class Table {
         // also RowData can be updated in the client -> has also be transfered to server
         data[this.PrimaryColumn] = RowID;
         data.state_id = TargetStateID;
-        console.log("Request [transit] for ID", RowID + " -> " + TargetStateID, trans_data);
         sendRequest('makeTransition', { table: this.tablename, row: data }, function (response) {
             callback(response);
         });
@@ -612,7 +614,6 @@ class Table {
             filter: this.Filter,
             join: joins
         };
-        console.log("Request [count] for Table", me.tablename);
         sendRequest('read', data, function (r) {
             if (r.length > 0) {
                 var resp = JSON.parse(r);
@@ -645,7 +646,6 @@ class Table {
             join: joins
         };
         // HTTP Request
-        console.log("Request [read] @ Table:", this.tablename);
         sendRequest('read', data, function (r) {
             // use "me" instead of "this", because of async functions
             var resp = JSON.parse(r);
@@ -674,8 +674,17 @@ function createEntry(jQSel) {
     var SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
     var M = new Modal('Create Entry', t.Form_Create, SaveBtn, true);
     var ModalID = M.DOM_ID;
+    // Update all Labels
+    let labels = $('#' + ModalID + ' label');
+    labels.each(function () {
+        let label = $(this);
+        let colname = label.parent().find('[name]').attr('name');
+        if (colname) {
+            let alias = gConfig[t.tablename].columns[colname].column_alias;
+            label.text(alias);
+        }
+    });
     // Save origin Table in all FKeys
-    //console.log("Set data ", t.tablename);
     $('#' + ModalID + ' .inputFK').data('origintable', t.tablename);
     // Bind Buttonclick
     $('#' + ModalID + ' .btnCreateEntry').click(function () {
@@ -698,7 +707,6 @@ function createEntry(jQSel) {
                 return;
             }
             // Handle Transition Feedback
-            console.log("TransScript:", msgs);
             var counter = 0; // 0 = trans, 1 = in -- but only at Create!
             msgs.forEach(msg => {
                 // Show Message
@@ -740,14 +748,12 @@ function setState(MID, jQSel, RowID, targetStateID) {
             var msgs = JSON.parse(r);
         }
         catch (err) {
-            console.log("Error:", r);
             $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
                 '<b>Script Error!</b>&nbsp;' + r +
                 '</div>');
             return;
         }
         // Handle Transition Feedback
-        console.log("Script-Results:", msgs);
         var counter = 0;
         msgs.forEach(msg => {
             // Remove all Error Messages
@@ -769,6 +775,7 @@ function setState(MID, jQSel, RowID, targetStateID) {
                     t.lastModifiedRowID = RowID;
                 t.loadRows();
             }
+            // Increase Counter
             counter++;
         });
     }
@@ -790,8 +797,19 @@ function renderEditForm(Table, RowID, htmlForm, nextStates) {
     });
     btns += '</div>';
     M.setFooter(btns);
+    $('#' + EditMID + ' .label-state').addClass('state' + (actStateID % 12)).text(row.state_id[1]);
+    // Update all Labels
+    let labels = $('#' + EditMID + ' label');
+    labels.each(function () {
+        let label = $(this);
+        let colname = label.parent().find('[name]').attr('name');
+        if (colname) {
+            let alias = gConfig[Table.tablename].columns[colname].column_alias;
+            label.text(alias);
+        }
+    });
     // Save origin Table in all FKeys
-    $('#' + M.DOM_ID + ' .inputFK').data('origintable', Table.tablename);
+    $('#' + EditMID + ' .inputFK').data('origintable', Table.tablename);
     // Load data from row and write to input fields with {key:value}
     writeDataToForm('#' + EditMID, row, Table.jQSelector);
     // Add PrimaryID in stored Data
@@ -862,7 +880,7 @@ function writeDataToForm(Mid, data, jQSel) {
                 }
                 else {
                     // GUI Foreign Key
-                    e.parent().parent().find('.fkval').text(value[1]);
+                    e.parent().parent().find('.fkval').val(value[1]);
                 }
                 // Save in hidden input
                 e.val(value[0]);
@@ -963,7 +981,6 @@ function modifyRow(jQSel, id) {
 function filterTable(jQSel) {
     var t = getTableByjQSel(jQSel);
     var filterText = $(jQSel + ' .filterText').val();
-    console.log('Filter Table ', t.tablename, ' with ', filterText);
     t.Filter = filterText;
     t.loadRows();
 }
@@ -997,11 +1014,10 @@ function delRow(jQSel, id) {
     var t = getTableByjQSel(jQSel);
     t.deleteRow(id, function (r) {
         if (r == "1") {
-            //console.log("Deleted Row", r)
             addClassToDataRow(t.jQSelector, id, 'table-danger');
         }
         else {
-            console.log("Could not delete Row", r);
+            // Error when deleting Row
         }
     });
 }
@@ -1041,16 +1057,25 @@ function selectForeignKey(inp) {
     var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table;
     var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id;
     var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst;
+    //console.log(originTable, originColumn, foreignTable, foreignPrimaryCol, foreignSubstCol, '<-- change this one here')
     // New Table Instance
     openTableInModal(foreignTable, function (selRows) {
         inp.val(selRows[foreignPrimaryCol]); // Set ID-Value in hidden field
-        inp.parent().parent().find('.fkval').text(selRows[foreignSubstCol]); // Set Substituted Column
+        //console.log(selRows)
+        // Set Substituted Column
+        if (foreignSubstCol.indexOf('(') >= 0) {
+            // TODO: Load the name correctly from SQL Server
+            inp.parent().parent().find('.fkval').val("ID: " + selRows[foreignPrimaryCol]);
+        }
+        else
+            inp.parent().parent().find('.fkval').val(selRows[foreignSubstCol]);
+        //sendRequest('read', {table: foreignTable, select: foreignSubstCol}, function(r){
+        //console.log(r)
+        //})
     });
 }
 // Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {
-    //-- Autofocus first input in modal
-    //$(this).find('input[type=text],textarea,select').filter(':visible:first').focus();
     //-- Stack modals correctly  
     var zIndex = 2040 + (10 * $('.modal:visible').length);
     $(this).css('z-index', zIndex);

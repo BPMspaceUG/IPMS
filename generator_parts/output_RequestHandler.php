@@ -211,10 +211,21 @@
       if (count($joins) > 0) {
         // Multi-join
         for ($i=0;$i<count($joins);$i++) {
+          $substCol = $joins[$i]["col_subst"];
+          // The FROM Part
           $join_from .= " LEFT JOIN ".$joins[$i]["table"]." AS t$i ON ".
-                        "t$i.".$joins[$i]["col_id"]."= a.".$joins[$i]["replace"];
-          $sel[] = "t$i.".$joins[$i]["col_subst"]." AS '".$joins[$i]["replace"]."'";
-          $sel_raw[] = "t$i.".$joins[$i]["col_subst"];
+            "t$i.".$joins[$i]["col_id"]."= a.".$joins[$i]["replace"];
+          // The SELECT Part
+          if (strpos($substCol, '(')) {
+            // Check if contains a function parenthesis, then handle differently
+            $sel[] = $substCol." AS '".$joins[$i]["replace"]."'";
+            $sel_raw[] = $substCol; // This is only for the filter later
+          }
+          else {
+            // No concat function involved
+            $sel[] = "t$i.".$substCol." AS '".$joins[$i]["replace"]."'";
+            $sel_raw[] = "t$i.".$substCol; // This is only for the filter later
+          }          
         }
         $sel_str = ",".implode(",", $sel);
       }
@@ -227,14 +238,17 @@
         // Get columns from the table
         $res = DB::getInstance()->getConnection()->query("SHOW COLUMNS FROM $tablename;");
         $k = [];
-        while ($row = $res->fetch_array()) { $k[] = $row[0]; } 
+        while ($row = $res->fetch_array()) {
+          $k[] = $row[0];
+        }
         $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
         // xxx LIKE = '%".$param["filter"]."%' OR yyy LIKE '%'
         $q_str = "";
         foreach ($k as $key) {
           $prefix = "";
-          // if no "." in string then refer to first table
-          if (strpos($key, ".") === FALSE) $prefix = "a.";
+          // if no "." in string and no function in key then refer to first table
+          if (strpos($key, ".") === FALSE && strpos($key, '(') === FALSE)
+            $prefix = "a.";
           $q_str .= " ".$prefix.$key." LIKE '%$filter%' OR ";
         }
         // Remove last 'OR '
@@ -250,6 +264,11 @@
       // Concat final query
       $query = "SELECT a.".$select.$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
       $query = str_replace("  ", " ", $query);
+      /*
+      //for debugging
+      if (strpos($query, 'CONCAT'))
+        file_put_contents('log-read-cmd.txt', time().":\n".$query."\n\n");
+      */
       $res = DB::getInstance()->getConnection()->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);

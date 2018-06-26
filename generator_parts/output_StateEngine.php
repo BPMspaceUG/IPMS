@@ -98,7 +98,7 @@
       if (strpos($columnstr, "script_IN") === FALSE) {
         $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_IN` LONGTEXT NULL AFTER `statemachine_id`;";
         $res = $this->db->query($query);
-        //$this->log($query); 
+        //$this->log($query);
       }
       // Column [script_OUT] does not yet exist
       if (strpos($columnstr, "script_OUT") === FALSE) {
@@ -200,38 +200,23 @@
         "</div>\n</div>\n";
     }
     private function getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol) {
-
-      // Special case if $key == 'state_id'
+      // Special case if $key == 'state_id'      
       if ($key == 'state_id') {
-        return "<div class=\"form-group row\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\"/>\n".
-          "<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static\">".
-          "<span class=\"label label-primary status\"></span></p>\n\t</div>\n</div>\n";
+        return $this->getFormElementStd($alias, '<div class="input-group">
+          <input type="hidden" name="'.$key.'" value="'.$default.'"/>
+          <span class="input-group-text label-state"></span>
+        </div>');
       }
       //----------------------------------
-      if ($FKTable != '') {
-        // FK
-        /* TODO: 
-        return $this->getFormElementStd($alias, '<input type="number" class="form-control" name="'.$key.'">');
-        '<input type="text" readonly class="form-control-plaintext fKey" name="'.$key.'" value="'.$default.'">'
-        // '<input type="hidden" name="'.$key.'" value="$default" class="inputFK"/>'
-        */
-      
+      else if ($FKTable != '') {
+        // FOREIGN KEY
         return $this->getFormElementStd($alias, '<div class="input-group">
           <div class="input-group-prepend">
             <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
             <button class="btn btn-outline-secondary fKey" type="button" onclick="selectForeignKey(this)">Select...</button>
           </div>
-          <div class="input-group-append">
-            <span class="input-group-text fkval"></span>
-          </div>
+          <input class="form-control fkval" placeholder="" teype="text" readonly>
         </div>');
-        
-
-        return "<div class=\"form-group row\">\n\t<input type=\"hidden\" name=\"$key\" value=\"$default\" class=\"inputFK\"/>\n".
-          "<label class=\"col-sm-2 control-label\">".
-          $alias."</label>\n\t<div class=\"col-sm-10\">\n\t\t<p class=\"form-control-static text-primary fKey\"  onclick=\"selectForeignKey(this)\"><i class=\"fa fa-key\"></i> ".
-          "<span class=\"fkval\">Select Foreign Key ...</span></p>\n\t</div>\n</div>\n";
       }
       else if (strtolower($data_type) == 'int') {
         // Number
@@ -271,14 +256,20 @@
       // Loop every column
       foreach ($colData as $colname => $value) {
         $key = $colname;
+        $visible = $value['is_in_menu'];
         $alias = $value['column_alias'];
         $data_type = $value['DATA_TYPE'];
         $FKTable = $value['foreignKey']['table'];
         $substCol = $value['foreignKey']['col_subst'];
         $default = '';
         // Check if exclude
-        if (!in_array($key, $excludeKeys))
-          $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol);
+        if (!in_array($key, $excludeKeys)) {
+          // Check if not visible
+          if (!$visible)
+            $content .= "<!--\n".$this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol)."-->\n";
+          else
+            $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol);
+        }        
       }
       return $header.$content.$footer;
     }
