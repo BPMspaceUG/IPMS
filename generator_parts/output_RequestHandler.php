@@ -385,6 +385,14 @@
       @$pricol = $pricols[0]; // there should always be only 1 primary column for the identification of element
       @$ElementID = $param["row"][$pricol];
 
+      // Load all data from Element
+      $existingData = $this->readRow($tablename, $pricol, $ElementID);
+      // overide existing data
+      foreach ($param['row'] as $key => $value) {
+        $existingData[$key] = $value;
+      }
+      $param["row"] = $existingData;
+
       // Statemachine
       $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       // get ActStateID by Element ID
