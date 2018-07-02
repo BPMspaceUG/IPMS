@@ -15,7 +15,7 @@
   $content = @file_get_contents("../../.git/config");
   if (!empty($content) && strpos($content,"https://github.com/BPMspaceUG/LIAM.git")) {
     if (!is_dir('../../IPMS_test')) {
-      mkdir('../../IPMS_test', 0755, true);
+      mkdir('../../IPMS_test', 0750, true);
     }
   }
   // Open a new DB-Connection
@@ -173,9 +173,13 @@
 
   function createSubDirIfNotExists($dirname) {
     if (!is_dir($dirname))
-      mkdir($dirname, 0755, true);
+      mkdir($dirname, 0750, true);
   }
-
+  
+  function createFile($filename, $content) {
+    file_put_contents($filename, $content);
+    chmod($filename, 0660);
+  }
 
   // ----> Write Project to Filesystem
 	//$Path_IPMS_test = '../../IPMS_test';
@@ -194,18 +198,16 @@
     createSubDirIfNotExists($project_dir."/src");
 
     // Put Files
-    file_put_contents($project_dir."/js/muster.js", $output_JS);
-    file_put_contents($project_dir."/css/muster.css", $output_css);
-    file_put_contents($project_dir."/api/index.php", $output_API);
-
-    file_put_contents($project_dir."/src/RequestHandler.inc.php", $output_RequestHandler);
-    file_put_contents($project_dir."/src/StateMachine.inc.php", $class_StateEngine);
-    file_put_contents($project_dir."/src/DatabaseHandler.inc.php", $output_DBHandler);
-    file_put_contents($project_dir."/src/AuthHandler.inc.php", $output_AuthHandler);
-
-    file_put_contents($project_dir."/login.php", $output_LoginPage);
-    file_put_contents($project_dir."/".$db_name.".php", $output_all);
-    file_put_contents($project_dir."/".$db_name."-config.inc.php", $output_config);
-    file_put_contents($project_dir."/index.php", "<?php\n\tHeader(\"Location: ".$db_name.".php\");\n\texit();\n?>");
+    createFile($project_dir."/js/muster.js", $output_JS);    
+    createFile($project_dir."/css/muster.css", $output_css);
+    createFile($project_dir."/api/index.php", $output_API);
+    createFile($project_dir."/src/RequestHandler.inc.php", $output_RequestHandler);
+    createFile($project_dir."/src/StateMachine.inc.php", $class_StateEngine);
+    createFile($project_dir."/src/DatabaseHandler.inc.php", $output_DBHandler);
+    createFile($project_dir."/src/AuthHandler.inc.php", $output_AuthHandler);
+    createFile($project_dir."/login.php", $output_LoginPage);
+    createFile($project_dir."/".$db_name.".php", $output_all);
+    createFile($project_dir."/".$db_name."-config.inc.php", $output_config);
+    createFile($project_dir."/index.php", "<?php\n\tHeader(\"Location: ".$db_name.".php\");\n\texit();\n?>");
   }
 ?>
