@@ -426,14 +426,16 @@
         } else {
           $feedbackMsgs[] = $res;
         }
+
+        // Update all rows
+        $this->update($param); 
+
         //---[3]- Execute IN Script
         $in_script = $SE->getINScript($nextStateID); // from target state
         $res = $SE->executeScript($in_script, $param);
         $res["allow_transition"] = true;
         $feedbackMsgs[] = $res;
-
-        // UPDATE
-        $this->update($param); // Update all other rows
+        
         // UPDATE StateID only
         //$query = "UPDATE $this->db_name.".$this->table." SET state_id = $stateID WHERE $primaryIDColName = $ElementID;";
         //$this->db->query($query);
