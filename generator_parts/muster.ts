@@ -2,6 +2,7 @@
 
 // Plugins
 var $: any;
+
 // Global variables
 var gTables: Array<Table> = []
 var gConfig: any;
@@ -747,8 +748,9 @@ function createEntry(jQSel: string): void {
     let label = $(this);
     let colname = label.parent().find('[name]').attr('name');
     if (colname) {
-      let alias = gConfig[t.tablename].columns[colname].column_alias;
-      label.text(alias);
+      let aliasCol = gConfig[t.tablename].columns[colname];
+      if (aliasCol)
+        label.text(aliasCol.column_alias);
     }
   });
   // Save origin Table in all FKeys

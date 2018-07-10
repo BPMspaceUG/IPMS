@@ -7,6 +7,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 // Plugins
 var $;
 // Global variables
@@ -22,7 +49,7 @@ var gOptions = {
 // Path for API
 var path = window.location.pathname;
 var pathName = path.substring(0, path.lastIndexOf('/') + 1);
-const gURL = pathName + 'api/';
+var gURL = pathName + 'api/';
 // Atomic Function for API Calls -> ensures Authorization 
 function sendRequest(command, params, callback) {
     // Request (every Request is processed by this function)
@@ -55,8 +82,10 @@ var SortOrder;
 //==============================================================
 // Class: Modal
 //==============================================================
-class Modal {
-    constructor(heading, content, footer = '', isBig = false) {
+var Modal = /** @class */ (function () {
+    function Modal(heading, content, footer, isBig) {
+        if (footer === void 0) { footer = ''; }
+        if (isBig === void 0) { isBig = false; }
         this.DOM_ID = 'msgBx';
         // Check if ID exists then add Number -> like 'idStrxxx'
         while ($("#" + this.DOM_ID).length) {
@@ -97,22 +126,23 @@ class Modal {
             $(this).remove();
         });
     }
-    setFooter(html) {
+    Modal.prototype.setFooter = function (html) {
         $('#' + this.DOM_ID + ' .customfooter').html(html);
-    }
-    show() {
+    };
+    Modal.prototype.show = function () {
         $("#" + this.DOM_ID).modal();
         $("#" + this.DOM_ID).modal('show');
-    }
-}
+    };
+    return Modal;
+}());
 //==============================================================
 // Class: StateMachine
 //==============================================================
-class StateMachine {
-    constructor(tablename) {
+var StateMachine = /** @class */ (function () {
+    function StateMachine(tablename) {
         this.tablename = tablename;
     }
-    openSEPopup() {
+    StateMachine.prototype.openSEPopup = function () {
         var smLinks, smNodes;
         var me = this;
         sendRequest('getStates', { table: me.tablename }, function (r) {
@@ -176,7 +206,7 @@ class StateMachine {
                         },
                         font: {
                             color: '#888888',
-                            size: 16,
+                            size: 16
                         },
                         shapeProperties: {
                             useBorderWithImage: false
@@ -215,21 +245,24 @@ class StateMachine {
                 });
             });
         });
-    }
-    isExitNode(NodeID, links) {
+    };
+    StateMachine.prototype.isExitNode = function (NodeID, links) {
         var res = true;
         links.forEach(function (e) {
             if (e.from == NodeID && e.from != e.to)
                 res = false;
         });
         return res;
-    }
-}
+    };
+    return StateMachine;
+}());
 //==============================================================
 // Class: Table
 //==============================================================
-class Table {
-    constructor(tablename, DOMSelector, selectableOne = false, callback = function () { }) {
+var Table = /** @class */ (function () {
+    function Table(tablename, DOMSelector, selectableOne, callback) {
+        if (selectableOne === void 0) { selectableOne = false; }
+        if (callback === void 0) { callback = function () { }; }
         this.AscDesc = SortOrder.DESC;
         this.PageIndex = 0;
         this.jQSelector = '';
@@ -272,7 +305,7 @@ class Table {
         });
     }
     //=============  Helper functions
-    getRowByID(RowID) {
+    Table.prototype.getRowByID = function (RowID) {
         var result = null;
         var me = this;
         this.Rows.forEach(function (row) {
@@ -281,17 +314,17 @@ class Table {
             }
         });
         return result;
-    }
-    toggleSort(ColumnName) {
+    };
+    Table.prototype.toggleSort = function (ColumnName) {
         this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC;
         this.OrderBy = ColumnName;
         // Refresh
         this.loadRows();
-    }
-    getSelectedRows() {
+    };
+    Table.prototype.getSelectedRows = function () {
         return this.selectedIDs[0];
-    }
-    buildJoinPart(t) {
+    };
+    Table.prototype.buildJoinPart = function (t) {
         var joins = [];
         Object.keys(t.Columns).forEach(function (col) {
             // Check if there is a substitute for the column
@@ -301,8 +334,8 @@ class Table {
             }
         });
         return joins;
-    }
-    setPageIndex(targetIndex) {
+    };
+    Table.prototype.setPageIndex = function (targetIndex) {
         var newIndex = targetIndex;
         var lastPageIndex = this.getNrOfPages() - 1;
         // Check borders
@@ -314,12 +347,12 @@ class Table {
         this.PageIndex = newIndex;
         // Refresh
         this.loadRows();
-    }
-    getNrOfPages() {
+    };
+    Table.prototype.getNrOfPages = function () {
         return Math.ceil(this.actRowCount / this.PageLimit);
-    }
-    getPaginationButtons() {
-        const MaxNrOfButtons = 5;
+    };
+    Table.prototype.getPaginationButtons = function () {
+        var MaxNrOfButtons = 5;
         var NrOfPages = this.getNrOfPages();
         // Pages are less then NrOfBtns => display all
         if (NrOfPages <= MaxNrOfButtons) {
@@ -344,8 +377,8 @@ class Table {
             }
         }
         return pages;
-    }
-    formatCell(cellStr) {
+    };
+    Table.prototype.formatCell = function (cellStr) {
         var entityMap = {
             '&': '&amp;',
             '<': '&lt;',
@@ -375,15 +408,15 @@ class Table {
                 return '';
         }
         return escapeHtml(cellStr);
-    }
-    getHTMLStatusText() {
+    };
+    Table.prototype.getHTMLStatusText = function () {
         if (this.actRowCount > 0)
             return 'Showing Entries ' + ((this.PageIndex * this.PageLimit) + 1) + '-' +
                 ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of ' + this.actRowCount + ' Entries';
         else
             return 'No Entries';
-    }
-    renderHTML() {
+    };
+    Table.prototype.renderHTML = function () {
         var t = this;
         var jQSelector = t.jQSelector;
         $(jQSelector).empty(); // GUI: Clear entries  
@@ -407,7 +440,7 @@ class Table {
         var PaginationButtons = t.getPaginationButtons();
         // Only Display Buttons, when more than one Button exists
         if (PaginationButtons.length > 1)
-            PaginationButtons.forEach(btnIndex => {
+            PaginationButtons.forEach(function (btnIndex) {
                 pgntn += '<li class="page-item' + (t.PageIndex == t.PageIndex + btnIndex ? ' active' : '') + '"><a class="page-link" onclick="' +
                     'getTableByjQSel(\'' + jQSelector + '\').setPageIndex(' + (t.PageIndex + btnIndex) + ')">' +
                     (t.PageIndex + 1 + btnIndex) +
@@ -548,36 +581,36 @@ class Table {
                 t.lastModifiedRowID = 0;
             }
         }
-    }
+    };
     //=============  CORE functions
-    getFormCreate() {
+    Table.prototype.getFormCreate = function () {
         var me = this;
         sendRequest('getFormCreate', { table: me.tablename }, function (response) {
             if (response.length > 0)
                 me.Form_Create = response;
         });
-    }
-    getFormModify(data, callback) {
+    };
+    Table.prototype.getFormModify = function (data, callback) {
         var me = this;
         sendRequest('getFormData', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
-    }
-    getNextStates(data, callback) {
+    };
+    Table.prototype.getNextStates = function (data, callback) {
         var me = this;
         sendRequest('getNextStates', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
-    }
-    createRow(data, callback) {
+    };
+    Table.prototype.createRow = function (data, callback) {
         var me = this;
         sendRequest('create', { table: me.tablename, row: data }, function (r) {
             me.countRows(function () {
                 callback(r);
             });
         });
-    }
-    deleteRow(RowID, callback) {
+    };
+    Table.prototype.deleteRow = function (RowID, callback) {
         var me = this;
         var data = {};
         data[this.PrimaryColumn] = RowID;
@@ -586,13 +619,14 @@ class Table {
                 callback(response);
             });
         });
-    }
-    updateRow(RowID, new_data, callback) {
+    };
+    Table.prototype.updateRow = function (RowID, new_data, callback) {
         sendRequest('update', { table: this.tablename, row: new_data }, function (response) {
             callback(response);
         });
-    }
-    transitRow(RowID, TargetStateID, trans_data = null, callback) {
+    };
+    Table.prototype.transitRow = function (RowID, TargetStateID, trans_data, callback) {
+        if (trans_data === void 0) { trans_data = null; }
         var data = { state_id: 0 };
         if (trans_data)
             data = trans_data;
@@ -603,9 +637,9 @@ class Table {
         sendRequest('makeTransition', { table: this.tablename, row: data }, function (response) {
             callback(response);
         });
-    }
+    };
     // Call this function only at [init] and then only on [create] and [delete] and at [filter]
-    countRows(callback) {
+    Table.prototype.countRows = function (callback) {
         var me = this;
         var joins = this.buildJoinPart(this);
         var data = {
@@ -624,8 +658,9 @@ class Table {
                 }
             }
         });
-    }
-    loadRows(callback = function () { }) {
+    };
+    Table.prototype.loadRows = function (callback) {
+        if (callback === void 0) { callback = function () { }; }
         var me = this;
         var FilterEvent = false;
         // Check Filter event -> jmp to page 1
@@ -665,8 +700,9 @@ class Table {
                 callback();
             }
         });
-    }
-}
+    };
+    return Table;
+}());
 // TODO:  Put the folowing functions in the classes, or reduce them
 // BUTTON Create
 function createEntry(jQSel) {
@@ -675,13 +711,14 @@ function createEntry(jQSel) {
     var M = new Modal('Create Entry', t.Form_Create, SaveBtn, true);
     var ModalID = M.DOM_ID;
     // Update all Labels
-    let labels = $('#' + ModalID + ' label');
+    var labels = $('#' + ModalID + ' label');
     labels.each(function () {
-        let label = $(this);
-        let colname = label.parent().find('[name]').attr('name');
+        var label = $(this);
+        var colname = label.parent().find('[name]').attr('name');
         if (colname) {
-            let alias = gConfig[t.tablename].columns[colname].column_alias;
-            label.text(alias);
+            var aliasCol = gConfig[t.tablename].columns[colname];
+            if (aliasCol)
+                label.text(aliasCol.column_alias);
         }
     });
     // Save origin Table in all FKeys
@@ -708,7 +745,7 @@ function createEntry(jQSel) {
             }
             // Handle Transition Feedback
             var counter = 0; // 0 = trans, 1 = in -- but only at Create!
-            msgs.forEach(msg => {
+            msgs.forEach(function (msg) {
                 // Show Message
                 if (msg.show_message)
                     showResult(msg.message, 'Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>');
@@ -755,7 +792,7 @@ function setState(MID, jQSel, RowID, targetStateID) {
         }
         // Handle Transition Feedback
         var counter = 0;
-        msgs.forEach(msg => {
+        msgs.forEach(function (msg) {
             // Remove all Error Messages
             $('#' + MID + ' .modal-body .alert').remove();
             // Show Message
@@ -799,12 +836,12 @@ function renderEditForm(Table, RowID, htmlForm, nextStates) {
     M.setFooter(btns);
     $('#' + EditMID + ' .label-state').addClass('state' + (actStateID % 12)).text(row.state_id[1]);
     // Update all Labels
-    let labels = $('#' + EditMID + ' label');
+    var labels = $('#' + EditMID + ' label');
     labels.each(function () {
-        let label = $(this);
-        let colname = label.parent().find('[name]').attr('name');
+        var label = $(this);
+        var colname = label.parent().find('[name]').attr('name');
         if (colname) {
-            let alias = gConfig[Table.tablename].columns[colname].column_alias;
+            var alias = gConfig[Table.tablename].columns[colname].column_alias;
             label.text(alias);
         }
     });
@@ -985,7 +1022,8 @@ function filterTable(jQSel) {
     t.loadRows();
 }
 // BUTTON SAVE + Close
-function saveEntry(MID, jQSel, closeModal = true) {
+function saveEntry(MID, jQSel, closeModal) {
+    if (closeModal === void 0) { closeModal = true; }
     var t = getTableByjQSel(jQSel);
     var data = readDataFromForm('#' + MID, jQSel);
     // REQUEST
@@ -1030,7 +1068,8 @@ function getTableByjQSel(SelStr) {
     });
     return result;
 }
-function openTableInModal(tablename, callback = function (e) { }) {
+function openTableInModal(tablename, callback) {
+    if (callback === void 0) { callback = function (e) { }; }
     // Modal
     var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
     var timestr = (new Date()).getTime();
@@ -1084,7 +1123,8 @@ $(document).on('show.bs.modal', '.modal', function () {
     }, 0);
 });
 // TODO: obsolete functions?
-function showResult(content, title = 'StateMachine Feedback') {
+function showResult(content, title) {
+    if (title === void 0) { title = 'StateMachine Feedback'; }
     var M = new Modal(title, content);
     M.show();
 }
@@ -1098,34 +1138,48 @@ function showSE(jQSel) {
 }
 //--------------------------------------------------------------------------
 // Initialize Tables (call from HTML)
-function initTables(callback = function () { }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var promises = [];
-        sendRequest('init', '', function (r) {
-            return __awaiter(this, void 0, void 0, function* () {
-                gConfig = JSON.parse(r);
-                var tables = Object.keys(gConfig);
-                // Init Table Objects
-                tables.map(function (t) {
-                    var p = new Promise(function (resolve) {
-                        // Create a new object and save it in global array
-                        if (gConfig[t].is_in_menu) {
-                            var newT = new Table(t, '.table_' + t, false, function () {
-                                resolve();
-                            });
-                            gTables.push(newT);
+function initTables(callback) {
+    if (callback === void 0) { callback = function () { }; }
+    return __awaiter(this, void 0, void 0, function () {
+        var promises;
+        return __generator(this, function (_a) {
+            promises = [];
+            sendRequest('init', '', function (r) {
+                return __awaiter(this, void 0, void 0, function () {
+                    var tables;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                gConfig = JSON.parse(r);
+                                tables = Object.keys(gConfig);
+                                // Init Table Objects
+                                tables.map(function (t) {
+                                    var p = new Promise(function (resolve) {
+                                        // Create a new object and save it in global array
+                                        if (gConfig[t].is_in_menu) {
+                                            var newT = new Table(t, '.table_' + t, false, function () {
+                                                resolve();
+                                            });
+                                            gTables.push(newT);
+                                        }
+                                        else
+                                            resolve();
+                                    });
+                                    promises.push(p);
+                                });
+                                return [4 /*yield*/, Promise.all(promises)];
+                            case 1:
+                                _a.sent();
+                                // First Tab selection
+                                $('.nav-tabs .nav-link:first').addClass('active');
+                                $('.tab-content .tab-pane:first').addClass('active');
+                                callback();
+                                return [2 /*return*/];
                         }
-                        else
-                            resolve();
                     });
-                    promises.push(p);
                 });
-                yield Promise.all(promises);
-                // First Tab selection
-                $('.nav-tabs .nav-link:first').addClass('active');
-                $('.tab-content .tab-pane:first').addClass('active');
-                callback();
             });
+            return [2 /*return*/];
         });
     });
 }
