@@ -249,26 +249,33 @@ class StateMachine {
 //==============================================================
 class Table {
   Columns: any;
-  private Rows: any;
+  tablename: string;
+  PrimaryColumn: string;
+  jQSelector: string = '';
+  selectedIDs: number[];
+  SM: StateMachine;
+  selOne: boolean;
   Filter: string;
+  Form_Create: string;
+  ReadOnly: boolean;
+  lastModifiedRowID: number;
+  private Rows: any;
   private Filter_Old: string;
   private OrderBy: string;
-  PrimaryColumn: string;
   private AscDesc: SortOrder = SortOrder.DESC;
-  tablename: string;
   private PageLimit: number;
   private PageIndex: number = 0;
   private actRowCount: number; // Count total
-  jQSelector: string = '';
-  selectedIDs: number[];
-  Form_Create: string;
-  SM: StateMachine;
-  ReadOnly: boolean;
-  lastModifiedRowID: number;
-  selOne: boolean;
+  private Where: string = '';
+  // GUI Settings
   private showControlColumn: boolean;
+  private showWorkflowButton: boolean;
+  private showFilter: boolean;
+  private smallestTimeUnitMins: boolean;
+  defaultObject = {}; // Default key:val object for creating
 
-  constructor(tablename: string, DOMSelector: string, selectableOne: boolean = false, callback: any = function(){}) {
+
+  constructor(tablename: string, DOMSelector: string, selectableOne: boolean = false, callback: any = function(){}, whereFilter: string = '', defaultObj = {} ) {
     var data = gConfig[tablename]; // Load data from global config
     this.tablename = tablename;
     this.jQSelector = DOMSelector;
@@ -277,8 +284,14 @@ class Table {
     this.Columns = data.columns;
     this.ReadOnly = data.is_read_only;
     this.selOne = selectableOne
+    // GUI Settings
     this.PageLimit = gOptions.EntriesPerPage || 10;
+    this.showFilter = gOptions.showFilter;
     this.showControlColumn = gOptions.showControlColumn;
+    this.showWorkflowButton = gOptions.showWorkflowButton;
+    this.smallestTimeUnitMins = gOptions.smallestTimeUnitMins;
+    this.defaultObject = defaultObj;
+    this.Where = whereFilter;
 
     // Get the Primary column name
     var PriCol: string;
@@ -425,7 +438,7 @@ class Table {
   renderHTML(): void {
     var t = this
     var jQSelector: string = t.jQSelector
-    $(jQSelector).empty() // GUI: Clear entries  
+    $(jQSelector).empty() // GUI: Clear entries
 
 
     var ths: string = '';
@@ -463,7 +476,7 @@ class Table {
     var header: string = '<div class="element"><div class="row">';
 
     // Filter
-    if (gOptions.showFilter) {
+    if (t.showFilter) {
       header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'    
       header += '  <input type="text" class="form-control filterText" placeholder="Filter..." onkeydown="'+
       'if(event.keyCode == 13) { filterTable(\''+jQSelector+'\'); }">'
@@ -475,12 +488,12 @@ class Table {
 
     header += '<div class="col-12 col-sm-6 col-lg-9 mb-3">'
     // Workflow Button
-    if (t.SM && gOptions.showWorkflowButton) {
+    if (t.SM && t.showWorkflowButton) {
       header += '<button class="btn btn-secondary" onclick="showSE(\''+jQSelector+'\')"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
     }
     // Create Button
     if (!t.ReadOnly) {
-      header += '&nbsp;<button class="btn btn-success" onclick="createEntry(\''+jQSelector+'\')"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+      header += '<a class="btn btn-success" onclick="createEntry(\''+jQSelector+'\')"><i class="fa fa-plus"></i>&nbsp;Create</a>';
     }
     header += '</div></div>';
     header += '<div class="tablewrapper"><table class="table table-hover table-sm datatbl"><thead><tr>'+ths+'</tr></thead><tbody>';
@@ -536,7 +549,7 @@ class Table {
             }
             else if(t.Columns[col].DATA_TYPE == 'time') {
               // Remove seconds from TimeString
-              if (gOptions.smallestTimeUnitMins) {
+              if (t.smallestTimeUnitMins) {
                 var timeArr = value.split(':');
                 timeArr.pop();
                 value = timeArr.join(':')
@@ -547,7 +560,7 @@ class Table {
               if(!isNaN(tmp.getTime())) {
                 value = tmp.toLocaleString('de-DE')
                 // Remove seconds from TimeString
-                if (gOptions.smallestTimeUnitMins) {
+                if (t.smallestTimeUnitMins) {
                   var timeArr = value.split(':');
                   timeArr.pop();
                   value = timeArr.join(':')
@@ -661,6 +674,7 @@ class Table {
     var data = {
       table: this.tablename,
       select: '*, COUNT(*) AS cnt',
+      where: this.Where,
       filter: this.Filter,
       join: joins
     }
@@ -678,20 +692,20 @@ class Table {
   loadRows(callback: any = function(){}): void {
     var me: Table = this;
     var FilterEvent: boolean = false;
+    var joins = this.buildJoinPart(this);
 
     // Check Filter event -> jmp to page 1
     if (this.Filter != this.Filter_Old) {
       this.PageIndex = 0;
       FilterEvent = true;
-    }
+    }  
     
-    var joins = this.buildJoinPart(this);
     var data = {
       table: this.tablename,
       limitStart: this.PageIndex * this.PageLimit,
       limitSize: this.PageLimit,
       select: '*',
-      where: '', //a.state_id = 1',
+      where: this.Where, // '', //a.state_id = 1',
       filter: this.Filter,
       orderby: this.OrderBy,
       ascdesc: this.AscDesc,
@@ -738,24 +752,19 @@ class Table {
 // BUTTON Create
 function createEntry(jQSel: string): void {
   var t = getTableByjQSel(jQSel)
-  var SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+  var SaveBtn = '<a class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</a>';
   var M = new Modal('Create Entry', t.Form_Create, SaveBtn, true)
   var ModalID = M.DOM_ID
 
   // Update all Labels
-  let labels = $('#'+ModalID+' label');
-  labels.each(function(){
-    let label = $(this);
-    let colname = label.parent().find('[name]').attr('name');
-    if (colname) {
-      let aliasCol = gConfig[t.tablename].columns[colname];
-      if (aliasCol)
-        label.text(aliasCol.column_alias);
-    }
-  });
+  updateLabels(ModalID, t)
+  // Update Default values
+  writeDataToForm('#'+ModalID, t.defaultObject, jQSel)
+
   // Save origin Table in all FKeys
   $('#'+ModalID+' .inputFK').data('origintable', t.tablename);
-  // Bind Buttonclick
+
+  // Bind Buttonclick  
   $('#'+ModalID+' .btnCreateEntry').click(function(){
     // Read out all input fields with {key:value}
     var data = readDataFromForm('#'+ModalID, jQSel)
@@ -847,6 +856,23 @@ function setState(MID: string, jQSel: string, RowID: number, targetStateID: numb
     });
   }
 }
+
+
+function updateLabels(ModalID: string, t: Table) {
+  // Update all Labels
+  let labels = $('#'+ModalID+' label');
+  labels.each(function(){
+    let label = $(this);
+    let colname = label.parent().find('[name]').attr('name');
+    if (colname) {
+      let aliasCol = gConfig[t.tablename].columns[colname];
+      if (aliasCol) {
+        label.text(aliasCol.column_alias);
+      }
+    }
+  });
+}
+
 function renderEditForm(Table: Table, RowID: number, htmlForm: string, nextStates: any) {
   var row = Table.getRowByID(RowID)
   // Modal
@@ -868,15 +894,7 @@ function renderEditForm(Table: Table, RowID: number, htmlForm: string, nextState
   $('#'+EditMID+' .label-state').addClass('state'+(actStateID % 12)).text(row.state_id[1]);
 
   // Update all Labels
-  let labels = $('#'+EditMID+' label');
-  labels.each(function(){
-    let label = $(this);
-    let colname = label.parent().find('[name]').attr('name');
-    if (colname) {
-      let alias = gConfig[Table.tablename].columns[colname].column_alias;
-      label.text(alias);
-    }
-  });
+  updateLabels(EditMID, Table)
   // Save origin Table in all FKeys
   $('#'+EditMID+' .inputFK').data('origintable',Table.tablename);
   // Load data from row and write to input fields with {key:value}
@@ -1029,7 +1047,6 @@ function modifyRow(jQSel: string, id: number) {
       })
 
     } else {
-
       // EDIT-Modal WITHOUT StateMachine
       var M: Modal = new Modal('Edit Entry', t.Form_Create, '', true)
       // Save origin Table in all FKeys
@@ -1048,6 +1065,7 @@ function modifyRow(jQSel: string, id: number) {
     }
   }
 }
+// obsolete?
 function filterTable(jQSel: string) {
   var t: Table = getTableByjQSel(jQSel);
   var filterText = $(jQSel + ' .filterText').val();
@@ -1122,8 +1140,6 @@ function selectForeignKey(inp){
   var foreignTable = gConfig[originTable].columns[originColumn].foreignKey.table
   var foreignPrimaryCol = gConfig[originTable].columns[originColumn].foreignKey.col_id
   var foreignSubstCol = gConfig[originTable].columns[originColumn].foreignKey.col_subst
-
-  //console.log(originTable, originColumn, foreignTable, foreignPrimaryCol, foreignSubstCol, '<-- change this one here')
 
   // New Table Instance
   openTableInModal(foreignTable, function(selRows){
