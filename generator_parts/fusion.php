@@ -192,7 +192,6 @@
     $project_dir = $Path_IPMS_test.'/'.$db_name;
     // Create Project directory
     createSubDirIfNotExists($project_dir);
-    createSubDirIfNotExists($project_dir."/api");
     createSubDirIfNotExists($project_dir."/css");
     createSubDirIfNotExists($project_dir."/js");
     createSubDirIfNotExists($project_dir."/src");
@@ -200,11 +199,11 @@
     // Put Files
     createFile($project_dir."/js/muster.js", $output_JS);    
     createFile($project_dir."/css/muster.css", $output_css);
-    createFile($project_dir."/api/index.php", $output_API);
     createFile($project_dir."/src/RequestHandler.inc.php", $output_RequestHandler);
     createFile($project_dir."/src/StateMachine.inc.php", $class_StateEngine);
     createFile($project_dir."/src/DatabaseHandler.inc.php", $output_DBHandler);
     createFile($project_dir."/src/AuthHandler.inc.php", $output_AuthHandler);
+    createFile($project_dir."/api.php", $output_API);
     createFile($project_dir."/login.php", $output_LoginPage);
     createFile($project_dir."/".$db_name.".php", $output_all);
     createFile($project_dir."/".$db_name."-config.inc.php", $output_config);

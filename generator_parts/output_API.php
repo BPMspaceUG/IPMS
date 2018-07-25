@@ -1,7 +1,7 @@
 <?php
   // Includes
-  require_once(__DIR__.'/../src/AuthHandler.inc.php');
-  include_once(__DIR__."/../src/RequestHandler.inc.php");
+  require_once(__DIR__.'/src/AuthHandler.inc.php');
+  include_once(__DIR__."/src/RequestHandler.inc.php");
 
   // Check if authenticated via Token
   $rawtoken = JWT::getBearerToken();
