@@ -27,7 +27,6 @@
       }
       return $res;
     }
-    // Format data for output, so long because of ForeignKeys
     private function parseToJSON($result) {
       $results_array = array();
       if (!$result) return false;
@@ -104,6 +103,11 @@
       }
       $output = substr($output, 0, -1);
       return $output;
+    }
+    private function readRow($tablename, $primColName, $ElementID) {
+      $query = "SELECT * FROM $tablename WHERE $primColName = $ElementID;";
+      $res = DB::getInstance()->getConnection()->query($query);
+      return $res->fetch_assoc();
     }
     //================================== INIT
     // TODO: Rename to loadConfig
@@ -370,11 +374,6 @@
       $res = $SE->getNextStates($stateID);
       return json_encode($res);
     }
-    private function readRow($tablename, $primColName, $ElementID) {
-      $query = "SELECT * FROM $tablename WHERE $primColName = $ElementID;";
-      $res = DB::getInstance()->getConnection()->query($query);
-      return $res->fetch_assoc();
-    }
     public function makeTransition($param) {
       // INPUT [table, ElementID, (next)state_id]
       // Get the next ID for the next State
@@ -459,6 +458,9 @@
       $SE = new StateMachine(DB::getInstance()->getConnection(), DB_NAME, $tablename);
       $res = $SE->getLinks();
       return json_encode($res);
+    }
+    public function getFile($param) {
+      // Download File from Server
     }
   }
 ?>

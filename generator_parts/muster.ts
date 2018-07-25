@@ -128,7 +128,6 @@ class StateMachine {
   constructor(tablename: string){
     this.tablename = tablename
   }
-
   openSEPopup() {
     var smLinks, smNodes
     var me = this
@@ -254,26 +253,140 @@ class StateMachine {
 
 }
 //==============================================================
-// Class: CoreTable
+// Class: RawTable
 //==============================================================
-class CoreTable {}
+class RawTable {
+  protected tablename: string;
+  protected Rows: any;
+  protected Columns: any;
+  protected PrimaryColumn: string;
+  protected Filter: string;
+  protected OrderBy: string;
+  protected AscDesc: SortOrder = SortOrder.DESC;
+  protected PageLimit: number;
+  protected PageIndex: number = 0;
+  protected Where: string = '';
+  private actRowCount: number; // Count total
+
+  constructor (tablename: string) {
+    this.tablename = tablename;
+    this.actRowCount = 0;
+  }
+  private buildJoinPart() {
+    let joins = []
+    let me = this;
+    Object.keys(me.Columns).forEach(function(col) {
+      // Check if there is a substitute for the column
+      if (me.Columns[col].foreignKey.table != "") {
+        me.Columns[col].foreignKey.replace = col
+        joins.push(me.Columns[col].foreignKey)
+      }
+    })
+    return joins
+  }
+  public getNextStates(data: any, callback): void {
+    sendRequest('getNextStates', {table: this.tablename, row: data}, function(response) {
+      callback(response)
+    })
+  }
+  public createRow(data: any, callback): void {
+    let me = this;
+    sendRequest('create', {table: this.tablename, row: data}, function(r){
+      me.countRows(function(){
+        callback(r)
+      })
+    })
+  }
+  public deleteRow(RowID: number, callback): void {
+    let me = this;
+    let data = {}
+    data[this.PrimaryColumn] = RowID
+    sendRequest('delete', {table: this.tablename, row: data}, function(response) {
+      me.countRows(function(){
+        callback(response)
+      })
+    })
+  }
+  public updateRow(RowID: number, new_data: any, callback): void {
+    // TODO: Use RowID
+    sendRequest('update', {table: this.tablename, row: new_data}, function(response) {
+      callback(response)
+    })
+  }
+  public transitRow(RowID: number, TargetStateID: number, trans_data: any = null, callback) {
+    let data = {state_id: 0}
+    if (trans_data) data = trans_data
+    // PrimaryColID and TargetStateID are the minimum Parameters which have to be set
+    // also RowData can be updated in the client -> has also be transfered to server
+    data[this.PrimaryColumn] = RowID
+    data.state_id = TargetStateID
+    sendRequest('makeTransition', {table: this.tablename, row: data}, function(response) {
+      callback(response)
+    })
+  }
+  // Call this function only at [init] and then only on [create] and [delete] and at [filter]
+  public countRows(callback): void {
+    let me = this;
+    let joins = this.buildJoinPart();
+    let data = {
+      table: this.tablename,
+      select: '*, COUNT(*) AS cnt',
+      where: this.Where,
+      filter: this.Filter,
+      join: joins
+    }
+    sendRequest('read', data, function(r){
+      if (r.length > 0) {
+        let resp = JSON.parse(r);
+        if (resp.length > 0) {
+          me.actRowCount = parseInt(resp[0].cnt);
+          // Callback method
+          callback()
+        }
+      }
+    })
+  }
+  public loadRows(callback: any = function(){}): void {
+    var me = this;
+    var joins = me.buildJoinPart();
+    var data = {
+      table: this.tablename,
+      limitStart: this.PageIndex * this.PageLimit,
+      limitSize: this.PageLimit,
+      select: '*',
+      where: this.Where, // '', //a.state_id = 1',
+      filter: this.Filter,
+      orderby: this.OrderBy,
+      ascdesc: this.AscDesc,
+      join: joins
+    }
+    // HTTP Request
+    sendRequest('read', data, function(r){
+      // use "me" instead of "this", because of async functions
+      var resp = JSON.parse(r);
+      me.Rows = resp
+      // Reset Filter Event
+      if (me.Filter.length > 0) {
+        // Count Entries again and then render Table        
+        me.countRows(function(){
+          //me.renderHTML() // TODO: Put in the callback
+          callback()
+        })
+      } else {
+        // Render Table
+        //me.renderHTML() // TODO: Put in the callback
+        callback()
+      }      
+    })
+  }
+  public getNrOfRows(): number {
+    return this.actRowCount
+  }
+}
 //==============================================================
 // Class: Table
 //==============================================================
-class Table /*extends CoreTable*/ {
-
-  private tablename: string;
-  private Rows: any;
-  private Columns: any;
-  private PrimaryColumn: string;
-  private Filter: string;
-  private OrderBy: string;
-  private AscDesc: SortOrder = SortOrder.DESC;
-  private PageLimit: number;
-  private PageIndex: number = 0;
-  private Where: string = '';
-  private actRowCount: number; // Count total  
-
+class Table extends RawTable {
   private jQSelector: string = '';
   private SM: StateMachine;
   private selType: SelectType;
@@ -288,14 +401,13 @@ class Table /*extends CoreTable*/ {
   private smallestTimeUnitMins: boolean;
   private defaultValues = {}; // Default key:val object for creating
 
-  // TODO: Structure should be ::: new Table(tablename, DOM-ID, {options})
-
   constructor(tablename: string, DOMSelector: string, SelType: SelectType = SelectType.NoSelect, callback: any = function(){}, whereFilter: string = '', defaultObj = {}) {
+    super(tablename)
+    
     let me = this
     let data = gConfig[tablename]; // Load data from global config    
     this.jQSelector = DOMSelector;
     this.PageIndex = 0;
-    this.actRowCount = 0;
     this.Columns = data.columns;
     this.ReadOnly = data.is_read_only;
     this.selType = SelType;
@@ -369,16 +481,19 @@ class Table /*extends CoreTable*/ {
     return this.selectedIDs
   }
   public setSelectedRows(selRows: Array<number>) {
+    let me = this
     this.selectedIDs = selRows;
-    this.loadRows();
+    this.loadRows(function(){me.renderHTML()});
   }
   private toggleSort(ColumnName: string): void {
+    let me = this;
     this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC
     this.OrderBy = ColumnName
     // Refresh
-    this.loadRows()
+    this.loadRows(function(){me.renderHTML()})
   }
   private setPageIndex(targetIndex: number): void {
+    let me = this
     var newIndex = targetIndex
     var lastPageIndex = this.getNrOfPages() - 1
     // Check borders
@@ -387,10 +502,10 @@ class Table /*extends CoreTable*/ {
     // Set new index
     this.PageIndex = newIndex
     // Refresh
-    this.loadRows()
+    this.loadRows(function(){me.renderHTML()})
   }
   private getNrOfPages(): number {
-    return Math.ceil(this.actRowCount / this.PageLimit);
+    return Math.ceil(this.getNrOfRows() / this.PageLimit);
   }
   private getPaginationButtons(): number[] {
     const MaxNrOfButtons: number = 5
@@ -442,13 +557,13 @@ class Table /*extends CoreTable*/ {
     return escapeHtml(cellContent)
   }
   private getHTMLStatusText(): string {
-    if (this.actRowCount > 0 && this.Rows.length > 0)
+    if (this.getNrOfRows() > 0 && this.Rows.length > 0)
       return 'Showing Entries '+((this.PageIndex * this.PageLimit) + 1)+'-'+
-        ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of '+ this.actRowCount + ' Entries';
+        ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of '+ this.getNrOfRows() + ' Entries';
     else
       return 'No Entries';
   }
-  private renderHTML(): void {
+  public renderHTML(): void {
     let t = this
 
     $(t.jQSelector).empty() // GUI: Clear entries
@@ -614,7 +729,7 @@ class Table /*extends CoreTable*/ {
       e.preventDefault();
       t.PageIndex = 0; // jump to first page
       t.Filter = $(t.jQSelector + ' .filterText').val();
-      t.loadRows()
+      t.loadRows(function(){t.renderHTML()})
     })
     // hitting Return on searchbar at Filter
     $(t.jQSelector+' .filterText').off('keydown').on('keydown', function(e){
@@ -622,7 +737,7 @@ class Table /*extends CoreTable*/ {
         e.preventDefault();
         t.PageIndex = 0; // jump to first page
         t.Filter = $(t.jQSelector + ' .filterText').val();
-        t.loadRows()
+        t.loadRows(function(){t.renderHTML()})
       }
     })
     // Show Workflow Button clicked
@@ -674,8 +789,9 @@ class Table /*extends CoreTable*/ {
     if (t.selectedIDs) {
       if (t.selectedIDs.length > 0) {
         t.selectedIDs.forEach(selRowID => {
-          t.addClassToDataRow(selRowID, 'table-success')
-          $(t.jQSelector + ' .row-' + selRowID+ ' td:first').html('<i class="fa fa-check-square-o"></i>');
+          if (t.showControlColumn)
+            $(t.jQSelector + ' .row-' + selRowID+ ' td:first').html('<i class="fa fa-check-square-o"></i>');
+          $(t.jQSelector + ' .row-' + selRowID).addClass('table-success');
         });
       }
     }
@@ -696,114 +812,6 @@ class Table /*extends CoreTable*/ {
 
 
   //=====================================================  CORE functions (TODO: Make an object)
-
-  private buildJoinPart() {
-    let joins = []
-    let me = this;
-    Object.keys(me.Columns).forEach(function(col) {
-      // Check if there is a substitute for the column
-      if (me.Columns[col].foreignKey.table != "") {
-        me.Columns[col].foreignKey.replace = col
-        joins.push(me.Columns[col].foreignKey)
-      }
-    })
-    return joins
-  }
-  public getNextStates(data: any, callback): void {
-    sendRequest('getNextStates', {table: this.tablename, row: data}, function(response) {
-      callback(response)
-    })
-  }
-  public createRow(data: any, callback): void {
-    let me = this;
-    sendRequest('create', {table: this.tablename, row: data}, function(r){
-      me.countRows(function(){
-        callback(r)
-      })
-    })
-  }
-  public deleteRow(RowID: number, callback): void {
-    let me = this;
-    let data = {}
-    data[this.PrimaryColumn] = RowID
-    sendRequest('delete', {table: this.tablename, row: data}, function(response) {
-      me.countRows(function(){
-        callback(response)
-      })
-    })
-  }
-  public updateRow(RowID: number, new_data: any, callback): void {
-    sendRequest('update', {table: this.tablename, row: new_data}, function(response) {
-      callback(response)
-    })
-  }
-  public transitRow(RowID: number, TargetStateID: number, trans_data: any = null, callback) {
-    var data = {state_id: 0}
-    if (trans_data) data = trans_data
-    // PrimaryColID and TargetStateID are the minimum Parameters which have to be set
-    // also RowData can be updated in the client -> has also be transfered to server
-    data[this.PrimaryColumn] = RowID
-    data.state_id = TargetStateID
-    sendRequest('makeTransition', {table: this.tablename, row: data}, function(response) {
-      callback(response)
-    })
-  }
-  // Call this function only at [init] and then only on [create] and [delete] and at [filter]
-  protected countRows(callback): void {
-    var me = this;
-    var joins = this.buildJoinPart();
-    var data = {
-      table: this.tablename,
-      select: '*, COUNT(*) AS cnt',
-      where: this.Where,
-      filter: this.Filter,
-      join: joins
-    }
-    sendRequest('read', data, function(r){
-      if (r.length > 0) {
-        var resp = JSON.parse(r);
-        if (resp.length > 0) {
-          me.actRowCount = parseInt(resp[0].cnt);
-          // Callback method
-          callback()
-        }
-      }
-    })
-  }
-  public loadRows(callback: any = function(){}): void {
-    var me = this;
-    var joins = me.buildJoinPart();
-    var data = {
-      table: this.tablename,
-      limitStart: this.PageIndex * this.PageLimit,
-      limitSize: this.PageLimit,
-      select: '*',
-      where: this.Where, // '', //a.state_id = 1',
-      filter: this.Filter,
-      orderby: this.OrderBy,
-      ascdesc: this.AscDesc,
-      join: joins
-    }
-    // HTTP Request
-    sendRequest('read', data, function(r){
-      // use "me" instead of "this", because of async functions
-      var resp = JSON.parse(r);
-      me.Rows = resp
-      // Reset Filter Event
-      if (me.Filter.length > 0) {
-        // Count Entries again and then render Table        
-        me.countRows(function(){
-          me.renderHTML() // TODO: Put in the callback
-          callback()
-        })
-      } else {
-        // Render Table
-        me.renderHTML() // TODO: Put in the callback
-        callback()
-      }      
-    })
-  }
-
 
 
 
@@ -963,7 +971,7 @@ class Table /*extends CoreTable*/ {
       // Select One
       this.selectedIDs = []
       this.selectedIDs.push(id)
-      this.loadRows();
+      this.loadRows(function(){me.renderHTML()});
       // If is only 1 select then instant close window
       //$(this.jQSelector).parent().parent().find('.btnSelectFK').click();
       return
@@ -972,11 +980,16 @@ class Table /*extends CoreTable*/ {
 
       // TODO !!!!!!!
 
-      // Select One
-      //this.selectedIDs = []
-      // TODO Check if already exists in array -> then remove
-      this.selectedIDs.push(id)
-      this.loadRows();
+      // Check if already exists in array -> then remove
+      let pos = this.selectedIDs.indexOf(id)
+      if (pos >= 0) {
+        // Remove from List and reindex array
+        this.selectedIDs.splice(pos, 1)
+      } else {
+        // Add to List
+        this.selectedIDs.push(id)
+      }
+      this.loadRows(function(){me.renderHTML()});
       // If is only 1 select then instant close window
       //$(this.jQSelector).parent().parent().find('.btnSelectFK').click();
       return
@@ -1047,7 +1060,7 @@ class Table /*extends CoreTable*/ {
           // Success
           if (closeModal) $('#'+MID).modal('hide')
           t.lastModifiedRowID = data[t.PrimaryColumn]
-          t.loadRows()
+          t.loadRows(function(){t.renderHTML()})
         } else {
           // Fail
           alert("Element could not be updated!")
@@ -1116,7 +1129,7 @@ class Table /*extends CoreTable*/ {
             if (msg.element_id > 0) {
               $('#'+ModalID).modal('hide')
               me.lastModifiedRowID = msg.element_id
-              me.loadRows()
+              me.loadRows(function(){me.renderHTML()})
             }
           } else {
             // ElementID has to be 0! otherwise the transscript aborted
@@ -1138,56 +1151,53 @@ class Table /*extends CoreTable*/ {
 
 
 
-  // TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
-  function setState(MID: string, jQSel: string, RowID: number, targetStateID: number): void {
-    var t = getTableByjQSel(jQSel);
-    var data = t.readDataFromForm('#'+MID); // Read out all input fields with {key:value}
-    // REQUEST
-    t.transitRow(RowID, targetStateID, data, function(r) {
+// TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
+function setState(MID: string, jQSel: string, RowID: number, targetStateID: number): void {
+  var t = getTableByjQSel(jQSel);
+  var data = t.readDataFromForm('#'+MID); // Read out all input fields with {key:value}
+  // REQUEST
+  t.transitRow(RowID, targetStateID, data, function(r) {
 
+    // Remove all Error Messages
+    $('#' + MID + ' .modal-body .alert').remove();
+    try {
+      var msgs = JSON.parse(r)
+    }
+    catch(err) {
+      $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
+      '<b>Script Error!</b>&nbsp;'+ r +
+      '</div>')
+      return
+    }
+
+    // Handle Transition Feedback
+    let counter = 0;
+    msgs.forEach(msg => {
       // Remove all Error Messages
       $('#' + MID + ' .modal-body .alert').remove();
-      try {
-        var msgs = JSON.parse(r)
+
+      // Show Messages
+      if (msg.show_message) {
+        let info = ""
+        if (counter == 0) info = 'OUT-Script'
+        if (counter == 1) info = 'Transition-Script'
+        if (counter == 2) info = 'IN-Script'
+        // Show Result Messages
+        let resM = new Modal('Feedback <small>'+ info +'</small>', msg.message)
+        resM.show()
       }
-      catch(err) {
-        $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
-        '<b>Script Error!</b>&nbsp;'+ r +
-        '</div>')
-        return
+      // Check if Transition was successful
+      if (counter >= 2) {
+        $('#'+MID).modal('hide') // Hide only if reached IN-Script
+        if (RowID != 0)
+          t.setLastModifiedID(RowID)
+        t.loadRows(function(){t.renderHTML()})
       }
-
-      // Handle Transition Feedback
-      let counter = 0;
-      msgs.forEach(msg => {
-        // Remove all Error Messages
-        $('#' + MID + ' .modal-body .alert').remove();
-
-        // Show Messages
-        if (msg.show_message) {
-          let info = ""
-          if (counter == 0) info = 'OUT-Script'
-          if (counter == 1) info = 'Transition-Script'
-          if (counter == 2) info = 'IN-Script'
-          // Show Result Messages
-          let resM = new Modal('Feedback <small>'+ info +'</small>', msg.message)
-          resM.show()
-        }
-        // Check if Transition was successful
-        if (counter >= 2) {
-          $('#'+MID).modal('hide') // Hide only if reached IN-Script
-          if (RowID != 0)
-            t.setLastModifiedID(RowID)
-          t.loadRows()
-        }
-        // Increase Counter for Modals
-        counter++;
-      });
-    })
-  }
-
-
-
+      // Increase Counter for Modals
+      counter++;
+    });
+  })
+}
 function openTableInModal(tablename: string, previousSelRows: Array<number> = [], callback = function(e){}) {
   // Modal
   var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
@@ -1249,7 +1259,6 @@ function selectForeignKey(inp){
   })
 }
 
-
 // Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {
   //-- Stack modals correctly  
@@ -1259,8 +1268,9 @@ $(document).on('show.bs.modal', '.modal', function () {
       $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
   }, 0);
 });
-
-
+$(document).on('hidden.bs.modal', '.modal', function () {
+  $('.modal:visible').length && $(document.body).addClass('modal-open');
+});
 
 // TODO: obsolete functions?
 // unused:
@@ -1280,7 +1290,6 @@ function delRow(jQSel: string, id: number) {
   })
 }
 
-
 //--------------------------------------------------------------------------
 // Initialize Tables (call from HTML)
 
@@ -1295,6 +1304,7 @@ async function initTables(callback: any = function(){}) {
         // Create a new object and save it in global array
         if (gConfig[t].is_in_menu) {
           var newT = new Table(t, '.table_'+t, SelectType.NoSelect, function(){
+            newT.renderHTML()
             resolve();
           })
           gTables.push(newT)

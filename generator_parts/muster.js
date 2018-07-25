@@ -1,3 +1,13 @@
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -277,48 +287,164 @@ var StateMachine = /** @class */ (function () {
     return StateMachine;
 }());
 //==============================================================
-// Class: CoreTable
+// Class: RawTable
 //==============================================================
-var CoreTable = /** @class */ (function () {
-    function CoreTable() {
+var RawTable = /** @class */ (function () {
+    function RawTable(tablename) {
+        this.AscDesc = SortOrder.DESC;
+        this.PageIndex = 0;
+        this.Where = '';
+        this.tablename = tablename;
+        this.actRowCount = 0;
     }
-    return CoreTable;
+    RawTable.prototype.buildJoinPart = function () {
+        var joins = [];
+        var me = this;
+        Object.keys(me.Columns).forEach(function (col) {
+            // Check if there is a substitute for the column
+            if (me.Columns[col].foreignKey.table != "") {
+                me.Columns[col].foreignKey.replace = col;
+                joins.push(me.Columns[col].foreignKey);
+            }
+        });
+        return joins;
+    };
+    RawTable.prototype.getNextStates = function (data, callback) {
+        sendRequest('getNextStates', { table: this.tablename, row: data }, function (response) {
+            callback(response);
+        });
+    };
+    RawTable.prototype.createRow = function (data, callback) {
+        var me = this;
+        sendRequest('create', { table: this.tablename, row: data }, function (r) {
+            me.countRows(function () {
+                callback(r);
+            });
+        });
+    };
+    RawTable.prototype.deleteRow = function (RowID, callback) {
+        var me = this;
+        var data = {};
+        data[this.PrimaryColumn] = RowID;
+        sendRequest('delete', { table: this.tablename, row: data }, function (response) {
+            me.countRows(function () {
+                callback(response);
+            });
+        });
+    };
+    RawTable.prototype.updateRow = function (RowID, new_data, callback) {
+        // TODO: Use RowID
+        sendRequest('update', { table: this.tablename, row: new_data }, function (response) {
+            callback(response);
+        });
+    };
+    RawTable.prototype.transitRow = function (RowID, TargetStateID, trans_data, callback) {
+        if (trans_data === void 0) { trans_data = null; }
+        var data = { state_id: 0 };
+        if (trans_data)
+            data = trans_data;
+        // PrimaryColID and TargetStateID are the minimum Parameters which have to be set
+        // also RowData can be updated in the client -> has also be transfered to server
+        data[this.PrimaryColumn] = RowID;
+        data.state_id = TargetStateID;
+        sendRequest('makeTransition', { table: this.tablename, row: data }, function (response) {
+            callback(response);
+        });
+    };
+    // Call this function only at [init] and then only on [create] and [delete] and at [filter]
+    RawTable.prototype.countRows = function (callback) {
+        var me = this;
+        var joins = this.buildJoinPart();
+        var data = {
+            table: this.tablename,
+            select: '*, COUNT(*) AS cnt',
+            where: this.Where,
+            filter: this.Filter,
+            join: joins
+        };
+        sendRequest('read', data, function (r) {
+            if (r.length > 0) {
+                var resp = JSON.parse(r);
+                if (resp.length > 0) {
+                    me.actRowCount = parseInt(resp[0].cnt);
+                    // Callback method
+                    callback();
+                }
+            }
+        });
+    };
+    RawTable.prototype.loadRows = function (callback) {
+        if (callback === void 0) { callback = function () { }; }
+        var me = this;
+        var joins = me.buildJoinPart();
+        var data = {
+            table: this.tablename,
+            limitStart: this.PageIndex * this.PageLimit,
+            limitSize: this.PageLimit,
+            select: '*',
+            where: this.Where,
+            filter: this.Filter,
+            orderby: this.OrderBy,
+            ascdesc: this.AscDesc,
+            join: joins
+        };
+        // HTTP Request
+        sendRequest('read', data, function (r) {
+            // use "me" instead of "this", because of async functions
+            var resp = JSON.parse(r);
+            me.Rows = resp;
+            // Reset Filter Event
+            if (me.Filter.length > 0) {
+                // Count Entries again and then render Table        
+                me.countRows(function () {
+                    //me.renderHTML() // TODO: Put in the callback
+                    callback();
+                });
+            }
+            else {
+                // Render Table
+                //me.renderHTML() // TODO: Put in the callback
+                callback();
+            }
+        });
+    };
+    RawTable.prototype.getNrOfRows = function () {
+        return this.actRowCount;
+    };
+    return RawTable;
 }());
 //==============================================================
 // Class: Table
 //==============================================================
-var Table /*extends CoreTable*/ = /** @class */ (function () {
-    // TODO: Structure should be ::: new Table(tablename, DOM-ID, {options})
+var Table = /** @class */ (function (_super) {
+    __extends(Table, _super);
     function Table(tablename, DOMSelector, SelType, callback, whereFilter, defaultObj) {
         if (SelType === void 0) { SelType = SelectType.NoSelect; }
         if (callback === void 0) { callback = function () { }; }
         if (whereFilter === void 0) { whereFilter = ''; }
         if (defaultObj === void 0) { defaultObj = {}; }
-        this.AscDesc = SortOrder.DESC;
-        this.PageIndex = 0;
-        this.Where = '';
-        this.jQSelector = '';
-        this.maxCellLength = 30;
-        this.defaultValues = {}; // Default key:val object for creating
-        var me = this;
+        var _this = _super.call(this, tablename) || this;
+        _this.jQSelector = '';
+        _this.maxCellLength = 30;
+        _this.defaultValues = {}; // Default key:val object for creating
+        var me = _this;
         var data = gConfig[tablename]; // Load data from global config    
-        this.jQSelector = DOMSelector;
-        this.PageIndex = 0;
-        this.actRowCount = 0;
-        this.Columns = data.columns;
-        this.ReadOnly = data.is_read_only;
-        this.selType = SelType;
-        this.maxCellLength = 30;
-        this.PageLimit = gOptions.EntriesPerPage || 10;
-        this.showFilter = gOptions.showFilter;
-        this.showControlColumn = gOptions.showControlColumn;
-        this.showWorkflowButton = gOptions.showWorkflowButton;
-        this.smallestTimeUnitMins = gOptions.smallestTimeUnitMins;
-        this.defaultValues = defaultObj;
-        this.Where = whereFilter;
-        this.selectedIDs = []; // empty array
-        this.tablename = tablename;
-        this.Filter = '';
+        _this.jQSelector = DOMSelector;
+        _this.PageIndex = 0;
+        _this.Columns = data.columns;
+        _this.ReadOnly = data.is_read_only;
+        _this.selType = SelType;
+        _this.maxCellLength = 30;
+        _this.PageLimit = gOptions.EntriesPerPage || 10;
+        _this.showFilter = gOptions.showFilter;
+        _this.showControlColumn = gOptions.showControlColumn;
+        _this.showWorkflowButton = gOptions.showWorkflowButton;
+        _this.smallestTimeUnitMins = gOptions.smallestTimeUnitMins;
+        _this.defaultValues = defaultObj;
+        _this.Where = whereFilter;
+        _this.selectedIDs = []; // empty array
+        _this.tablename = tablename;
+        _this.Filter = '';
         // Get the Primary column name
         var PriCol;
         var SortCol = ''; // first visible Column
@@ -328,9 +454,9 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
             if (data.columns[col].EXTRA == 'auto_increment')
                 PriCol = col;
         });
-        this.PrimaryColumn = PriCol;
-        this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
-        this.Form_Create = '';
+        _this.PrimaryColumn = PriCol;
+        _this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
+        _this.Form_Create = '';
         // Get Create-Form and save in Object
         sendRequest('getFormCreate', { table: tablename }, function (resp) {
             if (resp.length > 0)
@@ -347,6 +473,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
                 callback();
             });
         });
+        return _this;
     }
     //=============  Helper functions
     Table.prototype.getDOMSelector = function () {
@@ -374,16 +501,19 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         return this.selectedIDs;
     };
     Table.prototype.setSelectedRows = function (selRows) {
+        var me = this;
         this.selectedIDs = selRows;
-        this.loadRows();
+        this.loadRows(function () { me.renderHTML(); });
     };
     Table.prototype.toggleSort = function (ColumnName) {
+        var me = this;
         this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC;
         this.OrderBy = ColumnName;
         // Refresh
-        this.loadRows();
+        this.loadRows(function () { me.renderHTML(); });
     };
     Table.prototype.setPageIndex = function (targetIndex) {
+        var me = this;
         var newIndex = targetIndex;
         var lastPageIndex = this.getNrOfPages() - 1;
         // Check borders
@@ -394,10 +524,10 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         // Set new index
         this.PageIndex = newIndex;
         // Refresh
-        this.loadRows();
+        this.loadRows(function () { me.renderHTML(); });
     };
     Table.prototype.getNrOfPages = function () {
-        return Math.ceil(this.actRowCount / this.PageLimit);
+        return Math.ceil(this.getNrOfRows() / this.PageLimit);
     };
     Table.prototype.getPaginationButtons = function () {
         var MaxNrOfButtons = 5;
@@ -451,9 +581,9 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         return escapeHtml(cellContent);
     };
     Table.prototype.getHTMLStatusText = function () {
-        if (this.actRowCount > 0 && this.Rows.length > 0)
+        if (this.getNrOfRows() > 0 && this.Rows.length > 0)
             return 'Showing Entries ' + ((this.PageIndex * this.PageLimit) + 1) + '-' +
-                ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of ' + this.actRowCount + ' Entries';
+                ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of ' + this.getNrOfRows() + ' Entries';
         else
             return 'No Entries';
     };
@@ -608,7 +738,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
             e.preventDefault();
             t.PageIndex = 0; // jump to first page
             t.Filter = $(t.jQSelector + ' .filterText').val();
-            t.loadRows();
+            t.loadRows(function () { t.renderHTML(); });
         });
         // hitting Return on searchbar at Filter
         $(t.jQSelector + ' .filterText').off('keydown').on('keydown', function (e) {
@@ -616,7 +746,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
                 e.preventDefault();
                 t.PageIndex = 0; // jump to first page
                 t.Filter = $(t.jQSelector + ' .filterText').val();
-                t.loadRows();
+                t.loadRows(function () { t.renderHTML(); });
             }
         });
         // Show Workflow Button clicked
@@ -664,8 +794,9 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         if (t.selectedIDs) {
             if (t.selectedIDs.length > 0) {
                 t.selectedIDs.forEach(function (selRowID) {
-                    t.addClassToDataRow(selRowID, 'table-success');
-                    $(t.jQSelector + ' .row-' + selRowID + ' td:first').html('<i class="fa fa-check-square-o"></i>');
+                    if (t.showControlColumn)
+                        $(t.jQSelector + ' .row-' + selRowID + ' td:first').html('<i class="fa fa-check-square-o"></i>');
+                    $(t.jQSelector + ' .row-' + selRowID).addClass('table-success');
                 });
             }
         }
@@ -680,116 +811,6 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         });
     };
     //=====================================================  CORE functions (TODO: Make an object)
-    Table.prototype.buildJoinPart = function () {
-        var joins = [];
-        var me = this;
-        Object.keys(me.Columns).forEach(function (col) {
-            // Check if there is a substitute for the column
-            if (me.Columns[col].foreignKey.table != "") {
-                me.Columns[col].foreignKey.replace = col;
-                joins.push(me.Columns[col].foreignKey);
-            }
-        });
-        return joins;
-    };
-    Table.prototype.getNextStates = function (data, callback) {
-        sendRequest('getNextStates', { table: this.tablename, row: data }, function (response) {
-            callback(response);
-        });
-    };
-    Table.prototype.createRow = function (data, callback) {
-        var me = this;
-        sendRequest('create', { table: this.tablename, row: data }, function (r) {
-            me.countRows(function () {
-                callback(r);
-            });
-        });
-    };
-    Table.prototype.deleteRow = function (RowID, callback) {
-        var me = this;
-        var data = {};
-        data[this.PrimaryColumn] = RowID;
-        sendRequest('delete', { table: this.tablename, row: data }, function (response) {
-            me.countRows(function () {
-                callback(response);
-            });
-        });
-    };
-    Table.prototype.updateRow = function (RowID, new_data, callback) {
-        sendRequest('update', { table: this.tablename, row: new_data }, function (response) {
-            callback(response);
-        });
-    };
-    Table.prototype.transitRow = function (RowID, TargetStateID, trans_data, callback) {
-        if (trans_data === void 0) { trans_data = null; }
-        var data = { state_id: 0 };
-        if (trans_data)
-            data = trans_data;
-        // PrimaryColID and TargetStateID are the minimum Parameters which have to be set
-        // also RowData can be updated in the client -> has also be transfered to server
-        data[this.PrimaryColumn] = RowID;
-        data.state_id = TargetStateID;
-        sendRequest('makeTransition', { table: this.tablename, row: data }, function (response) {
-            callback(response);
-        });
-    };
-    // Call this function only at [init] and then only on [create] and [delete] and at [filter]
-    Table.prototype.countRows = function (callback) {
-        var me = this;
-        var joins = this.buildJoinPart();
-        var data = {
-            table: this.tablename,
-            select: '*, COUNT(*) AS cnt',
-            where: this.Where,
-            filter: this.Filter,
-            join: joins
-        };
-        sendRequest('read', data, function (r) {
-            if (r.length > 0) {
-                var resp = JSON.parse(r);
-                if (resp.length > 0) {
-                    me.actRowCount = parseInt(resp[0].cnt);
-                    // Callback method
-                    callback();
-                }
-            }
-        });
-    };
-    Table.prototype.loadRows = function (callback) {
-        if (callback === void 0) { callback = function () { }; }
-        var me = this;
-        var joins = me.buildJoinPart();
-        var data = {
-            table: this.tablename,
-            limitStart: this.PageIndex * this.PageLimit,
-            limitSize: this.PageLimit,
-            select: '*',
-            where: this.Where,
-            filter: this.Filter,
-            orderby: this.OrderBy,
-            ascdesc: this.AscDesc,
-            join: joins
-        };
-        // HTTP Request
-        sendRequest('read', data, function (r) {
-            // use "me" instead of "this", because of async functions
-            var resp = JSON.parse(r);
-            me.Rows = resp;
-            // Reset Filter Event
-            if (me.Filter.length > 0) {
-                // Count Entries again and then render Table        
-                me.countRows(function () {
-                    me.renderHTML(); // TODO: Put in the callback
-                    callback();
-                });
-            }
-            else {
-                // Render Table
-                me.renderHTML(); // TODO: Put in the callback
-                callback();
-            }
-        });
-    };
     //------------------------------------------------------- GUI Functions
     Table.prototype.readDataFromForm = function (Mid) {
         var me = this;
@@ -937,18 +958,24 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
             // Select One
             this.selectedIDs = [];
             this.selectedIDs.push(id);
-            this.loadRows();
+            this.loadRows(function () { me.renderHTML(); });
             // If is only 1 select then instant close window
             //$(this.jQSelector).parent().parent().find('.btnSelectFK').click();
             return;
         }
         else if (this.selType == SelectType.Multi) {
             // TODO !!!!!!!
-            // Select One
-            //this.selectedIDs = []
-            // TODO Check if already exists in array -> then remove
-            this.selectedIDs.push(id);
-            this.loadRows();
+            // Check if already exists in array -> then remove
+            var pos = this.selectedIDs.indexOf(id);
+            if (pos >= 0) {
+                // Remove from List and reindex array
+                this.selectedIDs.splice(pos, 1);
+            }
+            else {
+                // Add to List
+                this.selectedIDs.push(id);
+            }
+            this.loadRows(function () { me.renderHTML(); });
             // If is only 1 select then instant close window
             //$(this.jQSelector).parent().parent().find('.btnSelectFK').click();
             return;
@@ -1018,7 +1045,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
                     if (closeModal)
                         $('#' + MID).modal('hide');
                     t.lastModifiedRowID = data[t.PrimaryColumn];
-                    t.loadRows();
+                    t.loadRows(function () { t.renderHTML(); });
                 }
                 else {
                     // Fail
@@ -1085,7 +1112,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
                         if (msg.element_id > 0) {
                             $('#' + ModalID).modal('hide');
                             me.lastModifiedRowID = msg.element_id;
-                            me.loadRows();
+                            me.loadRows(function () { me.renderHTML(); });
                         }
                     }
                     else {
@@ -1103,7 +1130,7 @@ var Table /*extends CoreTable*/ = /** @class */ (function () {
         M.show();
     };
     return Table;
-}());
+}(RawTable));
 // TODO: Function should be >>>setState(this, 13)<<<, for individual buttons
 function setState(MID, jQSel, RowID, targetStateID) {
     var t = getTableByjQSel(jQSel);
@@ -1144,7 +1171,7 @@ function setState(MID, jQSel, RowID, targetStateID) {
                 $('#' + MID).modal('hide'); // Hide only if reached IN-Script
                 if (RowID != 0)
                     t.setLastModifiedID(RowID);
-                t.loadRows();
+                t.loadRows(function () { t.renderHTML(); });
             }
             // Increase Counter for Modals
             counter++;
@@ -1214,6 +1241,9 @@ $(document).on('show.bs.modal', '.modal', function () {
         $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
     }, 0);
 });
+$(document).on('hidden.bs.modal', '.modal', function () {
+    $('.modal:visible').length && $(document.body).addClass('modal-open');
+});
 // TODO: obsolete functions?
 // unused:
 function delRow(jQSel, id) {
@@ -1255,6 +1285,7 @@ function initTables(callback) {
                                         // Create a new object and save it in global array
                                         if (gConfig[t].is_in_menu) {
                                             var newT = new Table(t, '.table_' + t, SelectType.NoSelect, function () {
+                                                newT.renderHTML();
                                                 resolve();
                                             });
                                             gTables.push(newT);
