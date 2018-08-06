@@ -166,6 +166,10 @@
   // AuthKey
   define("AUTH_KEY", "secretkeybpmspace_'.sha1('test').'");
 
+  // WhiteLists for getFile
+  define("WHITELIST_PATHS", array("ordner/test/", "ordner/"));
+  define("WHITELIST_TYPES", array("pdf", "doc", "txt"));
+
   // Structure Configuration Data
   $config_tables_json = \''.$json.'\';
 ?>';
