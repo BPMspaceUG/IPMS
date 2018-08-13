@@ -23,8 +23,8 @@
   
   // Parameter
   $paramData = json_decode(file_get_contents('php://input'), true);
-  $command = $paramData["cmd"];
-  $param = $paramData["paramJS"];
+  $command = $paramData["cmd"]; // HAS TO EXIST!
+  $param = isset($paramData["paramJS"]) ? $paramData["paramJS"] : null;
 
   /* TODO
   // Check if has rights
@@ -41,7 +41,7 @@
   // Handle the Requests
   if ($command != "") {
     $RH = new RequestHandler();
-    if ($paramData != "") // are there parameters?
+    if (!is_null($param)) // are there parameters?
       $result = $RH->$command($param); // execute with params
     else
       $result = $RH->$command(); // execute

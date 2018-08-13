@@ -109,6 +109,9 @@
       $res = DB::getInstance()->getConnection()->query($query);
       return $res->fetch_assoc();
     }
+    private static function checkString($string) {
+      return (!preg_match('/[^A-Za-z0-9_]/', $string));
+    }
     //================================== INIT
     // TODO: Rename to loadConfig
     public static function init() {
@@ -194,21 +197,30 @@
       $limitStart = isset($param["limitStart"]) ? $param["limitStart"] : 0;
       $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : 1000;
 
-      // ORDER BY
-      $ascdesc = strtolower(trim($ascdesc));
-      if ($ascdesc == "asc" || $ascdesc == "") $ascdesc == "ASC";
-      if ($ascdesc == "desc") $ascdesc == "DESC";
-      if (trim($orderby) <> "")
-        $orderby = " ORDER BY a.".$param["orderby"]." ".$ascdesc;
-      else
-        $orderby = " "; // ORDER BY replacer_id DESC";
+      // check values
+      if (!is_int($limitSize)) die("Limit-Size is no integer!");
+      if (!is_int($limitStart)) die("Limit-Start is no integer!");
+      if (!RequestHandler::checkString($tablename)) die("Tablename is invalid (only A-z, 0-9 and _)!");
 
-      // LIMIT
+      //--- ORDER BY
+      $ascdesc = strtolower(trim($ascdesc));
+      if ($ascdesc == "asc" || $ascdesc == "") {
+        $ascdesc == "ASC";
+      } elseif ($ascdesc == "desc")
+        $ascdesc == "DESC";
+      else
+        die("AscDesc has no valid value (value has to be empty, ASC or DESC)!");
+
+      if (trim($orderby) <> "")
+        $sql_orderby = " ORDER BY a.".$orderby." ".$ascdesc;
+      else
+        $sql_orderby = " "; // ORDER BY replacer_id DESC";
+
+      //--- LIMIT
       $limit = " LIMIT ".$limitStart.",".$limitSize;
 
-      // JOIN
+      //--- JOINS
       $join_from = $tablename." AS a"; // if there is no join
-
       $sel = array();
       $sel_raw = array();
       $sel_str = "";
@@ -234,7 +246,7 @@
         $sel_str = ",".implode(",", $sel);
       }
 
-      // SEARCH / Filter
+      //--- WHERE (SEARCH / Filter)
       if ($where <> "" && $filter == "") {
         $where = " WHERE ".$where;
       }
@@ -265,14 +277,20 @@
         //$where = " WHERE ".$q_str;
       }
 
-      // Concat final query
-      $query = "SELECT a.".$select.$sel_str." FROM ".$join_from.$where.$orderby.$limit.";";
+      //--- SELECT + Concat final query
+      if ($select <> '*')
+        $query = "SELECT ".$select." FROM ".$join_from.$where.$sql_orderby.$limit.";";
+      else
+        $query = "SELECT a.*".$sel_str." FROM ".$join_from.$where.$sql_orderby.$limit.";";
+      // Clean up a bit
       $query = str_replace("  ", " ", $query);
-      /*
+      
       //for debugging
-      if (strpos($query, 'CONCAT'))
+      /*
+      if (strpos($query, 'COUNT'))
         file_put_contents('log-read-cmd.txt', time().":\n".$query."\n\n");
       */
+      
       $res = DB::getInstance()->getConnection()->query($query);
       // Return result as JSON
       return $this->parseToJSON($res);
@@ -461,8 +479,6 @@
     }
     public function getFile($param) {
       // Download File from Server
-      // TODO: 1. Paths have to be in a whitelist
-      // TODO: 2. FileExtensions/types has to be in a whitelist too
       
       // Inputs
       $filename = strtolower($param["name"]);

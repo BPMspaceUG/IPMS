@@ -48,7 +48,7 @@ class DB {
             let me = this;
             let promises = [];
             // Load Config from Server
-            me.request('init', '', function (r) {
+            me.request('init', null, function (r) {
                 return __awaiter(this, void 0, void 0, function* () {
                     me.ConfigurationData = JSON.parse(r);
                     // Init Table Objects
@@ -77,15 +77,16 @@ class DB {
     // TODO: Improve Error handling (goto login.php etc.)
     static request(command, params, callback) {
         let me = this;
+        let data = { cmd: command };
+        // If Params are set, then append them
+        if (params)
+            data['paramJS'] = params;
         // Request (every Request is processed by this function)
         $.ajax({
             method: "POST",
             url: me.API_URL,
             contentType: 'json',
-            data: JSON.stringify({
-                cmd: command,
-                paramJS: params
-            }),
+            data: JSON.stringify(data),
             error: function (xhr, status) {
                 // Not Authorized
                 if (xhr.status == 401) {
@@ -179,6 +180,9 @@ class Modal {
 //==============================================================
 // Class: StateMachine
 //==============================================================
+// For now every Table has its own statemachine. But in future it
+// would be better if every Row/Object would have its own Statemachine
+// 
 class StateMachine {
     constructor(tablename) {
         this.tablename = tablename;
@@ -344,7 +348,8 @@ class RawTable {
         });
     }
     updateRow(RowID, new_data, callback) {
-        // TODO: Use RowID
+        let data = new_data;
+        data[this.PrimaryColumn] = RowID;
         DB.request('update', { table: this.tablename, row: new_data }, function (response) {
             callback(response);
         });
@@ -367,7 +372,7 @@ class RawTable {
         let joins = this.buildJoinPart();
         let data = {
             table: this.tablename,
-            select: '*, COUNT(*) AS cnt',
+            select: 'COUNT(*) AS cnt',
             where: this.Where,
             filter: this.Filter,
             join: joins
@@ -383,10 +388,10 @@ class RawTable {
             }
         });
     }
-    loadRows(callback = function () { }) {
-        var me = this;
-        var joins = me.buildJoinPart();
-        var data = {
+    loadRows(callback) {
+        let me = this;
+        let joins = me.buildJoinPart();
+        let data = {
             table: this.tablename,
             limitStart: this.PageIndex * this.PageLimit,
             limitSize: this.PageLimit,
@@ -399,26 +404,30 @@ class RawTable {
         };
         // HTTP Request
         DB.request('read', data, function (r) {
-            // use "me" instead of "this", because of async functions
-            var resp = JSON.parse(r);
-            me.Rows = resp;
-            callback();
-            /*
-            // Reset Filter Event
-            if (me.Filter.length > 0) {
-              // Count Entries again and then render Table
-              me.countRows(function(){
-                
-              })
-            } else {
-              // Render Table
-              callback()
-            }
-            */
+            let response = JSON.parse(r);
+            me.Rows = response;
+            callback(response);
         });
     }
     getNrOfRows() {
         return this.actRowCount;
+    }
+    getRowByID(RowID, callback) {
+        let me = this;
+        let joins = me.buildJoinPart();
+        let data = {
+            table: this.tablename,
+            limitStart: 0,
+            limitSize: 1,
+            select: '*',
+            where: this.PrimaryColumn + '=' + RowID,
+            join: joins
+        };
+        // HTTP Request
+        DB.request('read', data, function (r) {
+            let response = JSON.parse(r);
+            callback(response[0]);
+        });
     }
 }
 //==============================================================
@@ -473,7 +482,8 @@ class Table extends RawTable {
             me.SM = null;
         // Download data from server    
         me.countRows(function () {
-            me.loadRows(function () {
+            me.loadRows(function (rows) {
+                me.Rows = rows;
                 callback();
             });
         });
@@ -522,12 +532,10 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
-            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
-            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -547,7 +555,7 @@ class Table extends RawTable {
         if (typeof cellContent == 'string') {
             // String, and longer than X chars
             if (cellContent.length > this.maxCellLength)
-                return escapeHtml(cellContent.substr(0, 30) + "\u2026");
+                return escapeHtml(cellContent.substr(0, this.maxCellLength) + "\u2026");
         }
         else if (Array.isArray(cellContent)) {
             // Foreign Key
@@ -624,9 +632,9 @@ class Table extends RawTable {
         let me = this;
         let inputs = $(Mid + ' :input');
         inputs.each(function () {
-            var e = $(this);
-            var col = e.attr('name');
-            var value = data[col];
+            let e = $(this);
+            let col = e.attr('name');
+            let value = data[col];
             // isFK?
             if (value) {
                 if (Array.isArray(value)) {
@@ -684,13 +692,18 @@ class Table extends RawTable {
     }
     renderEditForm(RowID, htmlForm, nextStates) {
         let t = this;
-        var row = t.getRowByID(RowID);
+        let TheRow = null;
+        // get The Row
+        this.Rows.forEach(row => {
+            if (row[t.PrimaryColumn] == RowID)
+                TheRow = row;
+        });
         // Modal
         var M = new Modal('Edit Entry', htmlForm, '', true);
         var EditMID = M.getDOMID();
         // state Buttons
         var btns = '<div class="btn-group" role="group">';
-        var actStateID = row.state_id[0]; // ID
+        var actStateID = TheRow.state_id[0]; // ID
         // TODO: Order Save Button at first
         nextStates.forEach(function (s) {
             var btn_text = s.name;
@@ -711,13 +724,13 @@ class Table extends RawTable {
             t.setState(EditMID, RowID, TargetStateID);
             //me.saveEntry(M.getDOMID(), false)
         });
-        $('#' + EditMID + ' .label-state').addClass('state' + (actStateID % 12)).text(row.state_id[1]);
+        $('#' + EditMID + ' .label-state').addClass('state' + (actStateID % 12)).text(TheRow.state_id[1]);
         // Update all Labels
         this.updateLabels(EditMID);
         // Save origin Table in all FKeys
         $('#' + EditMID + ' .inputFK').data('origintable', t.tablename);
         // Load data from row and write to input fields with {key:value}
-        t.writeDataToForm('#' + EditMID, row);
+        t.writeDataToForm('#' + EditMID, TheRow);
         // Add PrimaryID in stored Data
         $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + t.PrimaryColumn + '" value="' + RowID + '">');
         M.show();
@@ -799,7 +812,12 @@ class Table extends RawTable {
                 // Add the Primary RowID
                 $('#' + M.getDOMID() + ' .modal-body').append('<input type="hidden" name="' + this.PrimaryColumn + '" value="' + id + '">');
                 // Write all input fields with {key:value}
-                this.writeDataToForm('#' + M.getDOMID(), this.getRowByID(id));
+                let r = null;
+                me.Rows.forEach(row => {
+                    if (row[me.PrimaryColumn] == id)
+                        r = row;
+                });
+                this.writeDataToForm('#' + M.getDOMID(), r);
                 M.show();
             }
         }
@@ -955,16 +973,6 @@ class Table extends RawTable {
                 counter++;
             });
         });
-    }
-    getRowByID(RowID) {
-        var result = null;
-        var me = this;
-        this.Rows.forEach(function (row) {
-            if (row[me.PrimaryColumn] == RowID) {
-                result = row;
-            }
-        });
-        return result;
     }
     getSelectedRows() {
         return this.selectedIDs;
@@ -1128,28 +1136,28 @@ class Table extends RawTable {
         // GUI
         $(t.jQSelector).append(header + tds + footer);
         //---------------- Bind Events
-        // Filter-Button clicked
-        $(t.jQSelector + ' .btnFilter').off('click').on('click', function (e) {
-            e.preventDefault();
+        function filterEvent(t) {
             t.PageIndex = 0; // jump to first page
             t.Filter = $(t.jQSelector + ' .filterText').val();
             t.countRows(function () {
-                t.loadRows(function () {
+                if (t.getNrOfRows() > 0)
+                    t.loadRows(function () { t.renderHTML(); });
+                else {
+                    t.Rows = [];
                     t.renderHTML();
-                });
+                }
             });
+        }
+        // Filter-Button clicked
+        $(t.jQSelector + ' .btnFilter').off('click').on('click', function (e) {
+            e.preventDefault();
+            filterEvent(t);
         });
         // hitting Return on searchbar at Filter
         $(t.jQSelector + ' .filterText').off('keydown').on('keydown', function (e) {
             if (e.keyCode == 13) {
                 e.preventDefault();
-                t.PageIndex = 0; // jump to first page
-                t.Filter = $(t.jQSelector + ' .filterText').val();
-                t.countRows(function () {
-                    t.loadRows(function () {
-                        t.renderHTML();
-                    });
-                });
+                filterEvent(t);
             }
         });
         // Show Workflow Button clicked
