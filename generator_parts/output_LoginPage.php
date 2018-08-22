@@ -4,8 +4,7 @@
     require_once(__DIR__.'/src/AuthHandler.inc.php');
 
     function getPOSTParamSecure($param) {
-        if (isset($_POST[$param]))
-            return DB::getInstance()->getConnection()->real_escape_string($_POST[$param]);
+        if (isset($_POST[$param])) return $_POST[$param];
         return null;
     }
 

@@ -936,6 +936,7 @@ class Table extends RawTable {
           }
           // Check
           if (msg.element_id) {
+
             if (msg.element_id > 0) {
               $('#'+ModalID).modal('hide')
               me.lastModifiedRowID = msg.element_id
@@ -944,14 +945,16 @@ class Table extends RawTable {
                 me.loadRows(function(){
                   me.renderHTML()
                 })
-              })              
+              })
             }
-          } else {
+
             // ElementID has to be 0! otherwise the transscript aborted
             if (msg.element_id == 0) {
-              $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
+              $('#' + ModalID + ' .modal-body').prepend(
+                '<div class="alert alert-danger" role="alert">'+
                 '<b>Database Error!</b>&nbsp;'+ msg.errormsg +
-                '</div>')
+                '</div>'
+              )
             }
           }
           counter++;
@@ -1284,10 +1287,12 @@ function openTableInModal(tablename: string, previousSelRows: Array<number> = []
   var timestr = (new Date()).getTime()
   var newFKTableClass = 'foreignTable_abcdef'+timestr; // Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
   var M = new Modal('Select Foreign Key', '<div class="'+newFKTableClass+'"></div>', SelectBtn, true)
-  var t = new Table(tablename, '.'+newFKTableClass, SelectType.Single);
+  var t = new Table(tablename, '.'+newFKTableClass, SelectType.Single, function(){
+    DB.addTable(t);
+    t.setSelectedRows(previousSelRows);
+  }, '');
 
-  t.setSelectedRows(previousSelRows)
-  DB.addTable(t) // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
+  // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
   // Bind Buttonclick (Select)
   $('#'+M.getDOMID()+' .btnSelectFK').click(function(e){
     e.preventDefault();

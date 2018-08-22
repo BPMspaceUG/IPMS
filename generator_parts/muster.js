@@ -532,10 +532,12 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
+            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
+            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -905,8 +907,6 @@ class Table extends RawTable {
                                 });
                             });
                         }
-                    }
-                    else {
                         // ElementID has to be 0! otherwise the transscript aborted
                         if (msg.element_id == 0) {
                             $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
@@ -1219,9 +1219,11 @@ function openTableInModal(tablename, previousSelRows = [], callback = function (
     var timestr = (new Date()).getTime();
     var newFKTableClass = 'foreignTable_abcdef' + timestr; // Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
     var M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
-    var t = new Table(tablename, '.' + newFKTableClass, SelectType.Single);
-    t.setSelectedRows(previousSelRows);
-    DB.addTable(t); // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
+    var t = new Table(tablename, '.' + newFKTableClass, SelectType.Single, function () {
+        DB.addTable(t);
+        t.setSelectedRows(previousSelRows);
+    }, '');
+    // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
     // Bind Buttonclick (Select)
     $('#' + M.getDOMID() + ' .btnSelectFK').click(function (e) {
         e.preventDefault();

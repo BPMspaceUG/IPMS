@@ -1,80 +1,80 @@
 <?php
+
   class StateMachine {
     // Variables
     private $db;
     private $ID = -1;
-    private $db_name = "";
     private $table = "";
     private $query_log = "";
 
-    public function __construct($db, $db_name, $tablename = "") {
-      $this->db = $db;
-      $this->db_name = $db_name;
+
+    public function __construct($PDO_Connection, $tablename = "") {
+      $this->db = $PDO_Connection;
       $this->table = $tablename;
       if ($this->table != "")
       	$this->ID = $this->getSMIDByTablename($tablename);
     }
+
     private function log($text) {
       $this->query_log .= $text."\n\n";
     }
     public function getQueryLog() {
       return $this->query_log;
     }
-    private function getResultArray($rowObj) {
-      $res = array();
-      if (!$rowObj) return $res; // exit if query failed
-      while ($row = $rowObj->fetch_assoc())
-        $res[] = $row;
-      return $res;
-    }
+
     private function getSMIDByTablename($tablename) {
-    	// Return newest statemachine (MAX)
-      $query = "SELECT MAX(id) AS 'id' FROM `$this->db_name`.state_machines WHERE tablename = '$tablename';";
-      $res = $this->db->query($query);
-     	$r = $this->getResultArray($res);
-      if (empty($r)) return -1; // statemachine does not exist
-      return (int)$r[0]['id'];
+      $result = -1; //NULL;
+      $stmt = $this->db->prepare("SELECT MIN(id) AS 'id' FROM state_machines WHERE tablename = ?");
+      $stmt->execute(array($tablename));
+      while($row = $stmt->fetch()) {
+        $result = $row['id'];
+      }
+      return $result;
     }
     private function getStateAsObject($stateid) {
-      settype($id, 'integer');
-      $query = "SELECT state_id AS 'id', name AS 'name' FROM $this->db_name.state WHERE state_id = $stateid;";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
+      $result = -1; //NULL;
+      $stmt = $this->db->prepare("SELECT state_id AS 'id', name AS 'name' FROM state WHERE state_id = ?");
+      $stmt->execute(array($stateid));  
+      while($row = $stmt->fetch()) {
+        $result = $row;
+      }
+      return $result;
     }
+
+
+
     public function createDatabaseStructure() {
-    	$db_name = $this->db_name;
     	// ------------------------------- T A B L E S
     	//---- Create Table 'state_machines'
-		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_machines` (
+		  $query = "CREATE TABLE IF NOT EXISTS `state_machines` (
 			  `id` bigint(20) NOT NULL AUTO_INCREMENT,
 			  `tablename` varchar(45) DEFAULT NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
-      //$this->log($query); 
+      $this->log($query); 
 
       // Add Form_data column to state_machines if not exists
-      $query = "SHOW COLUMNS FROM  `$db_name`.`state_machines`;";
-      $res = $this->db->query($query);
-      $rows = $this->getResultArray($res);
+      $query = "SHOW COLUMNS FROM `state_machines`;";
+      $rows = $this->db->query($query);
       // Build one string with all columnnames
       $columnstr = "";
       foreach ($rows as $row) $columnstr .= $row["Field"];
       // Column [form_data] does not yet exist
       if (strpos($columnstr, "form_data") === FALSE) {
-        $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `form_data` LONGTEXT NULL AFTER `tablename`;";
-        $res = $this->db->query($query);
-        //$this->log($query);
+        $query = "ALTER TABLE `state_machines` ADD COLUMN `form_data` LONGTEXT NULL AFTER `tablename`;";
+        $this->db->query($query);
+        $this->log($query);
       }
       // Column [form_data] does not yet exist
       if (strpos($columnstr, "transition_script") === FALSE) {
-        $query = "ALTER TABLE `$db_name`.`state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
-        $res = $this->db->query($query);
-        //$this->log($query);
+        $query = "ALTER TABLE `state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
+        $this->db->query($query);
+        $this->log($query);
       }
 
 		  //---- Create Table 'state'
-		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state` (
+		  $query = "CREATE TABLE IF NOT EXISTS `state` (
 			  `state_id` bigint(20) NOT NULL AUTO_INCREMENT,
 			  `name` varchar(45) DEFAULT NULL,
 			  `form_data` longtext,
@@ -85,30 +85,29 @@
 			  PRIMARY KEY (`state_id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
-      //$this->log($query); 
+      $this->log($query); 
 
       // Add columns script_IN and script_OUT
-      $query = "SHOW COLUMNS FROM  `$db_name`.`state`;";
-      $res = $this->db->query($query);
-      $rows = $this->getResultArray($res);
+      $query = "SHOW COLUMNS FROM  `state`;";
+      $rows = $this->db->query($query);
       // Build one string with all columnnames
       $columnstr = "";
       foreach ($rows as $row) $columnstr .= $row["Field"];
       // Column [script_IN] does not yet exist
       if (strpos($columnstr, "script_IN") === FALSE) {
-        $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_IN` LONGTEXT NULL AFTER `statemachine_id`;";
-        $res = $this->db->query($query);
-        //$this->log($query);
+        $query = "ALTER TABLE `state` ADD COLUMN `script_IN` LONGTEXT NULL AFTER `statemachine_id`;";
+        $this->db->query($query);
+        $this->log($query);
       }
       // Column [script_OUT] does not yet exist
       if (strpos($columnstr, "script_OUT") === FALSE) {
-        $query = "ALTER TABLE `$db_name`.`state` ADD COLUMN `script_OUT` LONGTEXT NULL AFTER `script_IN`;";
-        $res = $this->db->query($query);
-        //$this->log($query); 
+        $query = "ALTER TABLE `state` ADD COLUMN `script_OUT` LONGTEXT NULL AFTER `script_IN`;";
+        $this->db->query($query);
+        $this->log($query); 
       }
 
 		  // Create Table 'state_rules'
-		  $query = "CREATE TABLE IF NOT EXISTS `$db_name`.`state_rules` (
+		  $query = "CREATE TABLE IF NOT EXISTS `state_rules` (
 			  `state_rules_id` bigint(20) NOT NULL AUTO_INCREMENT,
 			  `state_id_FROM` bigint(20) NOT NULL,
 			  `state_id_TO` bigint(20) NOT NULL,
@@ -116,64 +115,64 @@
 			  PRIMARY KEY (`state_rules_id`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;";
 		  $this->db->query($query);
-      //$this->log($query); 
+      $this->log($query); 
 			// ------------------------------- F O R E I G N - K E Y S
 		  // 'state_rules'
-		  $query = "ALTER TABLE `$db_name`.`state_rules` ".
+		  $query = "ALTER TABLE `state_rules` ".
 		    "ADD INDEX `state_id_fk1_idx` (`state_id_FROM` ASC), ".
 		    "ADD INDEX `state_id_fk_to_idx` (`state_id_TO` ASC);";
 		  $this->db->query($query);
-      //$this->log($query); 
-		  $query = "ALTER TABLE `$db_name`.`state_rules` ".
-		  	"ADD CONSTRAINT `state_id_fk_from` FOREIGN KEY (`state_id_FROM`) ".
-		  	"REFERENCES `$db_name`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION, ".
-		  	"ADD CONSTRAINT `state_id_fk_to` FOREIGN KEY (`state_id_TO`) ".
-		  	"REFERENCES `$db_name`.`state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
-		  $this->db->query($query);
-      //$this->log($query); 
-		  // 'state'
-		  $query = "ALTER TABLE `$db_name`.`state` ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
-		  $this->db->query($query);
-      //$this->log($query); 
-
-		  $query = "ALTER TABLE `$db_name`.`state` ".
-		  	"ADD CONSTRAINT `state_machine_id_fk` FOREIGN KEY (`statemachine_id`) ".
-		  	"REFERENCES `$db_name`.`state_machines` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
-		  $this->db->query($query);
-      //$this->log($query); 
-		  // TODO: Foreign Key for [state <-> state_machines]
-    }    
-    private function createNewState($statename, $isEP) {
-    	$db_name = $this->db_name;
-    	$SMID = $this->ID;
-    	// build query
-    	$query = "INSERT INTO `$db_name`.`state` (`name`, `form_data`, `statemachine_id`, `entrypoint`) ".
-      	"VALUES ('$statename', '', $SMID, $isEP);";
-      $this->db->query($query);
       $this->log($query); 
-      return $this->db->insert_id;
+		  $query = "ALTER TABLE `state_rules` ".
+		  	"ADD CONSTRAINT `state_id_fk_from` FOREIGN KEY (`state_id_FROM`) ".
+		  	"REFERENCES `state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION, ".
+		  	"ADD CONSTRAINT `state_id_fk_to` FOREIGN KEY (`state_id_TO`) ".
+		  	"REFERENCES `state` (`state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
+		  $this->db->query($query);
+      $this->log($query); 
+		  // 'state'
+		  $query = "ALTER TABLE `state` ADD INDEX `state_machine_id_fk` (`statemachine_id` ASC);";
+		  $this->db->query($query);
+      $this->log($query);
+
+		  $query = "ALTER TABLE `state` ".
+		  	"ADD CONSTRAINT `state_machine_id_fk` FOREIGN KEY (`statemachine_id`) ".
+		  	"REFERENCES `state_machines` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;";
+		  $this->db->query($query);
+      $this->log($query); 
+		  // TODO: Foreign Key for [state <-> state_machines]
+    }
+
+
+
+    private function createNewState($statename, $isEP) {
+      $result = -1;
+      $stmt = $this->db->prepare("INSERT INTO state (name, form_data, statemachine_id, entrypoint) VALUES (?,?,?,?)");
+      $stmt->execute(array($statename, '', $this->ID, $isEP));  
+      $result = $this->db->lastInsertId();
+      $this->log($query);
+      return $result;
     }
     private function createTransition($from, $to) {
-      $db_name = $this->db_name;
-      $query = "INSERT INTO $db_name.state_rules (state_id_FROM, state_id_TO) VALUES ($from, $to);";
-      $this->db->query($query);
+      $result = -1;
+      $stmt = $this->db->prepare("INSERT INTO state_rules (state_id_FROM, state_id_TO) VALUES (?,?)");
+      $stmt->execute(array($from, $to));  
+      $result = $this->db->lastInsertId();
       $this->log($query);
-      return $this->db->insert_id;
+      return $result;
     }
     public function createBasicStateMachine($tablename) {
-    	$db_name = $this->db_name;
       // check if a statemachine already exists for this table
       $ID = $this->getSMIDByTablename($tablename);
       if ($ID > 0) return $ID; // SM already exists
-
       $this->log("-- [Start] Creating a Basic StateMachine for Table '$tablename'"); 
 
       // Insert new statemachine for a table
-      $query = "INSERT INTO `$db_name`.`state_machines` (`tablename`) VALUES ('$tablename');";
-      $this->db->query($query);
-      $this->log($query); 
-      $ID = $this->db->insert_id; // returns the ID for the created SM
+      $stmt = $this->db->prepare("INSERT INTO state_machines (tablename) VALUES (?)");
+      $stmt->execute(array($tablename));
+      $ID = $this->db->lastInsertId(); // returns the ID for the created SM
       $this->ID = $ID;
+      $this->log($query);
 
       // Insert states (new, active, inactive)
       $ID_new = $this->createNewState('new ('.$tablename.')', 1);
@@ -193,6 +192,11 @@
       $this->log("-- [END] Basic StateMachine created for Table '$tablename'"); 
       return $ID;
     }
+
+
+
+
+    // [START]   FORM - Elements
     private function getFormElementStd($label, $content, $fk = '') {
       return "<div class=\"form-group row\">$fk\n\t".
         "<label class=\"col-sm-3 col-form-label\">".$label."</label>\n\t".
@@ -273,69 +277,73 @@
       }
       return $header.$content.$footer;
     }
+    // [END]   FORM - Elements
+
+
 
 
     public function getFormDataByStateID($StateID) {
       if (!($this->ID > 0)) return "";
-      settype($StateID, 'integer');
-      $query = "SELECT form_data AS 'fd' FROM $this->db_name.state ".
-        "WHERE statemachine_id = $this->ID AND state_id = $StateID;";
-      $res = $this->db->query($query);
-      $r = $this->getResultArray($res);
-      if ($r)
-        return $r[0]['fd'];
-      else
-        return '';
+      $result = '';
+      $stmt = $this->db->prepare("SELECT form_data AS 'fd' FROM state WHERE statemachine_id = ? AND state_id = ?");
+      $stmt->execute(array($this->ID, $StateID));
+      while($row = $stmt->fetch()) {
+        $result = $row['fd'];
+      }
+      return $result;
     }
     public function getCreateFormByTablename() {
       if (!($this->ID > 0)) return "";
-      settype($StateID, 'integer');
-      $query = "SELECT form_data AS 'fd' FROM $this->db_name.`state_machines` ".
-        "WHERE id = $this->ID;";
-      $res = $this->db->query($query);
-      $r = $this->getResultArray($res);
-      if ($r)
-        return $r[0]['fd'];
-      else
-        return '';
+      $result = '';
+      $stmt = $this->db->prepare("SELECT form_data AS 'fd' FROM state_machines WHERE id = ?");
+      $stmt->execute(array($this->ID));
+      while($row = $stmt->fetch()) {
+        $result = $row['fd'];
+      }
+      return $result;
     }
     public function getID() {
     	return $this->ID;
     }
     public function getStates() {
-      $query = "SELECT s.state_id AS 'id', s.name, s.name AS 'label', s.entrypoint, (".
-        "SELECT COUNT(*) FROM $this->db_name.$this->table AS x WHERE x.state_id = s.state_id) as 'NrOfTokens'".
-        "FROM $this->db_name.state AS s WHERE s.statemachine_id = $this->ID;";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
+      $result = array();
+      //$stmt = $this->db->prepare("SELECT s.state_id AS 'id', s.name, s.name AS 'label', s.entrypoint, (SELECT COUNT(*) FROM ? AS x WHERE x.state_id = s.state_id) as 'NrOfTokens' FROM state AS s WHERE s.statemachine_id = ?");
+      $stmt = $this->db->prepare("SELECT state_id AS 'id', name AS 'name', name AS 'label', entrypoint FROM state WHERE statemachine_id = ?");
+      $stmt->execute(array($this->ID));
+      while($row = $stmt->fetch()) {
+        $result[] = $row;
+      }
+      return $result;
     }
     public function getLinks() {
-      $query = "SELECT state_id_FROM AS 'from', state_id_TO AS 'to' FROM $this->db_name.state_rules ".
-               "WHERE state_id_FROM AND state_id_TO IN (SELECT state_id FROM $this->db_name.state WHERE statemachine_id = $this->ID);";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
+      $result = array();
+      $stmt = $this->db->prepare("SELECT state_id_FROM AS 'from', state_id_TO AS 'to' FROM state_rules ".
+        "WHERE state_id_FROM AND state_id_TO IN (SELECT state_id FROM state WHERE statemachine_id = ?)");
+      $stmt->execute(array($this->ID));
+      while($row = $stmt->fetch()) {
+        $result[] = $row;
+      }
+      return $result;
     }
     public function getEntryPoint() {
     	if (!($this->ID > 0)) return -1;
-      $query = "SELECT state_id AS 'id' FROM $this->db_name.state ".
-      	"WHERE entrypoint = 1 AND statemachine_id = $this->ID;";
-      $res = $this->db->query($query);
-      $r = $this->getResultArray($res);
-      return (int)$r[0]['id'];
+      $result = -1;
+      $stmt = $this->db->prepare("SELECT state_id AS 'id' FROM state WHERE entrypoint = 1 AND statemachine_id = ?");
+      $stmt->execute(array($this->ID));
+      while($row = $stmt->fetch()) {
+        $result = $row['id'];
+      }
+      return $result;
     }
     public function getNextStates($actStateID) {
-      settype($actStateID, 'integer');
-      $query = "SELECT a.state_id_TO AS 'id', b.name AS 'name' FROM $this->db_name.state_rules AS a ".
-        "JOIN state AS b ON a.state_id_TO = b.state_id WHERE state_id_FROM = $actStateID;";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
-    }
-    public function getActState($id, $primaryIDColName) {
-      settype($id, 'integer');
-      $query = "SELECT a.state_id AS 'id', b.name AS 'name' FROM $this->db_name.".$this->table.
-        " AS a INNER JOIN state AS b ON a.state_id = b.state_id WHERE $primaryIDColName = $id;";
-      $res = $this->db->query($query);
-      return $this->getResultArray($res);
+      $result = array();
+      $stmt = $this->db->prepare("SELECT a.state_id_TO AS 'id', b.name AS 'name' FROM state_rules AS a ".
+        "JOIN state AS b ON a.state_id_TO = b.state_id WHERE state_id_FROM = ?");
+      $stmt->execute(array($actStateID));
+      while($row = $stmt->fetch()) {
+        $result[] = $row;
+      }
+      return $result;
     }
     public function executeScript($script, &$param = null) {
       // standard result
@@ -353,42 +361,47 @@
       return $std_res;
     }
     public function checkTransition($fromID, $toID) {
-      settype($fromID, 'integer');
-      settype($toID, 'integer');
-      $query = "SELECT * FROM $this->db_name.state_rules WHERE state_id_FROM=$fromID AND state_id_TO=$toID;";
-      $res = $this->db->query($query);
-      $cnt = $res->num_rows;
+      $stmt = $this->db->prepare("SELECT * FROM state_rules WHERE state_id_FROM = ? AND state_id_TO = ?");
+      $stmt->execute(array($fromID, $toID));
+      $cnt = $stmt->rowCount();
       return ($cnt > 0);
     }
     public function getTransitionScript($fromID, $toID) {
-      settype($fromID, 'integer');
-      settype($toID, 'integer');
-      $query = "SELECT transition_script AS script FROM $this->db_name.state_rules WHERE ".
-      "state_id_FROM = $fromID AND state_id_TO = $toID;";
-      $res = $this->db->query($query);
-      $script = $this->getResultArray($res);
-      return $script[0]['script'];
+      $result = '';
+      $stmt = $this->db->prepare("SELECT transition_script FROM state_rules WHERE state_id_FROM = ? AND state_id_TO = ?");
+      $stmt->execute(array($fromID, $toID));
+      while($row = $stmt->fetch()) {
+        $result = $row['transition_script'];
+      }
+      return $result;
     }
     public function getTransitionScriptCreate() {
       if (!($this->ID > 0)) return ""; // check for valid state machine
-      $query = "SELECT transition_script AS script FROM $this->db_name.state_machines WHERE id = $this->ID;";
-      $res = $this->db->query($query);
-      $script = $this->getResultArray($res);
-      return $script[0]['script'];
+      $result = '';
+      $stmt = $this->db->prepare("SELECT transition_script FROM state_machines WHERE id = ?");
+      $stmt->execute(array($this->ID));
+      while($row = $stmt->fetch()) {
+        $result = $row['transition_script'];
+      }
+      return $result;
     }
     public function getINScript($StateID) {
       if (!($this->ID > 0)) return ""; // check for valid state machine
-      $query = "SELECT script_IN AS script FROM $this->db_name.state WHERE state_id = $StateID;";
-      $res = $this->db->query($query);
-      $script = $this->getResultArray($res);
-      return $script[0]['script'];
+      $stmt = $this->db->prepare("SELECT script_IN FROM state WHERE state_id = ?");
+      $stmt->execute(array($StateID));
+      while($row = $stmt->fetch()) {
+        $result = $row['script_IN'];
+      }
+      return $result;
     }
     public function getOUTScript($StateID) {
       if (!($this->ID > 0)) return ""; // check for valid state machine
-      $query = "SELECT script_OUT AS script FROM $this->db_name.state WHERE state_id = $StateID;";
-      $res = $this->db->query($query);
-      $script = $this->getResultArray($res);
-      return $script[0]['script'];
+      $stmt = $this->db->prepare("SELECT script_OUT FROM state WHERE state_id = ?");
+      $stmt->execute(array($StateID));
+      while($row = $stmt->fetch()) {
+        $result = $row['script_OUT'];
+      }
+      return $result;
     }
 
   }

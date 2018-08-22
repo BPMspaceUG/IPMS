@@ -18,17 +18,22 @@
       mkdir('../../IPMS_test', 0750, true);
     }
   }
+
+
   // Open a new DB-Connection
-  $con = new mysqli ($db_server, $db_user, $db_pass);  //Default server.
-  if ($con->connect_errno > 0) {
-    die('Unable to connect to database [' . $con->connect_error . ']');
-  }
+
+  define('DB_HOST', $db_server);
+  define('DB_NAME', $db_name);
+  define('DB_USER', $db_user);
+  define('DB_PASS', $db_pass);
+  require_once("output_DatabaseHandler.php");
+
 
   /* ------------------------------------- Statemachine ------------------------------------- */
 
   require_once("output_StateEngine.php");
   require_once("output_RequestHandler.php");
-   // Loop each Table with StateMachine checked create a new StateMachine Column
+   // Loop each Table with StateMachine checked create a StateMachine Column
 
   // -------------------- FormData --------------------
 
@@ -61,25 +66,27 @@
 
 
     if ($se_active) {
+      $con = DB::getInstance()->getConnection();
+
       // ------- StateMachine Creation
-      $SM = new StateMachine($con, $db_name);
+      $SM = new StateMachine($con);
       $SM->createDatabaseStructure();
       $SM_ID = $SM->createBasicStateMachine($tablename);
 
       // Add Basic Form Data for each state
       $colData = $table["columns"];
-      $excludeKeys = RequestHandler::getPrimaryColByTablename($data, $tablename);
+      $excludeKeys = Config::getPrimaryColsByTablename($tablename, $data);
       
       // write the formdata into the column if empty (TRANSITION)
-      $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
-      $query = "UPDATE $db_name.state SET form_data = '$form_data' WHERE ".
+      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
+      $query = "UPDATE state SET form_data = '$form_data' WHERE ".
       "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
       $con->query($query);
       
       // write the formdata into the column if empty (CREATE)
       $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the create Form
-      $form_data = $con->real_escape_string($SM->getBasicFormDataByColumns($colData, $excludeKeys));
-      $query = "UPDATE $db_name.state_machines SET form_data = '$form_data' WHERE ".
+      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
+      $query = "UPDATE state_machines SET form_data = '$form_data' WHERE ".
                "tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL;";
       $con->query($query);
 
@@ -91,7 +98,7 @@
       // ------------ Connection to existing structure !
 
       // Set the default Entrypoint for the Table (when creating an entry the Process starts here)
-      $SM = new StateMachine($con, $db_name, $tablename); // Load correct Machine
+      $SM = new StateMachine($con, $tablename); // Load correct Machine
       $EP_ID = $SM->getEntryPoint();
       $q_se = "ALTER TABLE `".$db_name."`.`".$tablename."` ADD COLUMN `state_id` BIGINT(20) DEFAULT $EP_ID;";
       $con->query($q_se);
