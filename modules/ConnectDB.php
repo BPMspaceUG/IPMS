@@ -122,7 +122,9 @@
             "read_only" => false,
             "is_ckeditor" => false,
             "foreignKey" => $fk,
-            "col_order" => 3 //random_int(1, 10)
+            "col_order" => 3,
+            "is_virtual" => false,
+            "virtual_select" => ""
           );
           // Filter columns array
           $allowed  = ['COLUMN_NAME', 'DATA_TYPE', 'COLUMN_TYPE', 'COLUMN_KEY', 'EXTRA'];
@@ -178,6 +180,7 @@
       /*------------------------------
               T A B L E S
       ------------------------------*/
+      //$table = strtolower($table);
       $res[$table] = array(
         "table_name" => $table,
         "table_alias" => $table_alias,

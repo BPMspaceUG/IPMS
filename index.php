@@ -139,10 +139,14 @@
                 <!-- Table START -->
                 <tr>
                   <td>
-                    <!-- Expand / Collapse -->
-                    <a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings">
-                      <i class="fa fa-plus-square"></i>
-                    </a>
+                    <div style="white-space:nowrap; overflow: hidden;">
+                      <!-- Expand / Collapse -->
+                      <a class="btn" ng-click="toggle_kids(tbl)" title="Show column settings">
+                        <i class="fa fa-plus-square" ng-if="!tbl.showKids"></i>
+                        <i class="fa fa-minus-square" ng-if="tbl.showKids"></i>
+                      </a>
+                      <button class="btn btn-sm btn-success" ng-click="add_virtCol(tbl)">+ virt.Col</button>
+                    </div>
                   </td>
                   <td>
                     <!-- Tablename -->
@@ -173,11 +177,12 @@
                   </td>
                 </tr>
                 <!-- Columns START -->
-                <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" style="font-size: .8em;">
+                <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" ng-class="{'warning' : col.is_virtual}" style="font-size: .8em;">
                   <td>&nbsp;</td>
                   <td><b>{{col.COLUMN_NAME}}</b> {{col.COLUMN_TYPE}}</td>
                   <td><input type="text" ng-model="col.column_alias"></td>
-                  <td colspan="4">
+
+                  <td colspan="4" ng-if="!col.is_virtual">
                     <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
                     <!--<input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;-->
                     <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
@@ -186,6 +191,12 @@
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.table" placeholder="Table">
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.col_id" placeholder="JoinID">
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.col_subst" placeholder="ReplacedCloumn">
+                  </td>
+
+                  <td colspan="4" ng-if="col.is_virtual">
+                    <span>SELECT ( i.e. CONCAT(a, b) ): </span>
+                    <input type="text" ng-model="col.virtual_select" style="width: 300px" placeholder="CONCAT(id, col1, col2)">
+                    <button class="btn btn-sm btn-danger" ng-click="del_virtCol(tbl, col)">delete</button>
                   </td>
                 </tr>
                 <!-- Columns END -->

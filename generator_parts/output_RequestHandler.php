@@ -17,7 +17,7 @@
       return $config_tables_json;
     }
     public static function getColsByTablename($tablename, $data = null) {
-      $tablename = strtolower($tablename);
+      //$tablename = strtolower($tablename);
 
       if (is_null($data))
         $data = json_decode(Config::getConfig(), true);
@@ -44,13 +44,17 @@
     }
     public static function doesTableExist($tablename) {
       $result = false;
-      $tablename = strtolower($tablename); // always lowercase
+      //$tablename = strtolower($tablename); // always lowercase
       $config = json_decode(Config::getConfig(), true);
       $result = (array_key_exists($tablename, $config));
       return $result;
     }
     public static function doesColExistInTable($tablename, $colname) {
       //= boolean
+    }
+    public static function hasColumnFK($tablename, $colname) {
+      $allCols = Config::getColsByTablename($tablename);
+      return $allCols[$colname]['foreignKey']['table'] <> '';
     }
     public static function isValidTablename($tablename) {
       // check if contains only vaild letters
@@ -60,44 +64,26 @@
       // = boolean // check if contains only vaild letters
       return (!preg_match('/[^A-Za-z0-9_]/', $colname));
     }
+    public static function getVirtualColnames($tablename) {
+      $res = array();
+      $cols = Config::getColsByTablename($tablename);
+      // Find primary columns
+      foreach ($cols as $col) {
+        if ($col["is_virtual"])
+          $res[] = $col["COLUMN_NAME"];
+      }
+      return $res;
+    }
   }
 
 
   class RequestHandler {
-
-    private static function buildSQLUpdatePart($cols, $primarycols, $rows, $tablename, $existing_cols) {
-      $update = "";
-      // Convert everything to lowercase
-      $primarycols = array_map('strtolower', $primarycols);
-      // Loop every element
-      foreach ($cols as $col) {
-        // update only when no primary column
-        if (!in_array($col, $primarycols)) {
-          // Only add existing Columns of param to query
-          if (array_key_exists($col, $existing_cols)) {
-            // Special check for NULL (especially for ForeignKeys)
-            if (is_null($rows[$col]))
-              $update .= $col.'=NULL';
-            else
-              $update .= $col."='".$rows[$col]."'";
-            // Seperate by comma
-            $update .= ",";
-          }
-        }
-      }
-      $update = substr($update, 0, -1); // remove last ',' char
-      return $update;
-    }
     private static function splitQuery($row) {
       $res = array();
       foreach ($row as $key => $value) { 
         $res[] = array("key" => $key, "value" => $value);
       }
       return $res;
-    }
-    // TODO: Obsolete
-    private static function checkString($string) {
-      return (!preg_match('/[^A-Za-z0-9_]/', $string));
     }
     // -------------------------------------------------- Database Access Methods
     private function readRowByPrimaryID($tablename, $ElementID) {
@@ -126,14 +112,23 @@
       return $result;
     }
 
-
     //======= INIT (Load the configuration to the client)
     // TODO: Rename to loadConfig or make completely obsolete
     public static function init() {
       return Config::getConfig();
     }
 
-    //================================== CREATE
+
+    /* TODO:
+    public function count($param) {
+      $tablename = $param["table"];
+      $where = isset($param["where"]) ? $param["where"] : "";
+      $filter = isset($param["filter"]) ? $param["filter"] : "";
+
+
+    }*/
+
+    //================================== CREATE (sec)
     public function create($param) {
       // Inputs
       $tablename = $param["table"];
@@ -179,8 +174,9 @@
 
         // --- Operation CREATE
         // Build Query
-        $strKeys = implode(",", $keys);
-        $strVals = implode(",", array_fill(0, count($keys), '?'));
+        $strKeys = implode(",", $keys); // Build str for keys
+        // Build array of ? for vals
+        $strVals = implode(",", array_fill(0, count($vals), '?'));
         $stmt = $pdo->prepare("INSERT INTO $tablename ($strKeys) VALUES ($strVals)");
         $stmt->execute($vals);
         $newElementID = $pdo->lastInsertId();
@@ -213,37 +209,57 @@
     public function read($param) {
       // Parameters and default values
       $tablename = $param["table"];
+      $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";      
+      $limitStart = isset($param["limitStart"]) ? $param["limitStart"] : null;
+      $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : null;
+      $limit = isset($param["limit"]) ? $param["limit"] : null;
+      $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
+
+      //--- Not yet secure params
       $select = isset($param["select"]) ? $param["select"] : "*";
       $where = isset($param["where"]) ? $param["where"] : "";
       $filter = isset($param["filter"]) ? $param["filter"] : "";
-      $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
-      $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";
       $joins = isset($param["join"]) ? $param["join"] : array();
-      $limitStart = isset($param["limitStart"]) ? $param["limitStart"] : 0;
-      $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : 1000;
 
       // Check Parameter
       if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
       if (!Config::doesTableExist($tablename)) die('Table does not exist!');
-      if (!is_int($limitSize)) die("Limit-Size is no integer!");
-      if (!is_int($limitStart)) die("Limit-Start is no integer!");
+      
 
       //--- ORDER BY
-      $ascdesc = strtolower(trim($ascdesc));
-      if ($ascdesc == "asc" || $ascdesc == "") {
-        $ascdesc == "ASC";
-      } elseif ($ascdesc == "desc")
-        $ascdesc == "DESC";
-      else
-        die("AscDesc has no valid value (value has to be empty, ASC or DESC)!");
-
-      if (trim($orderby) <> "")
-        $sql_orderby = " ORDER BY a.".$orderby." ".$ascdesc;
-      else
+      if (trim($orderby) <> "") {
+        // TODO: Check if orderby is a valid Column name and does not contain any special chars
+        if (!Config::isValidColname($orderby)) die('Param OrderBy has invalid chars in it!');
+        //--- ASC/DESC (sec)
+        $ascdesc = strtolower(trim($ascdesc));
+        if ($ascdesc == "") $ascdesc == "";
+        elseif ($ascdesc == "asc") $ascdesc == "ASC";
+        elseif ($ascdesc == "desc") $ascdesc == "DESC";
+        else die("AscDesc has no valid value (value has to be empty, ASC or DESC)!");
+        // Check if is a foreign key then add 'a.' at front
+        if (Config::hasColumnFK($tablename, $orderby))
+          $orderby = 'a.'.$orderby;
+        // Build query
+        $sql_orderby = " ORDER BY ".$orderby." ".$ascdesc;
+      } else {
+        // No Orderby is set
         $sql_orderby = " "; // ORDER BY replacer_id DESC";
+      }
 
-      //--- LIMIT
-      $limit = " LIMIT ".$limitStart.",".$limitSize;
+      //--- LIMIT (sec)
+      $sql_limit = '';
+      if (!is_null($limit)) {
+        if (!is_int($limit)) die("Limit is no integer!");
+        // Only use one limit param
+        $sql_limit = " LIMIT ".$limit;
+      }
+      if (!is_null($limitStart) || !is_null($limitSize)) {
+        if (is_null($limitStart) || is_null($limitSize))
+          die('Limit-Start and Limit-Size have to be set.');
+        if (!is_int($limitSize)) die("Limit-Size is no integer!");
+        if (!is_int($limitStart)) die("Limit-Start is no integer!");
+        $sql_limit = " LIMIT ".$limitStart.",".$limitSize;
+      }
 
       //--- JOINS
       $join_from = $tablename." AS a"; // if there is no join
@@ -269,22 +285,39 @@
             $sel_raw[] = "t$i.".$substCol; // This is only for the filter later
           }          
         }
-        $sel_str = ",".implode(",", $sel);
+        $sel_str = implode(",", $sel);
       }
+      // Check for virtual columns
+      $cols = Config::getColsByTablename($tablename);
+      $virtCols = Config::getVirtualColnames($tablename);
+      $virtSelects = [];
+      if (count($virtCols) > 0) {
+        foreach ($virtCols as $vcol) {
+          $virtSel = $cols[$vcol]['virtual_select'];
+          $virtSelects[] = $virtSel;
+          $sel_str .= ",".$virtSel.' AS '.$vcol;
+        }
+      }
+
 
       //--- WHERE (SEARCH / Filter)
       if ($where <> "" && $filter == "") {
         $where = " WHERE ".$where;
       }
       else if ($filter <> "") {
-        // Get columns from the table
+
+        // TODO: Maybe get the columns from the config file!
+        // Get columns from the table -> also is faster than a new request
         $stmt = DB::getInstance()->getConnection()->prepare("SHOW COLUMNS FROM $tablename");
         $k = [];
         $stmt->execute();
         while ($row = $stmt->fetch()) {
           $k[] = $row[0];
         }
-        $k = array_merge($k, $sel_raw); // Additional JOIN-columns     
+        $k = array_merge($k, $sel_raw); // Additional JOIN-columns  
+
+        $k = array_merge($k, $virtSelects); // Also add virtual columns
+
         // xxx LIKE = '%".$param["filter"]."%' OR yyy LIKE '%'
         $q_str = "";
         foreach ($k as $key) {
@@ -296,6 +329,7 @@
         }
         // Remove last 'OR '
         $q_str = substr($q_str, 0, -3);
+
         // Build WHERE String
         if ($where == '')
           $where = " WHERE $q_str";
@@ -304,14 +338,27 @@
       }
 
       //--- SELECT
-      if ($select <> '*')
-        $query = "SELECT ".$select." FROM ".$join_from.$where.$sql_orderby.$limit.";";
-      else
-        $query = "SELECT a.*".$sel_str." FROM ".$join_from.$where.$sql_orderby.$limit.";";
+      if ($select == 'COUNT(*) AS cnt') $sql_select = 'COUNT(*) AS cnt';
+      elseif ($select == 'a.*') $sql_select = "a.*";
+      elseif ($select == '*') {
+        $sql_select = "a.*";
+        if ($sel_str <> "")
+          $sql_select .= ", ".$sel_str;
+      }
+      else $sql_select = $select.', '.$sel_str;
 
+      // TODO: sel_str can only contain columnnames and , and COUNT(*)
+
+      $query = "SELECT " . $sql_select . " FROM " . $join_from . $where . $sql_orderby . $sql_limit;
       // Clean up a bit
       $query = str_replace("  ", " ", $query);
 
+      // For debugging
+      /*
+      if (strpos($query, 'COUNT') === FALSE) {
+        file_put_contents("query-log.txt", $query);
+      }
+      */
 
       // Execute & Fetch
       $result = array();
@@ -329,7 +376,7 @@
       // Return result as JSON
       return json_encode($result);
     }
-    //================================== UPDATE
+    //================================== UPDATE (sec)
     public function update($param) {
        // Parameter
       $tablename = $param["table"];
@@ -340,13 +387,32 @@
       // Extract relevant Info via Config     
       $pcol = Config::getPrimaryColNameByTablename($tablename);
       $id = (int)$row[$pcol];
-      // Build query TODO: Remove!!
-      $update = RequestHandler::buildSQLUpdatePart(array_keys($row), array($pcol), $row, $tablename, Config::getColsByTablename($tablename));
+
+      // Split Row into Key:Value Array
+      $keys = array();
+      $vals = array();
+      $x = RequestHandler::splitQuery($row);
+      $cols = Config::getColsByTablename($tablename);
+      foreach ($x as $el) {
+        // Filter Primary Key
+        if ($el["key"] == $pcol)
+          continue;
+        // Only add existing Columns of param to query
+        if (array_key_exists($el["key"], $cols)) {
+          // escape keys and values
+          $keys[] = $el["key"] . '=?';
+          $vals[] = $el["value"];
+        }
+      }
+      // Build Query
+      $strKeys = implode(",", $keys); // Build str for keys
+
       // Execute on Database
       $success = false;
       $pdo = DB::getInstance()->getConnection();
-      $stmt = $pdo->prepare("UPDATE $tablename SET $update WHERE $pcol = ?");
-      if ($stmt->execute(array($id))) {
+      $stmt = $pdo->prepare("UPDATE $tablename SET $strKeys WHERE $pcol = ?");
+      array_push($vals, $id); // Append primary ID to vals
+      if ($stmt->execute($vals)) {
         // Check if rows where updated
         $success = ($stmt->rowCount() > 0);
       } else {
@@ -356,7 +422,7 @@
       // Output
       return $success ? "1" : "0";
     }
-    //================================== DELETE
+    //================================== DELETE (sec)
     public function delete($param) {
       // Parameter
       $tablename = $param["table"];
@@ -386,6 +452,9 @@
       // Inputs
       $tablename = $param["table"];
       $row =  $param['row'];
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
 
       $SM = new StateMachine(DB::getInstance()->getConnection(), $tablename);
       // Check if has state machine ?
@@ -401,6 +470,10 @@
     }
     public function getFormCreate($param) {
       $tablename = $param["table"];
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
+
       $SM = new StateMachine(DB::getInstance()->getConnection(), $tablename);
       // StateMachine ?
       if ($SM->getID() > 0) {
@@ -409,8 +482,12 @@
         if (empty($r)) $r = "1"; // default: allow editing (if there are no rules set)
       } else {
         // Has NO StateMachine -> Return standard form
-        $cols = Config::getColsByTablename($tablename);
-        $excludeKeys = array(Config::getPrimaryColNameByTablename($tablename));
+        $cols = Config::getColsByTablename($tablename);   
+
+        $PrimKey = array(Config::getPrimaryColNameByTablename($tablename));
+        $VirtKeys = Config::getVirtualColnames($tablename);
+        $excludeKeys = array_merge($PrimKey, $VirtKeys);
+        
         $r = $SM->getBasicFormDataByColumns($cols, $excludeKeys);
       }
       return $r;
@@ -419,6 +496,9 @@
       // Inputs
       $tablename = $param["table"];
       $stateID = $this->getActualStateByRow($tablename, $param['row']);
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
 
       // execute query
       $SE = new StateMachine(DB::getInstance()->getConnection(), $tablename);
@@ -430,6 +510,9 @@
       // Get the next ID for the next State
       $nextStateID = $param["row"]["state_id"];
       $tablename = $param["table"];
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
 
       // Get Primary Column
       $pcol = Config::getPrimaryColNameByTablename($tablename);
@@ -491,19 +574,27 @@
     }
     public function getStates($param) {
       $tablename = $param["table"];
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
+    
       $SE = new StateMachine(DB::getInstance()->getConnection(), $tablename);
       $res = $SE->getStates();
       return json_encode($res);
     }
     public function smGetLinks($param) {
       $tablename = $param["table"];
+      // Check Parameter
+      if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+      if (!Config::doesTableExist($tablename)) die('Table does not exist!');
+
       $SE = new StateMachine(DB::getInstance()->getConnection(), $tablename);
       $res = $SE->getLinks();
       return json_encode($res);
     }
     public function getFile($param) {
       // Download File from Server
-      
+
       // Inputs
       $filename = strtolower($param["name"]);
       $filepath = strtolower($param["path"]);

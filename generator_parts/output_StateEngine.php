@@ -204,6 +204,7 @@
         "</div>\n</div>\n";
     }
     private function getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol) {
+      
       // Special case if $key == 'state_id'      
       if ($key == 'state_id') {
         return $this->getFormElementStd($alias, '<div class="input-group">
@@ -346,19 +347,19 @@
       return $result;
     }
     public function executeScript($script, &$param = null) {
-      // standard result
-      $std_res = array("allow_transition" => true, "show_message" => false, "message" => "");
+      $standardResult = array("allow_transition" => true, "show_message" => false, "message" => "");
       // Check if script is not empty
       if (!empty($script)) {
         // Execute Script (WARNING -> eval = evil)
         eval($script);
+        // This parameter comes from the script itself
         // check results, if no result => standard result
         if (empty($script_result))
-          return $std_res;
+          return $standardResult;
         else
           return $script_result;
       }
-      return $std_res;
+      return $standardResult;
     }
     public function checkTransition($fromID, $toID) {
       $stmt = $this->db->prepare("SELECT * FROM state_rules WHERE state_id_FROM = ? AND state_id_TO = ?");

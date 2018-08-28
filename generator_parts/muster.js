@@ -395,7 +395,7 @@ class RawTable {
             table: this.tablename,
             limitStart: this.PageIndex * this.PageLimit,
             limitSize: this.PageLimit,
-            select: '*',
+            select: this.Select,
             where: this.Where,
             filter: this.Filter,
             orderby: this.OrderBy,
@@ -461,12 +461,21 @@ class Table extends RawTable {
         // Get the Primary column name
         let PriCol;
         let SortCol = ''; // first visible Column
+        let SelectParam = '*';
+        // Loop all cloumns form this table
         Object.keys(data.columns).forEach(function (col) {
+            // Get Primary and SortColumn
             if (data.columns[col].is_in_menu && SortCol == '')
                 SortCol = col;
             if (data.columns[col].EXTRA == 'auto_increment')
                 PriCol = col;
+            // Get virtual columns
+            /*
+            if (data.columns[col].is_virtual)
+              SelectParam += ', ' + data.columns[col].virtual_select + ' AS ' + col;
+            */
         });
+        this.Select = SelectParam;
         this.PrimaryColumn = PriCol;
         this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
         this.Form_Create = '';
@@ -532,12 +541,10 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
-            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
-            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -1021,7 +1028,7 @@ class Table extends RawTable {
         // Filter
         if (t.showFilter) {
             header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">';
-            header += '  <input type="text" class="form-control filterText" placeholder="Filter...">';
+            header += '  <input type="text" class="form-control filterText" placeholder="">';
             header += '  <div class="input-group-append">';
             header += '    <button class="btn btn-secondary btnFilter" type="button"><i class="fa fa-search"></i></button>';
             header += '  </div>';

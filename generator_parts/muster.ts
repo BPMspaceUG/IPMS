@@ -48,8 +48,7 @@ abstract class DB {
     let promises = []
     // Load Config from Server
     me.request('init', null, async function(r){
-      me.ConfigurationData = JSON.parse(r);
-      
+      me.ConfigurationData = JSON.parse(r);      
       
       // Init Table Objects
       let tables = Object.keys(me.Config);
@@ -324,6 +323,7 @@ class RawTable {
   protected Filter: string;
   protected OrderBy: string;
   protected AscDesc: SortOrder = SortOrder.DESC;
+  protected Select: string;
   protected PageLimit: number;
   protected PageIndex: number = 0;
   protected Where: string = '';
@@ -416,7 +416,7 @@ class RawTable {
       table: this.tablename,
       limitStart: this.PageIndex * this.PageLimit,
       limitSize: this.PageLimit,
-      select: '*',
+      select: this.Select,
       where: this.Where, // '', //a.state_id = 1',
       filter: this.Filter,
       orderby: this.OrderBy,
@@ -482,6 +482,7 @@ class Table extends RawTable {
     this.selType = SelType;
     this.maxCellLength = 30;
 
+  
     this.PageLimit = DB.Options.EntriesPerPage || 10;
     this.showFilter = DB.Options.showFilter;
     this.showControlColumn = DB.Options.showControlColumn;
@@ -491,15 +492,25 @@ class Table extends RawTable {
     this.Where = whereFilter;
     this.selectedIDs = []; // empty array
     this.tablename = tablename
-    this.Filter = '';
+    this.Filter = '';    
 
     // Get the Primary column name
     let PriCol: string;
     let SortCol: string = ''; // first visible Column
+    let SelectParam: string = '*';
+    // Loop all cloumns form this table
     Object.keys(data.columns).forEach(function(col){
+      // Get Primary and SortColumn
       if (data.columns[col].is_in_menu && SortCol == '') SortCol = col;
       if (data.columns[col].EXTRA == 'auto_increment') PriCol = col;
+      // Get virtual columns
+      /*
+      if (data.columns[col].is_virtual)
+        SelectParam += ', ' + data.columns[col].virtual_select + ' AS ' + col;
+      */
     })
+
+    this.Select = SelectParam;
     this.PrimaryColumn = PriCol;
     this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
     this.Form_Create = '';
@@ -587,7 +598,7 @@ class Table extends RawTable {
     if (typeof cellContent == 'string') {
       // String, and longer than X chars
       if (cellContent.length > this.maxCellLength)
-        return escapeHtml(cellContent.substr(0, this.maxCellLength) + "\u2026");
+        return escapeHtml(cellContent.substr(0, this.maxCellLength) + "\u2026");      
     }
     else if (Array.isArray(cellContent)) {
       // Foreign Key
@@ -1073,8 +1084,8 @@ class Table extends RawTable {
 
     // Filter
     if (t.showFilter) {
-      header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'    
-      header += '  <input type="text" class="form-control filterText" placeholder="Filter...">'
+      header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'
+      header += '  <input type="text" class="form-control filterText" placeholder="">'
       header += '  <div class="input-group-append">'
       header += '    <button class="btn btn-secondary btnFilter" type="button"><i class="fa fa-search"></i></button>'
       header += '  </div>'
@@ -1130,7 +1141,7 @@ class Table extends RawTable {
         // Check if it is displayed
         if (t.Columns[col].is_in_menu) {
           // check Cell-Value
-          if (value) {
+          if (value) {            
             // Truncate Cell if Content is too long
             if (t.Columns[col].DATA_TYPE == 'date') {
               var tmp = new Date(value)

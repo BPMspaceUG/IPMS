@@ -33,15 +33,31 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
         let value = obj[key];
         if (b.hasOwnProperty(key)) {
           // Convert
-          if (typeof value === 'object') 
+          if (typeof value === 'object')
             rec_test(obj[key], b[key]);
           else
-            obj[key] = b[key];
+            obj[key] = b[key]; // overwrite
         }
       });
     }
     rec_test(newConfig, oldConfig)
+    
+    // Virtual Columns
+    console.log("OLD:", oldConfig);
+    console.log("NEW:", newConfig);
 
+    Object.keys(oldConfig).forEach(function(table){
+      //console.log(table)
+      Object.keys(oldConfig[table].columns).forEach(function(column){
+        let col = oldConfig[table].columns[column]
+        if (col.is_virtual) {
+          console.log(table, " -> ", column);
+          newConfig[table].columns[column] = col
+        }
+      })
+    })
+    
+    // Return
     $scope.tables = newConfig
   }
 
@@ -103,16 +119,13 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
       }
     })
     .success(function(data, status, headers, config) {
-
       // Error
       if (data.indexOf('mysqli::') >= 0) {
         $scope.isLoading = false
         $scope.isError = true
         return
       }
-
-      console.log("Successfully loaded all DBs:", data)
-
+      //console.log("Successfully loaded all DBs:", data)
       $scope.resultData = data
       $scope.dbNames = {
         model: data[0].database,
@@ -209,6 +222,43 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
   }
 
   // GUI------------------------------------
+
+  $scope.add_virtCol = function(tbl){
+    console.log("Add virtual Column", tbl);
+    let cols = $scope.tables[tbl.table_name].columns
+    
+    let new_virt_colname = 'virtualCol'
+    while (cols[new_virt_colname]) {
+      new_virt_colname = new_virt_colname + 'x'
+    }
+        
+    $scope.tables[tbl.table_name].columns[new_virt_colname] = {
+      COLUMN_NAME: new_virt_colname,
+      DATA_TYPE: "longtext",
+      COLUMN_TYPE: "longtext",
+      COLUMN_KEY: "",
+      EXTRA: "",
+      column_alias: "Virtual Column",
+      is_in_menu: true,
+      read_only: false,
+      is_ckeditor: false,
+      foreignKey: {
+          table: "",
+          col_id: "",
+          col_subst: ""
+      },
+      col_order: 3,
+      is_virtual: true,
+      virtual_select: "CONCAT(arechnung_id, bezeichnung)"
+    }
+    return
+  }
+  $scope.del_virtCol = function(tbl, col){
+    console.log(tbl);
+    console.log(col);
+    console.log($scope.tables[tbl.table_name].columns[col.COLUMN_NAME]);
+    delete tbl.columns[col.COLUMN_NAME]
+  }
 
   $scope.openProject = function(){ // Build new URL and execute in new Tab
     url = window.location.href.replace("IPMS", "IPMS_test")
