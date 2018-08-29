@@ -78,6 +78,7 @@
 
 
   class RequestHandler {
+
     private static function splitQuery($row) {
       $res = array();
       foreach ($row as $key => $value) { 
@@ -117,17 +118,6 @@
     public static function init() {
       return Config::getConfig();
     }
-
-
-    /* TODO:
-    public function count($param) {
-      $tablename = $param["table"];
-      $where = isset($param["where"]) ? $param["where"] : "";
-      $filter = isset($param["filter"]) ? $param["filter"] : "";
-
-
-    }*/
-
     //================================== CREATE (sec)
     public function create($param) {
       // Inputs
@@ -214,12 +204,15 @@
       $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : null;
       $limit = isset($param["limit"]) ? $param["limit"] : null;
       $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
-
+      $filter = isset($param["filter"]) ? $param["filter"] : "";
+      
       //--- Not yet secure params
       $select = isset($param["select"]) ? $param["select"] : "*";
       $where = isset($param["where"]) ? $param["where"] : "";
-      $filter = isset($param["filter"]) ? $param["filter"] : "";
       $joins = isset($param["join"]) ? $param["join"] : array();
+
+      // For internal use only (values of the prepared stmt)
+      $vals = array();
 
       // Check Parameter
       if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
@@ -305,6 +298,7 @@
         $where = " WHERE ".$where;
       }
       else if ($filter <> "") {
+        //------------ FILTER
 
         // TODO: Maybe get the columns from the config file!
         // Get columns from the table -> also is faster than a new request
@@ -314,8 +308,9 @@
         while ($row = $stmt->fetch()) {
           $k[] = $row[0];
         }
-        $k = array_merge($k, $sel_raw); // Additional JOIN-columns  
 
+        
+        $k = array_merge($k, $sel_raw); // Additional JOIN-columns
         $k = array_merge($k, $virtSelects); // Also add virtual columns
 
         // xxx LIKE = '%".$param["filter"]."%' OR yyy LIKE '%'
@@ -325,10 +320,11 @@
           // if no "." in string and no function in key then refer to first table
           if (strpos($key, ".") === FALSE && strpos($key, '(') === FALSE)
             $prefix = "a.";
-          $q_str .= " ".$prefix.$key." LIKE '%$filter%' OR ";
+          $q_str .= " ".$prefix.$key." LIKE :filter OR ";
         }
         // Remove last 'OR '
         $q_str = substr($q_str, 0, -3);
+        $vals[':filter'] = '%'.$filter.'%';
 
         // Build WHERE String
         if ($where == '')
@@ -364,7 +360,7 @@
       $result = array();
       $pdo = DB::getInstance()->getConnection();
       $stmt = $pdo->prepare($query);
-      if ($stmt->execute()) {
+      if ($stmt->execute($vals)) {
         while($row = $stmt->fetch(PDO::FETCH_NAMED)) {
           $result[] = $row;
         }
