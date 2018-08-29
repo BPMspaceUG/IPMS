@@ -259,6 +259,9 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
     console.log($scope.tables[tbl.table_name].columns[col.COLUMN_NAME]);
     delete tbl.columns[col.COLUMN_NAME]
   }
+  $scope.changeSortOrder = function(col, inc) {
+    col.col_order = parseInt(col.col_order) + inc
+  }
 
   $scope.openProject = function(){ // Build new URL and execute in new Tab
     url = window.location.href.replace("IPMS", "IPMS_test")
@@ -275,6 +278,12 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
     $scope.tables.forEach(function(t){
       t.is_in_menu = !t.is_in_menu;
     })
+  }
+
+  $scope.convertObjToArr = function(myObj) {
+    return Object.keys(myObj).map(function(key) {
+      return myObj[key];
+    });
   }
 
 });/*End Controller*/

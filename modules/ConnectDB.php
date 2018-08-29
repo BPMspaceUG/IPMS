@@ -82,6 +82,7 @@
       $tables[] = $row[$nameParam];
     }
     
+
     foreach ($tables as $table) {
       $query = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$db' AND TABLE_NAME = '$table';";
       $res2 = mysqli_query($con, $query);
@@ -90,13 +91,14 @@
 
       // has columns ?
       if ($res2) {
+
         // Loop Columns
+        $column_counter = 1;
         while ($row2 = $res2->fetch_assoc()) {
           // Column information
           $column_info = $row2;
           $column_name = $row2["COLUMN_NAME"];
           // Additional information
-
 
           // Pre fill foreign keys
           if ($column_name == "state_id_FROM" || $column_name == "state_id_TO") {
@@ -106,7 +108,6 @@
           } else {
             $fk = array("table" => "", "col_id" => "", "col_subst" => "");
           }
-
 
           // Table Has StateMachine?
           if ($column_name == "state_id" && $table != "state")
@@ -122,7 +123,7 @@
             "read_only" => false,
             "is_ckeditor" => false,
             "foreignKey" => $fk,
-            "col_order" => 3,
+            "col_order" => (int)$column_counter,
             "is_virtual" => false,
             "virtual_select" => ""
           );
@@ -133,12 +134,12 @@
             function ($key) use ($allowed) { return in_array($key, $allowed); },
             ARRAY_FILTER_USE_KEY
           );
-
           // Merge arrays
           $merged = array_merge($filtered, $additional_info);
-
           $colname = $merged['COLUMN_NAME'];
           $columns[$colname] = $merged;
+
+          $column_counter++;
         }        
         //------------------------------------------------ Auto Foreign Keys
         $fKeys = array();

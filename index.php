@@ -126,7 +126,7 @@
               <i>{{dbNames.model+' ,'}} {{tables.length}} Tabelle{{tables.length > 1 ? 'n' : ''}}</i>
               <thead>
                 <tr>
-                  <th width="10px"></th>
+                  <th width="10px"><span class="text-muted">Order</span></th>
                   <th width="25%">TABLENAME</th>
                   <th width="20%">ALIAS</th>
                   <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
@@ -177,16 +177,28 @@
                   </td>
                 </tr>
                 <!-- Columns START -->
-                <tr ng-repeat="col in tbl.columns" ng-show="tbl.showKids" ng-class="{'warning' : col.is_virtual}" style="font-size: .8em;">
-                  <td>&nbsp;</td>
-                  <td><b>{{col.COLUMN_NAME}}</b> {{col.COLUMN_TYPE}}</td>
+                <tr ng-repeat="col in convertObjToArr(tbl.columns) | orderBy: 'col_order'" ng-show="tbl.showKids" ng-class="{'warning' : col.is_virtual}" style="font-size: .8em;">
+                  <!-- Column Order -->
+                  <td>
+                    <div style="white-space:nowrap;overflow:hidden;">
+                      <input type="text" style="width: 40px" ng-model="col.col_order" placeholder="0">
+                      <a class="btn" ng-click="changeSortOrder(col, 1)"><i class="fa fa-angle-down"></i></a>
+                      <a class="btn" ng-click="changeSortOrder(col, -1)"><i class="fa fa-angle-up"></i></a>
+                    </div>
+                  </td>
+                  <!-- Column Name and Type -->
+                  <td>
+                    <div class="pull-left"><b>{{col.COLUMN_NAME}}</b></div>
+                    <div class="pull-right">{{col.COLUMN_TYPE}}</div>
+                    <div class="clearfix"></div>
+                  </td>
                   <td><input type="text" ng-model="col.column_alias"></td>
 
                   <td colspan="4" ng-if="!col.is_virtual">
                     <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
                     <!--<input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;-->
                     <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
-                    <input type="text" style="width: 40px" ng-model="col.col_order" placeholder="0">
+                    
                     &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;<b>FK:</b>
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.table" placeholder="Table">
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.col_id" placeholder="JoinID">

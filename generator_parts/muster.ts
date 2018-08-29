@@ -1048,15 +1048,22 @@ class Table extends RawTable {
   }
   public renderHTML(): void {
     let t = this
-
     $(t.jQSelector).empty() // GUI: Clear entries
 
+    //---------------------------- Table Headers
     let ths: string = '';
     if (t.showControlColumn)
       ths = '<th></th>'; // Pre fill with 1 because of selector
 
-    // Table Headers
-    Object.keys(t.Columns).forEach(function(col) {
+    // Order Headers by col_order
+    function compare(a,b) {
+      a = parseInt(t.Columns[a].col_order);
+      b = parseInt(t.Columns[b].col_order);
+      return a < b ? -1 : (a > b ? 1 : 0);
+    }
+    let sortedColumnNames = Object.keys(t.Columns).sort(compare);
+    // Generate HTML for Headers sorted
+    sortedColumnNames.forEach(function(col) {
       if (t.Columns[col].is_in_menu) {
         ths += '<th data-colname="'+col+'" class="datatbl_header'+(col == t.OrderBy ? ' sorted' : '')+'">'+
                 t.Columns[col].column_alias + (col == t.OrderBy ? '&nbsp;'+(t.AscDesc == SortOrder.ASC ?
@@ -1135,8 +1142,8 @@ class Table extends RawTable {
         data_string += '</td>'
       }
 
-      // Loop Columns
-      Object.keys(t.Columns).forEach(function(col) {
+      // Generate HTML for Table-Data Cells sorted
+      sortedColumnNames.forEach(function(col) {
         var value = row[col]
         // Check if it is displayed
         if (t.Columns[col].is_in_menu) {
