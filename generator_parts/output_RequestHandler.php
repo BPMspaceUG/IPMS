@@ -114,9 +114,41 @@
     }
 
     //======= INIT (Load the configuration to the client)
-    // TODO: Rename to loadConfig or make completely obsolete
-    public static function init() {
-      return Config::getConfig();
+    public function init($param = null) {
+      if (is_null($param))
+        return Config::getConfig();
+      else {
+        // Send only data from a specific Table
+        // Send info: structure (from config) the createForm and Count of all entries
+        $tablename = $param["table"];
+        // Check Parameter
+        if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
+        if (!Config::doesTableExist($tablename)) die('Table does not exist!');
+
+        $pdo = DB::getInstance()->getConnection();
+        $result = [];
+
+        // ---- Structure
+        $config = json_decode(Config::getConfig(), true);
+        $result['config'] = $config[$tablename];
+
+        // ---- Count
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM $tablename");
+        if ($stmt->execute()) {
+          $row = $stmt->fetch(PDO::FETCH_NAMED);
+          $result['count'] = $row['cnt'];
+        } else {
+          echo $stmt->queryString."<br />";
+          var_dump($stmt->errorInfo());
+        }
+
+        // ---- CreateForm
+        $result['formcreate'] = $this->getFormCreate($param);
+  
+        // Return result as JSON
+        return json_encode($result);
+
+      }
     }
     //================================== CREATE (sec)
     public function create($param) {
@@ -136,10 +168,11 @@
       if ($SM->getID() > 0) {
         // Override/Set EP
         $EP = $SM->getEntryPoint();
-        $param["row"]["state_id"] = $EP;
+        $param["row"]["state_id"] = (int)$EP;
         // Execute Transition Script
         $script = $SM->getTransitionScriptCreate();
         $script_result[] = $SM->executeScript($script, $param);
+        $row = $param["row"];
       }
       else {
         // NO StateMachine => goto next step

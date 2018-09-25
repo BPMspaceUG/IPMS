@@ -1,11 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 // Enums
 var SortOrder;
 (function (SortOrder) {
@@ -39,41 +31,6 @@ class LiteEvent {
 // Class: Database
 //==============================================================
 class DB {
-    static init(APIUrl, callback = function () { }, GlobalTableOptions = {
-        showWorkflowButton: true, showFilter: true, smallestTimeUnitMins: true, showCreateButton: true, showControlColumn: true, EntriesPerPage: 15
-    }) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.API_URL = APIUrl;
-            this.GlobalTableOptions = GlobalTableOptions;
-            let me = this;
-            let promises = [];
-            // Load Config from Server
-            me.request('init', null, function (r) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    me.ConfigurationData = JSON.parse(r);
-                    // Init Table Objects
-                    let tables = Object.keys(me.Config);
-                    tables.map(function (t) {
-                        var p = new Promise(function (resolve) {
-                            // Create a new object and save it in global array
-                            if (me.Config[t].is_in_menu) {
-                                var newT = new Table(t, '.table_' + t, SelectType.NoSelect, function () {
-                                    newT.renderHTML();
-                                    resolve();
-                                });
-                                me.Tables.push(newT);
-                            }
-                            else
-                                resolve();
-                        });
-                        promises.push(p);
-                    });
-                    yield Promise.all(promises);
-                    callback();
-                });
-            });
-        });
-    }
     // TODO: Improve Error handling (goto login.php etc.)
     static request(command, params, callback) {
         let me = this;
@@ -100,26 +57,7 @@ class DB {
             callback(response);
         });
     }
-    static getTable(SelStr) {
-        var result;
-        this.Tables.forEach(function (t) {
-            if (t.getDOMSelector() === SelStr) {
-                result = t;
-            }
-        });
-        return result;
-    }
-    static addTable(newTable) {
-        this.Tables.push(newTable);
-    }
-    static get Config() {
-        return this.ConfigurationData;
-    }
-    static get Options() {
-        return this.GlobalTableOptions;
-    }
 }
-DB.Tables = [];
 //==============================================================
 // Class: Modal
 //==============================================================
@@ -437,64 +375,52 @@ class Table extends RawTable {
     constructor(tablename, DOMSelector, SelType = SelectType.NoSelect, callback = function () { }, whereFilter = '', defaultObj = {}) {
         super(tablename);
         this.jQSelector = '';
+        this.Form_Create = '';
         this.maxCellLength = 30;
+        this.showControlColumn = true;
+        this.showWorkflowButton = true;
+        this.showFilter = true;
+        this.smallestTimeUnitMins = true;
         this.defaultValues = {}; // Default key:val object for creating
         this.onSelectionChanged = new LiteEvent();
         let me = this;
-        let data = DB.Config[tablename]; // Load data from global config    
         this.jQSelector = DOMSelector;
-        this.PageIndex = 0;
-        this.Columns = data.columns;
-        this.ReadOnly = data.is_read_only;
-        this.selType = SelType;
-        this.maxCellLength = 30;
-        this.PageLimit = DB.Options.EntriesPerPage || 10;
-        this.showFilter = DB.Options.showFilter;
-        this.showControlColumn = DB.Options.showControlColumn;
-        this.showWorkflowButton = DB.Options.showWorkflowButton;
-        this.smallestTimeUnitMins = DB.Options.smallestTimeUnitMins;
         this.defaultValues = defaultObj;
+        this.selType = SelType;
+        // Inherited
+        this.PageIndex = 0;
+        this.PageLimit = 10;
         this.Where = whereFilter;
         this.selectedIDs = []; // empty array
         this.tablename = tablename;
         this.Filter = '';
-        // Get the Primary column name
-        let PriCol;
-        let SortCol = ''; // first visible Column
-        let SelectParam = '*';
-        // Loop all cloumns form this table
-        Object.keys(data.columns).forEach(function (col) {
-            // Get Primary and SortColumn
-            if (data.columns[col].is_in_menu && SortCol == '')
-                SortCol = col;
-            if (data.columns[col].EXTRA == 'auto_increment')
-                PriCol = col;
-            // Get virtual columns
-            /*
-            if (data.columns[col].is_virtual)
-              SelectParam += ', ' + data.columns[col].virtual_select + ' AS ' + col;
-            */
-        });
-        this.Select = SelectParam;
-        this.PrimaryColumn = PriCol;
-        this.OrderBy = SortCol; // DEFAULT: Sort by first visible Col
-        this.Form_Create = '';
-        // Get Create-Form and save in Object
-        DB.request('getFormCreate', { table: tablename }, function (resp) {
-            if (resp.length > 0)
-                me.Form_Create = resp;
-        });
-        // Initialize StateMachine for the Table
-        if (data.se_active)
-            me.SM = new StateMachine(tablename);
-        else
-            me.SM = null;
-        // Download data from server    
-        me.countRows(function () {
-            me.loadRows(function (rows) {
-                me.Rows = rows;
+        this.Select = '*';
+        this.OrderBy = '';
+        DB.request('init', { table: tablename }, function (resp) {
+            if (resp.length > 0) {
+                resp = JSON.parse(resp);
+                // Save Form Data
+                me.Form_Create = resp['formcreate'];
+                me.actRowCount = resp['count'];
+                me.TableConfig = resp['config'];
+                // Initialize StateMachine for the Table
+                if (me.TableConfig['se_active'])
+                    me.SM = new StateMachine(tablename);
+                else
+                    me.SM = null;
+                me.Columns = me.TableConfig.columns;
+                me.ReadOnly = me.TableConfig.is_read_only;
+                // Loop all cloumns form this table
+                Object.keys(me.Columns).forEach(function (col) {
+                    // Get Primary and SortColumn
+                    if (me.Columns[col].is_in_menu && me.OrderBy == '')
+                        me.OrderBy = col; // DEFAULT: Sort by first visible Col
+                    if (me.Columns[col].EXTRA == 'auto_increment')
+                        me.PrimaryColumn = col;
+                });
+                // Initializing finished
                 callback();
-            });
+            }
         });
     }
     addClassToDataRow(id, classname) {
@@ -541,10 +467,12 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
+            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
+            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -671,7 +599,7 @@ class Table extends RawTable {
                                 e.val(value.split(" ")[0]);
                             else if (e.attr('type') == 'time') {
                                 // Remove seconds from TimeString
-                                if (DB.Options.smallestTimeUnitMins) {
+                                if (me.smallestTimeUnitMins) {
                                     var timeArr = value.split(':');
                                     timeArr.pop();
                                     value = timeArr.join(':');
@@ -681,7 +609,7 @@ class Table extends RawTable {
                         }
                         else if (DataType == 'time') {
                             // Remove seconds from TimeString
-                            if (DB.Options.smallestTimeUnitMins) {
+                            if (me.smallestTimeUnitMins) {
                                 var timeArr = value.split(':');
                                 timeArr.pop();
                                 value = timeArr.join(':');
@@ -859,7 +787,7 @@ class Table extends RawTable {
             let label = $(this);
             let colname = label.parent().find('[name]').attr('name');
             if (colname) {
-                let aliasCol = DB.Config[me.tablename].columns[colname];
+                let aliasCol = me.Columns[colname];
                 if (aliasCol) {
                     label.text(aliasCol.column_alias);
                 }
@@ -993,9 +921,6 @@ class Table extends RawTable {
     }
     get SelectionHasChanged() {
         return this.onSelectionChanged.expose();
-    }
-    getDOMSelector() {
-        return this.jQSelector;
     }
     renderHTML() {
         let t = this;
@@ -1235,8 +1160,10 @@ function openTableInModal(tablename, previousSelRows = [], callback = function (
     var newFKTableClass = 'foreignTable_abcdef' + timestr; // Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
     var M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
     var t = new Table(tablename, '.' + newFKTableClass, SelectType.Single, function () {
-        DB.addTable(t);
-        t.setSelectedRows(previousSelRows);
+        t.loadRows(function () {
+            t.setSelectedRows(previousSelRows);
+            t.renderHTML();
+        });
     }, '');
     // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
     // Bind Buttonclick (Select)
@@ -1248,31 +1175,38 @@ function openTableInModal(tablename, previousSelRows = [], callback = function (
     });
     M.show();
 }
+// TODO: Make this into the Class!!!!
 // This function is called from FormData
 function selectForeignKey(inp) {
     inp = $(inp).parent().find('input');
     // Extract relevant Variables
     var originTable = inp.data('origintable');
     var originColumn = inp.attr('name');
-    var foreignTable = DB.Config[originTable].columns[originColumn].foreignKey.table;
-    var foreignPrimaryCol = DB.Config[originTable].columns[originColumn].foreignKey.col_id;
-    var foreignSubstCol = DB.Config[originTable].columns[originColumn].foreignKey.col_subst;
-    var prevSelRow = [inp.val()];
-    // New Table Instance
-    openTableInModal(foreignTable, prevSelRow, function (forKeyTable) {
-        let selRows = forKeyTable.getSelectedRows();
-        let singleSelRow = selRows[0];
-        inp.val(singleSelRow); // Set ID-Value in hidden field
-        // Set Substituted Column
-        if (foreignSubstCol.indexOf('(') >= 0) {
-            // TODO: Load the name correctly from SQL Server
-            inp.parent().parent().find('.fkval').val("ID: " + singleSelRow);
-        }
-        else
-            inp.parent().parent().find('.fkval').val(singleSelRow);
-        //sendRequest('read', {table: foreignTable, select: foreignSubstCol}, function(r){
-        //console.log(r)
-        //})
+    let tmp = new Table(originTable, '', 0, function () {
+        var foreignTable = tmp.Columns[originColumn].foreignKey.table;
+        var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id; // TODO: useless
+        var foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst;
+        var prevSelRow = [inp.val()];
+        // Open a Table Instance
+        openTableInModal(foreignTable, prevSelRow, function (forKeyTable) {
+            let selRows = forKeyTable.getSelectedRows();
+            let singleSelRow = selRows[0];
+            inp.val(singleSelRow); // Set ID-Value in hidden field
+            // Set Substituted Column
+            if (foreignSubstCol.indexOf('(') >= 0) {
+                // TODO: Load the name correctly from SQL Server
+                inp.parent().parent().find('.fkval').val("ID: " + singleSelRow);
+            }
+            else {
+                // Retrive selected Row
+                let selRow = null;
+                forKeyTable.Rows.forEach(row => {
+                    if (row[forKeyTable.PrimaryColumn] == singleSelRow)
+                        selRow = row;
+                });
+                inp.parent().parent().find('.fkval').val(selRow[foreignSubstCol]);
+            }
+        });
     });
 }
 //-------------------------------------------

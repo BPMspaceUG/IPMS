@@ -19,9 +19,7 @@
     }
   }
 
-
   // Open a new DB-Connection
-
   define('DB_HOST', $db_server);
   define('DB_NAME', $db_name);
   define('DB_USER', $db_user);
@@ -39,6 +37,8 @@
 
   $content_tabs = '';
   $content_tabpanels = '';  
+  $content_jsObjects = '';
+  
 
   foreach ($data as $table) {
     // Get Data
@@ -47,6 +47,7 @@
 
     //--- Create HTML Content
     if ($table["is_in_menu"]) {
+
       // Tabs
       $content_tabs .= "            ".
             "<li class=\"nav-item\">
@@ -55,15 +56,20 @@
                 <span class=\"table_alias\">".$table["table_alias"]."</span>
               </a>
             </li>\n";
+
       // TabPanes
       $content_tabpanels .= "            ".
         "<div role=\"tabpanel\" class=\"tab-pane\" id=\"$tablename\">".
         "<div class=\"table_$tablename\"></div></div>\n";
+
+      // Init a JS-Object
+      $tableVarName = "tbl_$tablename";
+      $content_jsObjects .= "      let $tableVarName = new Table('$tablename', '.table_$tablename', 0, function(){ $tableVarName.loadRows(function(){ $tableVarName.renderHTML(); }); });\n";
+
     }
     //---/
 
     // TODO: Check if the "table" is no view
-
 
     if ($se_active) {
       $con = DB::getInstance()->getConnection();
@@ -145,6 +151,8 @@
   $content_tabpanels = substr($content_tabpanels, 0, -1);
   $output_content = str_replace('###TABS###', $content_tabs, $output_content);
   $output_content = str_replace('###TAB_PANELS###', $content_tabpanels, $output_content);
+  // Write the init functions for the JS-Table Objects
+  $output_footer = str_replace('###JS_TABLE_OBJECTS###', $content_jsObjects, $output_footer);
 
   // ------------------------------------ Generate Core File
   $output_all = $output_header.$output_content.$output_footer;

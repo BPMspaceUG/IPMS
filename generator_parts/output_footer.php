@@ -14,17 +14,15 @@
   <script src="js/muster.js"></script>
   <script>
     $(document).ready(function() {
-
-      DB.init('api.php', function(){
-        // Message when everything is ready
-        console.log('Everything ready!')
-        // First Tab selection
-        $('.nav-tabs .nav-link:first').addClass('active')
-        $('.tab-content .tab-pane:first').addClass('active')
-        // Loading disable
-        $('.initloadingtext').hide();
-        $('.mainapp').show();
-      });
+      DB.API_URL = 'api.php';
+      // Create objects
+###JS_TABLE_OBJECTS###
+      // First Tab selection
+      $('.nav-tabs .nav-link:first').addClass('active')
+      $('.tab-content .tab-pane:first').addClass('active')
+      // Loading disable
+      $('.initloadingtext').hide();
+      $('.mainapp').show();
     });
   </script>
 </body>
