@@ -120,7 +120,6 @@ class Modal {
 //==============================================================
 // For now every Table has its own statemachine. But in future it
 // would be better if every Row/Object would have its own Statemachine
-// 
 class StateMachine {
     constructor(tablename) {
         this.tablename = tablename;
@@ -382,7 +381,15 @@ class Table extends RawTable {
         this.showFilter = true;
         this.smallestTimeUnitMins = true;
         this.defaultValues = {}; // Default key:val object for creating
+        this.ModalHeaderTextCreate = 'Create Entry';
+        this.ModalHeaderTextModify = 'Modify Entry';
+        this.ModalButtonTextCreate = 'Create';
+        this.ModalButtonTextModifySave = 'Save';
+        this.ModalButtonTextModifySaveAndClose = 'Save & Close';
+        this.ModalButtonTextModifyClose = 'Close';
+        // Events
         this.onSelectionChanged = new LiteEvent();
+        this.onEntriesModified = new LiteEvent(); // Created, Deleted, Updated
         let me = this;
         this.jQSelector = DOMSelector;
         this.defaultValues = defaultObj;
@@ -432,7 +439,9 @@ class Table extends RawTable {
         this.AscDesc = (this.AscDesc == SortOrder.DESC) ? SortOrder.ASC : SortOrder.DESC;
         this.OrderBy = ColumnName;
         // Refresh
-        this.loadRows(function () { me.renderHTML(); });
+        this.loadRows(function () {
+            me.renderHTML();
+        });
     }
     setPageIndex(targetIndex) {
         let me = this;
@@ -467,12 +476,10 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
-            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
-            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -511,17 +518,16 @@ class Table extends RawTable {
         else
             return 'No Entries';
     }
-    // TODO: Param: [RowID, callback]
     getFormModify(data, callback) {
         var me = this;
         DB.request('getFormData', { table: me.tablename, row: data }, function (response) {
             callback(response);
         });
     }
-    readDataFromForm(Mid) {
+    readDataFromForm(MID) {
         let me = this;
         let data = {};
-        let inputs = $(Mid + ' :input');
+        let inputs = $(MID + ' :input');
         inputs.each(function () {
             var e = $(this);
             var key = e.attr('name');
@@ -565,9 +571,9 @@ class Table extends RawTable {
         });
         return data;
     }
-    writeDataToForm(Mid, data) {
+    writeDataToForm(MID, data) {
         let me = this;
-        let inputs = $(Mid + ' :input');
+        let inputs = $(MID + ' :input');
         inputs.each(function () {
             let e = $(this);
             let col = e.attr('name');
@@ -647,8 +653,6 @@ class Table extends RawTable {
             if (actStateID == s.id)
                 btn_text = '<i class="fa fa-floppy-o"></i> Save';
             var btn = '<button class="btn btn-primary btnState state' + (s.id % 12) + '" data-rowid="' + RowID + '" data-targetstate="' + s.id + '">' + btn_text + '</button>';
-            // onclick="setState(\''+EditMID+'\', \''+t.jQSelector+'\', '+RowID+', '+s.id+')"
-            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             btns += btn;
         });
         btns += '</div>';
@@ -672,93 +676,6 @@ class Table extends RawTable {
         $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + t.PrimaryColumn + '" value="' + RowID + '">');
         M.show();
     }
-    modifyRow(id) {
-        let me = this;
-        // ForeignKey
-        if (this.selType == SelectType.Single) {
-            // < SINGLE SELECT >
-            this.selectedIDs = [];
-            this.selectedIDs.push(id);
-            this.renderHTML();
-            this.onSelectionChanged.trigger();
-            return;
-        }
-        else if (this.selType == SelectType.Multi) {
-            // < MULTI SELECT >
-            // Check if already exists in array -> then remove
-            let pos = this.selectedIDs.indexOf(id);
-            if (pos >= 0) {
-                // Remove from List and reindex array
-                this.selectedIDs.splice(pos, 1);
-            }
-            else {
-                // Add to List
-                this.selectedIDs.push(id);
-            }
-            this.renderHTML();
-            this.onSelectionChanged.trigger();
-            return;
-        }
-        else {
-            // Exit if it is a ReadOnly Table
-            if (this.ReadOnly)
-                return;
-            // Indicate which row is getting modified
-            this.addClassToDataRow(id, 'table-warning');
-            $(this.jQSelector + ' .datarow .controllcoulm').html('<i class="fa fa-pencil"></i>'); // for all
-            $(this.jQSelector + ' .row-' + id + ' .controllcoulm').html('<i class="fa fa-arrow-right"></i>');
-            // Set Form
-            if (this.SM) {
-                // With StateMachine
-                let PrimaryColumn = this.PrimaryColumn;
-                let data = {};
-                data[PrimaryColumn] = id;
-                // Get Forms
-                me.getFormModify(data, function (r) {
-                    if (r.length > 0) {
-                        var htmlForm = r;
-                        me.getNextStates(data, function (re) {
-                            if (re.length > 0) {
-                                var nextstates = JSON.parse(re);
-                                me.renderEditForm(id, htmlForm, nextstates);
-                            }
-                        });
-                    }
-                });
-            }
-            else {
-                // EDIT-Modal WITHOUT StateMachine
-                var M = new Modal('Edit Entry', this.Form_Create, '', true);
-                // Save origin Table in all FKeys
-                $('#' + M.getDOMID() + ' .inputFK').data('origintable', this.tablename);
-                // Save buttons
-                var btn = '<div class="btn-group" role="group">';
-                btn += '<button class="btn btn-primary btnSave" type="button"><i class="fa fa-floppy-o"></i> Save</button>';
-                btn += '<button class="btn btn-primary btnSaveAndClose" type="button">Save &amp; Close</button>';
-                btn += '</div>';
-                M.setFooter(btn);
-                // Bind functions to Save Buttons
-                $('#' + M.getDOMID() + ' .btnSave').click(function (e) {
-                    e.preventDefault();
-                    me.saveEntry(M.getDOMID(), false);
-                });
-                $('#' + M.getDOMID() + ' .btnSaveAndClose').click(function (e) {
-                    e.preventDefault();
-                    me.saveEntry(M.getDOMID());
-                });
-                // Add the Primary RowID
-                $('#' + M.getDOMID() + ' .modal-body').append('<input type="hidden" name="' + this.PrimaryColumn + '" value="' + id + '">');
-                // Write all input fields with {key:value}
-                let r = null;
-                me.Rows.forEach(row => {
-                    if (row[me.PrimaryColumn] == id)
-                        r = row;
-                });
-                this.writeDataToForm('#' + M.getDOMID(), r);
-                M.show();
-            }
-        }
-    }
     saveEntry(MID, closeModal = true) {
         var t = this;
         var data = t.readDataFromForm('#' + MID);
@@ -770,7 +687,10 @@ class Table extends RawTable {
                     if (closeModal)
                         $('#' + MID).modal('hide');
                     t.lastModifiedRowID = data[t.PrimaryColumn];
-                    t.loadRows(function () { t.renderHTML(); });
+                    t.loadRows(function () {
+                        t.renderHTML();
+                        t.onEntriesModified.trigger();
+                    });
                 }
                 else {
                     // Fail
@@ -779,9 +699,9 @@ class Table extends RawTable {
             }
         });
     }
-    updateLabels(ModalID) {
+    updateLabels(MID) {
         let me = this;
-        let labels = $('#' + ModalID + ' label');
+        let labels = $('#' + MID + ' label');
         // Update all Labels
         labels.each(function () {
             let label = $(this);
@@ -793,67 +713,6 @@ class Table extends RawTable {
                 }
             }
         });
-    }
-    createEntry() {
-        let me = this;
-        let SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
-        let M = new Modal('Create Entry', me.Form_Create, SaveBtn, true);
-        let ModalID = M.getDOMID();
-        this.updateLabels(ModalID); // Update all Labels  
-        this.writeDataToForm('#' + ModalID, me.defaultValues); // Update Default values
-        // Save origin Table in all FKeys
-        $('#' + ModalID + ' .inputFK').data('origintable', me.tablename);
-        // Bind Buttonclick
-        $('#' + ModalID + ' .btnCreateEntry').click(function (e) {
-            e.preventDefault();
-            // Read out all input fields with {key:value}
-            let data = me.readDataFromForm('#' + ModalID);
-            me.createRow(data, function (r) {
-                let msgs = [];
-                // Remove all Error Messages
-                $('#' + ModalID + ' .modal-body .alert').remove();
-                try {
-                    msgs = JSON.parse(r);
-                }
-                catch (err) {
-                    // Show Error        
-                    $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
-                        '<b>Script Error!</b>&nbsp;' + r +
-                        '</div>');
-                    return;
-                }
-                // Handle Transition Feedback
-                let counter = 0; // 0 = trans, 1 = in -- but only at Create!
-                msgs.forEach(msg => {
-                    // Show Message
-                    if (msg.show_message) {
-                        let resM = new Modal('Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>', msg.message);
-                        resM.show();
-                    }
-                    // Check
-                    if (msg.element_id) {
-                        if (msg.element_id > 0) {
-                            $('#' + ModalID).modal('hide');
-                            me.lastModifiedRowID = msg.element_id;
-                            // load rows and render Table
-                            me.countRows(function () {
-                                me.loadRows(function () {
-                                    me.renderHTML();
-                                });
-                            });
-                        }
-                        // ElementID has to be 0! otherwise the transscript aborted
-                        if (msg.element_id == 0) {
-                            $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
-                                '<b>Database Error!</b>&nbsp;' + msg.errormsg +
-                                '</div>');
-                        }
-                    }
-                    counter++;
-                });
-            });
-        });
-        M.show();
     }
     setState(MID, RowID, targetStateID) {
         // Remove all Error Messages
@@ -902,25 +761,181 @@ class Table extends RawTable {
                     $('#' + MID).modal('hide'); // Hide only if reached IN-Script
                     if (RowID != 0)
                         t.lastModifiedRowID = RowID;
-                    t.loadRows(function () { t.renderHTML(); });
+                    t.loadRows(function () {
+                        t.renderHTML();
+                        t.onEntriesModified.trigger();
+                    });
                 }
                 // Increase Counter for Modals
                 counter++;
             });
         });
     }
+    //-------------------------------------------------- PUBLIC METHODS
+    createEntry() {
+        let me = this;
+        let SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+        let M = new Modal('Create Entry', me.Form_Create, SaveBtn, true);
+        let ModalID = M.getDOMID();
+        this.updateLabels(ModalID); // Update all Labels  
+        this.writeDataToForm('#' + ModalID, me.defaultValues); // Update Default values
+        // Save origin Table in all FKeys
+        $('#' + ModalID + ' .inputFK').data('origintable', me.tablename);
+        // Bind Buttonclick
+        $('#' + ModalID + ' .btnCreateEntry').click(function (e) {
+            e.preventDefault();
+            // Read out all input fields with {key:value}
+            let data = me.readDataFromForm('#' + ModalID);
+            me.createRow(data, function (r) {
+                let msgs = [];
+                // Remove all Error Messages
+                $('#' + ModalID + ' .modal-body .alert').remove();
+                try {
+                    msgs = JSON.parse(r);
+                }
+                catch (err) {
+                    // Show Error        
+                    $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+                        '<b>Script Error!</b>&nbsp;' + r +
+                        '</div>');
+                    return;
+                }
+                // Handle Transition Feedback
+                let counter = 0; // 0 = trans, 1 = in -- but only at Create!
+                msgs.forEach(msg => {
+                    // Show Message
+                    if (msg.show_message) {
+                        let resM = new Modal('Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>', msg.message);
+                        resM.show();
+                    }
+                    // Check if Element was created
+                    if (msg.element_id) {
+                        // Success?
+                        if (msg.element_id > 0) {
+                            $('#' + ModalID).modal('hide');
+                            me.lastModifiedRowID = msg.element_id;
+                            // load rows and render Table
+                            me.countRows(function () {
+                                me.loadRows(function () {
+                                    me.renderHTML();
+                                    me.onEntriesModified.trigger();
+                                });
+                            });
+                        }
+                        // ElementID has to be 0! otherwise the transscript aborted
+                        if (msg.element_id == 0) {
+                            $('#' + ModalID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">' +
+                                '<b>Database Error!</b>&nbsp;' + msg.errormsg +
+                                '</div>');
+                        }
+                    }
+                    counter++;
+                });
+            });
+        });
+        M.show();
+    }
+    modifyRow(id) {
+        let me = this;
+        // Check Selection-Type
+        if (this.selType == SelectType.Single) {
+            //------------------------------------
+            // SINGLE SELECT
+            //------------------------------------
+            this.selectedIDs = [];
+            this.selectedIDs.push(id);
+            this.renderHTML();
+            this.onSelectionChanged.trigger();
+            return;
+        }
+        else if (this.selType == SelectType.Multi) {
+            //------------------------------------
+            // MULTI SELECT
+            //------------------------------------
+            let pos = this.selectedIDs.indexOf(id);
+            // Check if already exists in array -> then remove
+            if (pos >= 0) {
+                // Remove from List and reindex array
+                this.selectedIDs.splice(pos, 1);
+            }
+            else {
+                // Add to List
+                this.selectedIDs.push(id);
+            }
+            this.renderHTML();
+            this.onSelectionChanged.trigger();
+            return;
+        }
+        else {
+            //------------------------------------
+            // NO SELECT / EDITABLE / READ-ONLY
+            //------------------------------------
+            // Exit if it is a ReadOnly Table
+            if (this.ReadOnly)
+                return;
+            // Indicate which row is getting modified
+            this.addClassToDataRow(id, 'table-warning');
+            $(this.jQSelector + ' .datarow .controllcoulm').html('<i class="fa fa-pencil"></i>'); // for all
+            $(this.jQSelector + ' .row-' + id + ' .controllcoulm').html('<i class="fa fa-arrow-right"></i>');
+            // Set Form
+            if (this.SM) {
+                // EDIT-Modal WITH StateMachine
+                let PrimaryColumn = this.PrimaryColumn;
+                let data = {};
+                data[PrimaryColumn] = id;
+                // Get Forms
+                me.getFormModify(data, function (r) {
+                    if (r.length > 0) {
+                        var htmlForm = r;
+                        me.getNextStates(data, function (re) {
+                            if (re.length > 0) {
+                                var nextstates = JSON.parse(re);
+                                me.renderEditForm(id, htmlForm, nextstates);
+                                // TODO: me.onEntriesModified.trigger();
+                            }
+                        });
+                    }
+                });
+            }
+            else {
+                // EDIT-Modal WITHOUT StateMachine
+                var M = new Modal('Edit Entry', this.Form_Create, '', true);
+                // Save origin Table in all FKeys
+                $('#' + M.getDOMID() + ' .inputFK').data('origintable', this.tablename);
+                // Save buttons
+                var btn = '<div class="btn-group" role="group">';
+                btn += '<button class="btn btn-primary btnSave" type="button"><i class="fa fa-floppy-o"></i> Save</button>';
+                btn += '<button class="btn btn-primary btnSaveAndClose" type="button">Save &amp; Close</button>';
+                btn += '</div>';
+                M.setFooter(btn);
+                // Bind functions to Save Buttons
+                $('#' + M.getDOMID() + ' .btnSave').click(function (e) {
+                    e.preventDefault();
+                    me.saveEntry(M.getDOMID(), false);
+                });
+                $('#' + M.getDOMID() + ' .btnSaveAndClose').click(function (e) {
+                    e.preventDefault();
+                    me.saveEntry(M.getDOMID());
+                });
+                // Add the Primary RowID
+                $('#' + M.getDOMID() + ' .modal-body').append('<input type="hidden" name="' + this.PrimaryColumn + '" value="' + id + '">');
+                // Write all input fields with {key:value}
+                let r = null;
+                me.Rows.forEach(row => {
+                    if (row[me.PrimaryColumn] == id)
+                        r = row;
+                });
+                this.writeDataToForm('#' + M.getDOMID(), r);
+                M.show();
+            }
+        }
+    }
     getSelectedRows() {
         return this.selectedIDs;
     }
     setSelectedRows(selRows) {
-        let me = this;
         this.selectedIDs = selRows;
-        //this.loadRows(function(){
-        me.renderHTML();
-        //});
-    }
-    get SelectionHasChanged() {
-        return this.onSelectionChanged.expose();
+        this.renderHTML();
     }
     renderHTML() {
         let t = this;
@@ -1152,6 +1167,13 @@ class Table extends RawTable {
             }
         }
     }
+    //-------------------------------------------------- EVENTS
+    get SelectionHasChanged() {
+        return this.onSelectionChanged.expose();
+    }
+    get EntriesHaveChanged() {
+        return this.onEntriesModified.expose();
+    }
 }
 function openTableInModal(tablename, previousSelRows = [], callback = function (e) { }) {
     // Modal
@@ -1180,13 +1202,13 @@ function openTableInModal(tablename, previousSelRows = [], callback = function (
 function selectForeignKey(inp) {
     inp = $(inp).parent().find('input');
     // Extract relevant Variables
-    var originTable = inp.data('origintable');
-    var originColumn = inp.attr('name');
+    let originTable = inp.data('origintable');
+    let originColumn = inp.attr('name');
     let tmp = new Table(originTable, '', 0, function () {
-        var foreignTable = tmp.Columns[originColumn].foreignKey.table;
-        var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id; // TODO: useless
-        var foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst;
-        var prevSelRow = [inp.val()];
+        let foreignTable = tmp.Columns[originColumn].foreignKey.table;
+        //var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id // TODO: useless
+        let foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst;
+        let prevSelRow = [inp.val()];
         // Open a Table Instance
         openTableInModal(foreignTable, prevSelRow, function (forKeyTable) {
             let selRows = forKeyTable.getSelectedRows();
