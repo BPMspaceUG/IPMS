@@ -209,7 +209,8 @@
           $script = $SM->getINScript($SM->getEntryPoint());
           // Refresh row (add ID)
           $pcol = Config::getPrimaryColNameByTablename($tablename);
-          $row[$pcol] = (string)$newElementID;
+          $param['row'] = $row;
+          $param['row'][$pcol] = (string)$newElementID;
           // IN-Script          
           $tmp_script_res = $SM->executeScript($script, $param);
           // Append the ID from new Element

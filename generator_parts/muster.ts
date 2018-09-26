@@ -403,44 +403,50 @@ class RawTable {
 // Class: Table
 //==============================================================
 class Table extends RawTable {
+  private TableConfig: any;
+  private lastModifiedRowID: number;
   private jQSelector: string = '';
   private SM: StateMachine;
-  private selType: SelectType;
   private ReadOnly: boolean;
+  private selType: SelectType;
   private selectedIDs: number[];
   private Form_Create: string = '';
-  private lastModifiedRowID: number;
+  private defaultValues = {}; // Default Values in Create-Form
+  // TODO: Make these also GUI Options
   private maxCellLength: number = 30;
   private showControlColumn: boolean = true;
   private showWorkflowButton: boolean = true;
   private showFilter: boolean = true;
   private smallestTimeUnitMins: boolean = true;
-  private TableConfig: any;
-  private defaultValues = {}; // Default key:val object for creating
-  // TODO: GUI-Texts and Modal behaviour
-  private ModalShouldStayOpen: boolean;
-  private ModalHeaderTextCreate: string = 'Create Entry';
-  private ModalHeaderTextModify: string = 'Modify Entry';
-  private ModalButtonTextCreate: string = 'Create';
-  private ModalButtonTextModifySave: string = 'Save';
-  private ModalButtonTextModifySaveAndClose: string = 'Save & Close';
-  private ModalButtonTextModifyClose: string = 'Close';
+  public GUIOptions = {
+    modalHeaderTextCreate: 'Create Entry',
+    modalHeaderTextModify: 'Modify Entry',
+    modalButtonTextCreate: 'Create',
+    modalButtonTextModifySave: 'Save',
+    modalButtonTextModifySaveAndClose: 'Save &amp; Close',
+    modalButtonTextModifyClose: 'Close',
+    modalButtonTextSelect: 'Select',
+    filterPlaceholderText: 'Enter searchword',
+    statusBarTextNoEntries: 'No Entries',
+    statusBarTextEntries: 'Showing Entries {lim_from} - {lim_to} of {count} Entries'
+  }
   // Events
   private readonly onSelectionChanged = new LiteEvent<void>();
   private readonly onEntriesModified = new LiteEvent<void>(); // Created, Deleted, Updated
 
-  constructor(tablename: string, DOMSelector: string, SelType: SelectType = SelectType.NoSelect, callback: any = function(){}, whereFilter: string = '', defaultObj = {}) {
-    super(tablename)
-    
-    let me = this;
 
+  constructor(tablename: string, DOMSelector: string, SelType: SelectType = SelectType.NoSelect, callback: any = function(){}, whereFilter: string = '', defaultObj = {}) {
+    // Call parent constructor
+    super(tablename)
+
+    let me = this;
     this.jQSelector = DOMSelector;
     this.defaultValues = defaultObj;
     this.selType = SelType;
+    this.Where = whereFilter;
     // Inherited
     this.PageIndex = 0;
     this.PageLimit = 10;
-    this.Where = whereFilter;
     this.selectedIDs = []; // empty array
     this.tablename = tablename
     this.Filter = '';
@@ -550,11 +556,18 @@ class Table extends RawTable {
     return escapeHtml(cellContent)
   }
   private getHTMLStatusText(): string {
-    if (this.getNrOfRows() > 0 && this.Rows.length > 0)
-      return 'Showing Entries '+((this.PageIndex * this.PageLimit) + 1)+'-'+
-        ((this.PageIndex * this.PageLimit) + this.Rows.length) + ' of '+ this.getNrOfRows() + ' Entries';
-    else
-      return 'No Entries';
+    if (this.getNrOfRows() > 0 && this.Rows.length > 0) {
+      let text = this.GUIOptions.statusBarTextEntries;
+      // Replace Texts
+      text = text.replace('{lim_from}', ''+ ((this.PageIndex * this.PageLimit) + 1) );
+      text = text.replace('{lim_to}', ''+ ((this.PageIndex * this.PageLimit) + this.Rows.length) );
+      text = text.replace('{count}', '' + this.getNrOfRows() );
+      return text;
+    }
+    else {
+      // No Entries
+      return this.GUIOptions.statusBarTextNoEntries;
+    }
   }
   private getFormModify(data: any, callback): void {
     var me: Table = this;
@@ -562,7 +575,6 @@ class Table extends RawTable {
       callback(response)
     })
   }
-
   private readDataFromForm(MID: string): any {
     let me = this
     let data = {}
@@ -681,7 +693,7 @@ class Table extends RawTable {
         TheRow = row
     });
     // Modal
-    var M = new Modal('Edit Entry', htmlForm, '', true)
+    var M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true)
     var EditMID = M.getDOMID();
     // state Buttons
     var btns = '<div class="btn-group" role="group">'
@@ -691,7 +703,7 @@ class Table extends RawTable {
     nextStates.forEach(function(s){
       var btn_text = s.name
       if (actStateID == s.id)
-        btn_text = '<i class="fa fa-floppy-o"></i> Save'
+        btn_text = '<i class="fa fa-floppy-o"></i> '+ t.GUIOptions.modalButtonTextModifySave;
       var btn = '<button class="btn btn-primary btnState state'+(s.id % 12)+'" data-rowid="'+RowID+'" data-targetstate="'+s.id+'">' + btn_text + '</button>';
       btns += btn;
     })
@@ -726,7 +738,8 @@ class Table extends RawTable {
       if (r.length > 0) {
         if (r != "0") {
           // Success
-          if (closeModal) $('#'+MID).modal('hide')
+          if (closeModal)
+            $('#'+MID).modal('hide')
           t.lastModifiedRowID = data[t.PrimaryColumn]
           t.loadRows(function(){
             t.renderHTML()
@@ -813,8 +826,9 @@ class Table extends RawTable {
   //-------------------------------------------------- PUBLIC METHODS
   public createEntry(): void {
     let me = this
-    let SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button"><i class="fa fa-plus"></i>&nbsp;Create</button>';
-    let M = new Modal('Create Entry', me.Form_Create, SaveBtn, true)
+    let SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button">'+
+      '<i class="fa fa-plus"></i>&nbsp;'+ this.GUIOptions.modalButtonTextCreate +'</button>';
+    let M = new Modal(this.GUIOptions.modalHeaderTextCreate, me.Form_Create, SaveBtn, true)
     let ModalID = M.getDOMID()
   
     this.updateLabels(ModalID) // Update all Labels  
@@ -941,13 +955,15 @@ class Table extends RawTable {
         })
       } else {
         // EDIT-Modal WITHOUT StateMachine
-        var M: Modal = new Modal('Edit Entry', this.Form_Create, '', true)
+        var M: Modal = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true)
         // Save origin Table in all FKeys
         $('#'+M.getDOMID()+' .inputFK').data('origintable', this.tablename);
         // Save buttons
         var btn: string = '<div class="btn-group" role="group">'
-        btn += '<button class="btn btn-primary btnSave" type="button"><i class="fa fa-floppy-o"></i> Save</button>';
-        btn += '<button class="btn btn-primary btnSaveAndClose" type="button">Save &amp; Close</button>';
+        btn += '<button class="btn btn-primary btnSave" type="button">'+
+          '<i class="fa fa-floppy-o"></i> '+this.GUIOptions.modalButtonTextModifySave +'</button>';
+        btn += '<button class="btn btn-primary btnSaveAndClose" type="button">'+
+          this.GUIOptions.modalButtonTextModifySaveAndClose + '</button>';
         btn += '</div>'
         M.setFooter(btn);
         // Bind functions to Save Buttons
@@ -1025,7 +1041,7 @@ class Table extends RawTable {
     // Filter
     if (t.showFilter) {
       header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'
-      header += '  <input type="text" class="form-control filterText" placeholder="">'
+      header += '  <input type="text" class="form-control filterText" placeholder="'+this.GUIOptions.filterPlaceholderText+'">'
       header += '  <div class="input-group-append">'
       header += '    <button class="btn btn-secondary btnFilter" type="button"><i class="fa fa-search"></i></button>'
       header += '  </div>'
@@ -1239,26 +1255,28 @@ class Table extends RawTable {
 
 
 function openTableInModal(tablename: string, previousSelRows: Array<number> = [], callback = function(e){}) {
-  // Modal
-  var SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> Select</button>';
-  var timestr = (new Date()).getTime()
-  var newFKTableClass = 'foreignTable_abcdef'+timestr; // Make dynamic and unique -> if foreignkey from foreignkey (>2 loops)
-  var M = new Modal('Select Foreign Key', '<div class="'+newFKTableClass+'"></div>', SelectBtn, true)
-  var t = new Table(tablename, '.'+newFKTableClass, SelectType.Single, function(){
+  let timestr = (new Date()).getTime(); // current Time-String
+  let newFKTableClass = 'foreignTable_abcdef'+timestr;
+  let t = new Table(tablename, '.'+newFKTableClass, SelectType.Single, function(){
     t.loadRows(function(){
       t.setSelectedRows(previousSelRows);
+      // create a new Modal layout in DOM
+      let SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> '+
+        t.GUIOptions.modalButtonTextSelect +'</button>';
+      let M = new Modal('Select Foreign Key', '<div class="'+newFKTableClass+'"></div>', SelectBtn, true)
       t.renderHTML();
+      // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
+      // Bind Buttonclick (Select)
+      $('#'+M.getDOMID()+' .btnSelectFK').click(function(e){
+        e.preventDefault();
+        callback(t);
+        // Hide Modal
+        $('#'+M.getDOMID()).modal('hide');
+      })
+      // Finally, show Modal
+      M.show();
     });
-  }, '');
-  // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
-  // Bind Buttonclick (Select)
-  $('#'+M.getDOMID()+' .btnSelectFK').click(function(e){
-    e.preventDefault();
-    callback(t);
-    // Hide Modal
-    $('#'+M.getDOMID()).modal('hide');
-  })
-  M.show()
+  }, '');  
 }
 // TODO: Make this into the Class!!!!
 // This function is called from FormData
