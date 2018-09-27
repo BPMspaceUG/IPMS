@@ -35,12 +35,12 @@ class LiteEvent<T> implements ILiteEvent<T> {
 abstract class DB {
   private static API_URL: string;
 
-  // TODO: Improve Error handling (goto login.php etc.)
   public static request(command: string, params: any, callback) {
     let me = this;
     let data = {cmd: command}
-    // If Params are set, then append them
-    if (params) data['paramJS'] = params;
+    // If Params are set, then append them to data object
+    if (params)
+      data['paramJS'] = params;
 
     // Request (every Request is processed by this function)
     $.ajax({
@@ -101,7 +101,7 @@ class Modal {
     html += this.content;
     html += '</div>';
     html += '<div class="modal-footer">';
-    html += '  <span class="customfooter">'+this.footer+'</span>';
+    html += '  <span class="customfooter d-flex">'+this.footer+'</span>';
     html += '  <span class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
     html += '</div>';  // content
     html += '</div>';  // dialog
@@ -425,6 +425,7 @@ class Table extends RawTable {
     modalButtonTextModifySave: 'Save',
     modalButtonTextModifySaveAndClose: 'Save &amp; Close',
     modalButtonTextModifyClose: 'Close',
+    modalButtonTextSetStates: 'Set State',
     modalButtonTextSelect: 'Select',
     filterPlaceholderText: 'Enter searchword',
     statusBarTextNoEntries: 'No Entries',
@@ -693,21 +694,42 @@ class Table extends RawTable {
         TheRow = row
     });
     // Modal
-    var M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true)
-    var EditMID = M.getDOMID();
-    // state Buttons
-    var btns = '<div class="btn-group" role="group">'
-    var actStateID = TheRow.state_id[0] // ID
+    let M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true)
+    let EditMID = M.getDOMID();
+    let btns = '';
+    let saveBtn = '';
+    let actStateID = TheRow.state_id[0] // ID
+    
+    if (nextStates.length > 0) {
+      let cnt_states = 0;
 
-    // TODO: Order Save Button at first
-    nextStates.forEach(function(s){
-      var btn_text = s.name
-      if (actStateID == s.id)
-        btn_text = '<i class="fa fa-floppy-o"></i> '+ t.GUIOptions.modalButtonTextModifySave;
-      var btn = '<button class="btn btn-primary btnState state'+(s.id % 12)+'" data-rowid="'+RowID+'" data-targetstate="'+s.id+'">' + btn_text + '</button>';
-      btns += btn;
-    })
-    btns += '</div>';
+      // Header
+      btns = '<div class="btn-group dropup ml-0 mr-auto">'+
+      '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
+      t.GUIOptions.modalButtonTextSetStates +
+      '</button><div class="dropdown-menu">';
+    
+      // Loop States
+      nextStates.forEach(function(s){
+        let btn_text = s.name
+        let btn = '';
+        // Override the state-name if it is a Loop (Save)
+        if (actStateID == s.id) {
+          saveBtn = '<button class="btn btn-primary mr-0 ml-auto btnState state'+(s.id % 12)+'" data-rowid="'+RowID+'" data-targetstate="'+s.id+'" type="button">'+
+          '<i class="fa fa-floppy-o"></i> '+t.GUIOptions.modalButtonTextModifySave +'</button>';
+        } else {
+          cnt_states++;
+          btn = '<a class="dropdown-item btnState state'+(s.id % 12)+'" data-rowid="'+RowID+'" data-targetstate="'+s.id+'">' + btn_text + '</a>';
+        }
+        btns += btn;
+      })
+      // Footer
+      btns += '</div></div>';
+      // Save buttons
+      if (cnt_states == 0)
+        btns = '' // Reset html if only Save button exists
+      btns += saveBtn;
+    }
     M.setFooter(btns);
 
     // Bind function to StateButtons
@@ -716,7 +738,6 @@ class Table extends RawTable {
       let RowID = $(this).data('rowid')
       let TargetStateID = $(this).data('targetstate')
       t.setState(EditMID, RowID, TargetStateID)
-      //me.saveEntry(M.getDOMID(), false)
     })
 
     $('#'+EditMID+' .label-state').addClass('state'+(actStateID % 12)).text(TheRow.state_id[1]);  
@@ -948,23 +969,26 @@ class Table extends RawTable {
               if (re.length > 0) {
                 var nextstates = JSON.parse(re);
                 me.renderEditForm(id, htmlForm, nextstates);
-                // TODO: me.onEntriesModified.trigger();
               }
             })
           }
         })
       } else {
+
         // EDIT-Modal WITHOUT StateMachine
-        var M: Modal = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true)
+
+        let M: Modal = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true)
         // Save origin Table in all FKeys
         $('#'+M.getDOMID()+' .inputFK').data('origintable', this.tablename);
+
         // Save buttons
-        var btn: string = '<div class="btn-group" role="group">'
+        let btn: string = '<div class="btn-group ml-auto mr-0" role="group">'
         btn += '<button class="btn btn-primary btnSave" type="button">'+
           '<i class="fa fa-floppy-o"></i> '+this.GUIOptions.modalButtonTextModifySave +'</button>';
         btn += '<button class="btn btn-primary btnSaveAndClose" type="button">'+
           this.GUIOptions.modalButtonTextModifySaveAndClose + '</button>';
         btn += '</div>'
+
         M.setFooter(btn);
         // Bind functions to Save Buttons
         $('#'+M.getDOMID()+' .btnSave').click(function(e){
@@ -1287,7 +1311,7 @@ function selectForeignKey(inp){
   let originColumn = inp.attr('name');  
   let tmp = new Table(originTable, '', 0, function(){    
     let foreignTable = tmp.Columns[originColumn].foreignKey.table
-    //var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id // TODO: useless
+    //var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id // useless
     let foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst    
     let prevSelRow = [inp.val()];
   

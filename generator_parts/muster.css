@@ -15,10 +15,12 @@
 
 /* Modal */
 .editor {font-family: 'Courier New', 'Courier', 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace; font-size: .8em;}
+.customfooter {width: 100%;}
 
 /* StateEngine */
 .badge.label-state {margin-top: 3px;}
 .label-state {background-color: #333; color: white; border: none; }
+.btnState {cursor: pointer;}
 .state1 {background-color: darkgreen;}
 .state2 {background-color: steelblue;}
 .state3 {background-color: DarkRed ;}

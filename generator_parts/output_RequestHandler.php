@@ -40,7 +40,12 @@
     }
     public static function getPrimaryColNameByTablename($tablename) {
       $cols = Config::getPrimaryColsByTablename($tablename);
-      return $cols[0];
+      try {
+        $res = $cols[0];
+      } catch (Exception $e) {
+        return null;
+      }
+      return $res;
     }
     public static function doesTableExist($tablename) {
       $result = false;
