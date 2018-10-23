@@ -20,7 +20,10 @@
 /* StateEngine */
 .badge.label-state {margin-top: 3px;}
 .label-state {background-color: #333; color: white; border: none; }
-.btnState {cursor: pointer;}
+
+.btnStateChange {cursor: pointer; color: white !important;}
+.btnStateChange:hover{color: black !important;}
+
 .state1 {background-color: darkgreen;}
 .state2 {background-color: steelblue;}
 .state3 {background-color: DarkRed ;}

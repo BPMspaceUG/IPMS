@@ -3,7 +3,7 @@ Intelligent Process Management System
 
 # Requirements
 
-## Database
+## Database Structure
 - Tables must have only ONE Primary Column
 - Tablename must contain only this Letters: "A-Z", "a-z" and "_"
 

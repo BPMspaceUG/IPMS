@@ -62,6 +62,9 @@ class DB {
 //==============================================================
 class Modal {
     constructor(heading, content, footer = '', isBig = false) {
+        this.options = {
+            btnTextClose: 'Close'
+        };
         this.DOM_ID = 'msgBx';
         // Check if ID exists then add Number -> like 'idStrxxx'
         while ($("#" + this.DOM_ID).length) {
@@ -91,7 +94,7 @@ class Modal {
         html += '</div>';
         html += '<div class="modal-footer">';
         html += '  <span class="customfooter d-flex">' + this.footer + '</span>';
-        html += '  <span class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i> Close</span>';
+        html += '  <span class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i> ' + this.options.btnTextClose + '</span>';
         html += '</div>'; // content
         html += '</div>'; // dialog
         html += '</div>'; // footer
@@ -105,6 +108,9 @@ class Modal {
     }
     setFooter(html) {
         $('#' + this.DOM_ID + ' .customfooter').html(html);
+    }
+    setContent(html) {
+        $('#' + this.DOM_ID + ' .modal-body').html(html);
     }
     show() {
         $("#" + this.DOM_ID).modal();
@@ -124,19 +130,18 @@ class StateMachine {
         this.tablename = tablename;
     }
     openSEPopup() {
-        var smLinks, smNodes;
-        var me = this;
+        let smLinks, smNodes;
+        let me = this;
         DB.request('getStates', { table: me.tablename }, function (r) {
             smNodes = JSON.parse(r);
             DB.request('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
                 // Finally, when everything was loaded, show Modal
-                var M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-secondary fitsm">Fit</button>', true);
-                var MID = M.getDOMID();
-                var container = document.getElementsByClassName('statediagram')[0];
-                var nodes = smNodes;
-                var edges = smLinks;
-                for (var i = 0; i < nodes.length; i++) {
+                let M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-secondary fitsm">Fit</button>', true);
+                let container = document.getElementsByClassName('statediagram')[0];
+                let nodes = smNodes;
+                let edges = smLinks;
+                for (let i = 0; i < nodes.length; i++) {
                     if (me.isExitNode(nodes[i].id, smLinks)) {
                         nodes[i]['color'] = '#c55';
                         nodes[i]['shape'] = 'dot';
@@ -148,11 +153,11 @@ class StateMachine {
                         edges.push({ from: 0, to: nodes[i].id });
                     }
                 }
-                var data = {
+                let data = {
                     nodes: nodes,
                     edges: edges
                 };
-                var options = {
+                let options = {
                     edges: {
                         //smooth: { 'type': 'straightCross', 'forceDirection': 'horizontal'},
                         color: '#3598DC',
@@ -219,7 +224,7 @@ class StateMachine {
                         /*dragView: false*/
                     }
                 };
-                var network = new vis.Network(container, data, options);
+                let network = new vis.Network(container, data, options);
                 M.show();
                 $('.fitsm').click(function (e) {
                     e.preventDefault();
@@ -229,7 +234,7 @@ class StateMachine {
         });
     }
     isExitNode(NodeID, links) {
-        var res = true;
+        let res = true;
         links.forEach(function (e) {
             if (e.from == NodeID && e.from != e.to)
                 res = false;
@@ -648,7 +653,7 @@ class Table extends RawTable {
             }
         });
     }
-    renderEditForm(RowID, htmlForm, nextStates) {
+    renderEditForm(RowID, htmlForm, nextStates, ExistingModalID = undefined) {
         let t = this;
         let TheRow = null;
         // get The Row
@@ -656,12 +661,23 @@ class Table extends RawTable {
             if (row[t.PrimaryColumn] == RowID)
                 TheRow = row;
         });
-        // Modal
-        let M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true);
-        let EditMID = M.getDOMID();
+        // Create a new Modal or get the Existing Modal by DOM-ID
+        let EditMID = null;
+        let M = null;
+        if (!ExistingModalID) {
+            M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true);
+            M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
+            EditMID = M.getDOMID();
+        }
+        else {
+            EditMID = ExistingModalID;
+            // TODO: Title
+            $('#' + EditMID + ' .modal-body').html(htmlForm);
+        }
         let btns = '';
         let saveBtn = '';
-        let actStateID = TheRow.state_id[0]; // ID
+        let actStateID = TheRow.state_id[0]; // ID    
+        // Check States -> generate Footer HTML
         if (nextStates.length > 0) {
             let cnt_states = 0;
             // Header
@@ -675,12 +691,12 @@ class Table extends RawTable {
                 let btn = '';
                 // Override the state-name if it is a Loop (Save)
                 if (actStateID == s.id) {
-                    saveBtn = '<button class="btn btn-primary mr-0 ml-auto btnState state' + (s.id % 12) + '" data-rowid="' + RowID + '" data-targetstate="' + s.id + '" type="button">' +
+                    saveBtn = '<button class="btn btn-primary mr-0 ml-auto btnState btnStateSave" data-rowid="' + RowID + '" data-targetstate="' + s.id + '" type="button">' +
                         '<i class="fa fa-floppy-o"></i> ' + t.GUIOptions.modalButtonTextModifySave + '</button>';
                 }
                 else {
                     cnt_states++;
-                    btn = '<a class="dropdown-item btnState state' + (s.id % 12) + '" data-rowid="' + RowID + '" data-targetstate="' + s.id + '">' + btn_text + '</a>';
+                    btn = '<a class="dropdown-item btnState btnStateChange state' + (s.id % 12) + '" data-rowid="' + RowID + '" data-targetstate="' + s.id + '">' + btn_text + '</a>';
                 }
                 btns += btn;
             });
@@ -691,7 +707,9 @@ class Table extends RawTable {
                 btns = ''; // Reset html if only Save button exists
             btns += saveBtn;
         }
-        M.setFooter(btns);
+        // TODO: Rewrite to MID
+        //M.setFooter(btns);
+        $('#' + EditMID + ' .customfooter').html(btns);
         // Bind function to StateButtons
         $('#' + EditMID + ' .btnState').click(function (e) {
             e.preventDefault();
@@ -708,11 +726,13 @@ class Table extends RawTable {
         t.writeDataToForm('#' + EditMID, TheRow);
         // Add PrimaryID in stored Data
         $('#' + EditMID + ' .modal-body').append('<input type="hidden" name="' + t.PrimaryColumn + '" value="' + RowID + '">');
-        M.show();
+        //--- finally show Modal if it is a new one
+        if (M)
+            M.show();
     }
     saveEntry(MID, closeModal = true) {
-        var t = this;
-        var data = t.readDataFromForm('#' + MID);
+        let t = this;
+        let data = t.readDataFromForm('#' + MID);
         // REQUEST
         t.updateRow(data[t.PrimaryColumn], data, function (r) {
             if (r.length > 0) {
@@ -788,11 +808,28 @@ class Table extends RawTable {
                         info = 'IN-Script';
                     // Show Result Messages
                     let resM = new Modal('Feedback <small>' + info + '</small>', msg.message);
+                    resM.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
                     resM.show();
                 }
                 // Check if Transition was successful
                 if (counter >= 2) {
-                    $('#' + MID).modal('hide'); // Hide only if reached IN-Script
+                    // do not hide Modal-Window
+                    //$('#'+MID).modal('hide') // Hide only if reached IN-Script
+                    // Refresh Form-Data
+                    t.getFormModify(data, function (r) {
+                        if (r.length > 0) {
+                            let htmlForm = r;
+                            // Refresh Modal Buttons
+                            t.getNextStates(data, function (re) {
+                                if (re.length > 0) {
+                                    let nextstates = JSON.parse(re);
+                                    // Set Form-Content
+                                    //$('#' + MID + ' .modal-body').html(htmlForm);
+                                    t.renderEditForm(RowID, htmlForm, nextstates, MID);
+                                }
+                            });
+                        }
+                    });
                     if (RowID != 0)
                         t.lastModifiedRowID = RowID;
                     t.loadRows(function () {
@@ -811,6 +848,7 @@ class Table extends RawTable {
         let SaveBtn = '<button class="btn btn-success btnCreateEntry" type="button">' +
             '<i class="fa fa-plus"></i>&nbsp;' + this.GUIOptions.modalButtonTextCreate + '</button>';
         let M = new Modal(this.GUIOptions.modalHeaderTextCreate, me.Form_Create, SaveBtn, true);
+        M.options.btnTextClose = me.GUIOptions.modalButtonTextModifyClose;
         let ModalID = M.getDOMID();
         this.updateLabels(ModalID); // Update all Labels  
         this.writeDataToForm('#' + ModalID, me.defaultValues); // Update Default values
@@ -841,19 +879,23 @@ class Table extends RawTable {
                     // Show Message
                     if (msg.show_message) {
                         let resM = new Modal('Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>', msg.message);
+                        resM.options.btnTextClose = me.GUIOptions.modalButtonTextModifyClose;
                         resM.show();
                     }
                     // Check if Element was created
                     if (msg.element_id) {
                         // Success?
                         if (msg.element_id > 0) {
-                            $('#' + ModalID).modal('hide');
+                            // Reload Data from Table
                             me.lastModifiedRowID = msg.element_id;
                             // load rows and render Table
                             me.countRows(function () {
                                 me.loadRows(function () {
                                     me.renderHTML();
                                     me.onEntriesModified.trigger();
+                                    // TODO: Overwrite the new Content from Database
+                                    me.modifyRow(msg.element_id, ModalID);
+                                    //$('#'+ModalID).modal('hide')
                                 });
                             });
                         }
@@ -870,7 +912,7 @@ class Table extends RawTable {
         });
         M.show();
     }
-    modifyRow(id) {
+    modifyRow(id, ExistingModalID = undefined) {
         let me = this;
         // Check Selection-Type
         if (this.selType == SelectType.Single) {
@@ -925,7 +967,7 @@ class Table extends RawTable {
                         me.getNextStates(data, function (re) {
                             if (re.length > 0) {
                                 var nextstates = JSON.parse(re);
-                                me.renderEditForm(id, htmlForm, nextstates);
+                                me.renderEditForm(id, htmlForm, nextstates, ExistingModalID);
                             }
                         });
                     }
@@ -933,9 +975,18 @@ class Table extends RawTable {
             }
             else {
                 // EDIT-Modal WITHOUT StateMachine
-                let M = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true);
+                let M = undefined;
+                let ModalID = undefined;
+                if (!ExistingModalID) {
+                    M = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true);
+                    M.options.btnTextClose = this.GUIOptions.modalButtonTextModifyClose;
+                    ModalID = M.getDOMID();
+                }
+                else {
+                    ModalID = ExistingModalID;
+                }
                 // Save origin Table in all FKeys
-                $('#' + M.getDOMID() + ' .inputFK').data('origintable', this.tablename);
+                $('#' + ModalID + ' .inputFK').data('origintable', this.tablename);
                 // Save buttons
                 let btn = '<div class="btn-group ml-auto mr-0" role="group">';
                 btn += '<button class="btn btn-primary btnSave" type="button">' +
@@ -943,26 +994,30 @@ class Table extends RawTable {
                 btn += '<button class="btn btn-primary btnSaveAndClose" type="button">' +
                     this.GUIOptions.modalButtonTextModifySaveAndClose + '</button>';
                 btn += '</div>';
-                M.setFooter(btn);
+                // TODO: Set Footer
+                //M.setFooter(btn);
+                $('#' + ModalID + ' .customfooter').html(btn);
                 // Bind functions to Save Buttons
-                $('#' + M.getDOMID() + ' .btnSave').click(function (e) {
+                $('#' + ModalID + ' .btnSave').click(function (e) {
                     e.preventDefault();
-                    me.saveEntry(M.getDOMID(), false);
+                    me.saveEntry(ModalID, false);
                 });
-                $('#' + M.getDOMID() + ' .btnSaveAndClose').click(function (e) {
+                $('#' + ModalID + ' .btnSaveAndClose').click(function (e) {
                     e.preventDefault();
-                    me.saveEntry(M.getDOMID());
+                    me.saveEntry(ModalID);
                 });
                 // Add the Primary RowID
-                $('#' + M.getDOMID() + ' .modal-body').append('<input type="hidden" name="' + this.PrimaryColumn + '" value="' + id + '">');
+                $('#' + ModalID + ' .modal-body').append('<input type="hidden" name="' + this.PrimaryColumn + '" value="' + id + '">');
                 // Write all input fields with {key:value}
                 let r = null;
                 me.Rows.forEach(row => {
                     if (row[me.PrimaryColumn] == id)
                         r = row;
                 });
-                this.writeDataToForm('#' + M.getDOMID(), r);
-                M.show();
+                this.writeDataToForm('#' + ModalID, r);
+                // Finally show Modal if none existed
+                if (M)
+                    M.show();
             }
         }
     }
@@ -1221,6 +1276,7 @@ function openTableInModal(tablename, previousSelRows = [], callback = function (
             let SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> ' +
                 t.GUIOptions.modalButtonTextSelect + '</button>';
             let M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
+            M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
             t.renderHTML();
             // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
             // Bind Buttonclick (Select)
