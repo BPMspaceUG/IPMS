@@ -135,8 +135,6 @@ class Modal {
 //==============================================================
 // Class: StateMachine
 //==============================================================
-// For now every Table has its own statemachine. But in future it
-// would be better if every Row/Object would have its own Statemachine
 class StateMachine {
   private tablename: string
 
@@ -712,7 +710,8 @@ class Table extends RawTable {
 
     let btns = '';
     let saveBtn = '';
-    let actStateID = TheRow.state_id[0] // ID    
+    let actStateID = TheRow.state_id[0] // ID
+
     // Check States -> generate Footer HTML
     if (nextStates.length > 0) {
       let cnt_states = 0;
@@ -806,37 +805,48 @@ class Table extends RawTable {
     });
   }
   private setState(MID: string, RowID: number, targetStateID: number): void {
-    // Remove all Error Messages
-    $('#' + MID + ' .modal-body .alert').remove();
     let t = this
-    let data = t.readDataFromForm('#'+MID); // Read out all input fields with {key:value}
 
+    // Remove all Error Messages
+    let data = {}
+    if (MID != '') {
+      $('#' + MID + ' .modal-body .alert').remove();
+      // Read out all input fields with {key:value}
+      data = t.readDataFromForm('#'+MID);
+    }
     // Set a loading icon or indicator
-    $('#'+MID+' .modal-body').prepend('<div class="text-center text-primary mb-3 loadingtext">'+
-      '<h2><i class="fa fa-spinner fa-pulse"></i> Loading...</h2></div>');
-    $('#'+MID+' :input').prop("disabled", true);
+    if (MID != '') {
+      $('#'+MID+' .modal-body').prepend('<div class="text-center text-primary mb-3 loadingtext">'+
+        '<h2><i class="fa fa-spinner fa-pulse"></i> Loading...</h2></div>');
+      $('#'+MID+' :input').prop("disabled", true);
+    }
 
     // REQUEST
     t.transitRow(RowID, targetStateID, data, function(r) {
       // When a response came back
-      $('#' + MID + ' .loadingtext').remove();
-      $('#'+MID+' :input').prop("disabled", false);
+      if (MID != '') {
+        $('#' + MID + ' .loadingtext').remove();
+        $('#'+MID+' :input').prop("disabled", false);
+      }
 
       // Try to parse result messages
       try {
         var msgs = JSON.parse(r)
       }
       catch(err) {
-        $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
-        '<b>Script Error!</b>&nbsp;'+ r +
-        '</div>')
+        console.log(r);
+        if (MID != '')
+          $('#' + MID + ' .modal-body').prepend('<div class="alert alert-danger" role="alert">'+
+          '<b>Script Error!</b>&nbsp;'+ r +
+          '</div>')
         return
       }  
       // Handle Transition Feedback
       let counter = 0;
       msgs.forEach(msg => {
         // Remove all Error Messages
-        $('#' + MID + ' .modal-body .alert').remove();
+        if (MID != '')
+          $('#' + MID + ' .modal-body .alert').remove();
         // Show Messages
         if (msg.show_message) {
           let info = ""
@@ -854,20 +864,22 @@ class Table extends RawTable {
           //$('#'+MID).modal('hide') // Hide only if reached IN-Script
 
           // Refresh Form-Data
-          t.getFormModify(data, function(r){
-            if (r.length > 0) {
-              let htmlForm = r;
-              // Refresh Modal Buttons
-              t.getNextStates(data, function(re){
-                if (re.length > 0) {
-                  let nextstates = JSON.parse(re);
-                  // Set Form-Content
-                  //$('#' + MID + ' .modal-body').html(htmlForm);
-                  t.renderEditForm(RowID, htmlForm, nextstates, MID);
-                }
-              })
-            }
-          })
+          if (MID != '') {
+            t.getFormModify(data, function(r){
+              if (r.length > 0) {
+                let htmlForm = r;
+                // Refresh Modal Buttons
+                t.getNextStates(data, function(re){
+                  if (re.length > 0) {
+                    let nextstates = JSON.parse(re);
+                    // Set Form-Content
+                    //$('#' + MID + ' .modal-body').html(htmlForm);
+                    t.renderEditForm(RowID, htmlForm, nextstates, MID);
+                  }
+                })
+              }
+            })
+          }
 
           if (RowID != 0) t.lastModifiedRowID = RowID
           t.loadRows(function(){
@@ -936,8 +948,8 @@ class Table extends RawTable {
                   me.renderHTML()
                   me.onEntriesModified.trigger();
                   // TODO: Overwrite the new Content from Database
-                  me.modifyRow(msg.element_id, ModalID)
-                  //$('#'+ModalID).modal('hide')
+                  //me.modifyRow(msg.element_id, ModalID)
+                  $('#'+ModalID).modal('hide')
                 })
               })
             }
@@ -1079,7 +1091,7 @@ class Table extends RawTable {
     //---------------------------- Table Headers
     let ths: string = '';
     if (t.showControlColumn)
-      ths = '<th></th>'; // Pre fill with 1 because of selector
+      ths = '<th scope="col"></th>'; // Pre fill with 1 because of selector
 
     // Order Headers by col_order
     function compare(a,b) {
@@ -1091,7 +1103,7 @@ class Table extends RawTable {
     // Generate HTML for Headers sorted
     sortedColumnNames.forEach(function(col) {
       if (t.Columns[col].is_in_menu) {
-        ths += '<th data-colname="'+col+'" class="datatbl_header'+(col == t.OrderBy ? ' sorted' : '')+'">'+
+        ths += '<th scope="col" data-colname="'+col+'" class="datatbl_header'+(col == t.OrderBy ? ' sorted' : '')+'">'+
                 t.Columns[col].column_alias + (col == t.OrderBy ? '&nbsp;'+(t.AscDesc == SortOrder.ASC ?
                 '<i class="fa fa-sort-asc">' : (t.AscDesc == SortOrder.DESC ?
                 '<i class="fa fa-sort-desc">' : '') )+'' : '') + '</th>';
@@ -1128,7 +1140,7 @@ class Table extends RawTable {
     header += '<div class="col-12 col-sm-6 col-lg-9 mb-3">'
     // Workflow Button
     if (t.SM && t.showWorkflowButton) {
-      header += '<button class="btn btn-secondary btnShowWorkflow"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
+      header += '<button class="btn btn-secondary btnShowWorkflow mr-1"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
     }
     // Create Button
     if (!t.ReadOnly) {
@@ -1156,7 +1168,7 @@ class Table extends RawTable {
       
       // If a Control Column is set then Add one before each row
       if (t.showControlColumn) {
-        data_string = '<td class="controllcoulm modRow" data-rowid="'+row[t.PrimaryColumn]+'">'
+        data_string = '<td scope="row" class="controllcoulm modRow" data-rowid="'+row[t.PrimaryColumn]+'">'
         // Entries are selectable?
         if (t.selType == SelectType.Single || t.selType == SelectType.Multi) {
           data_string += '<i class="fa fa-square-o"></i>';
@@ -1213,7 +1225,15 @@ class Table extends RawTable {
             // Check for statemachine
             if (col == 'state_id' && t.tablename != 'state') {
               // Modulo 12 --> see in css file (12 colors)
-              data_string += '<td><span class="badge label-state state'+(row['state_id'][0] % 12)+'">'+value+'</span></td>'
+              let cssClass = 'state' + (row['state_id'][0] % 12);
+              data_string += '<td>\
+                  <div class="dropdown showNextStates">\
+                    <button class="btn dropdown-toggle btnGridState btn-sm label-state '+cssClass+'" data-toggle="dropdown">'+value+'</button>\
+                    <div class="dropdown-menu">\
+                      <p class="m-0 p-3 text-muted"><i class="fa fa-spinner fa-pulse"></i> Loading...</p>\
+                    </div>\
+                  </div>\
+              </td>';
             }
             else
               data_string += '<td>'+value+'</td>'
@@ -1279,6 +1299,42 @@ class Table extends RawTable {
       let RowID = $(this).data('rowid');
       t.modifyRow(RowID);
     })
+    // PopUp Menu
+    $(t.jQSelector+' .showNextStates').off('show.bs.dropdown').on('show.bs.dropdown', function(e){
+      let jQRow = $(this).parent().parent();
+      let RowID = jQRow.find('td:first').data('rowid');
+      //console.log('show Next states popup');
+      let PrimaryColumn: string = t.PrimaryColumn;
+      let data = {}
+      data[PrimaryColumn] = RowID
+      //console.log(data)
+      t.getNextStates(data, function(re){
+        if (re.length > 0) {
+          jQRow.find('.dropdown-menu').html('<p class="m-0 p-3 text-muted"><i class="fa fa-times"></i> No transition possible</p>');
+          let nextstates = JSON.parse(re);
+          // Any Target States?
+          if (nextstates.length > 0) {
+            jQRow.find('.dropdown-menu').empty();
+            let actStateID = 0;
+            let btns = '';
+            nextstates.map(state => {
+              //console.log(state);
+              btns += '<a class="dropdown-item btnState btnStateChange state'+(state.id % 12)+'" data-rowid="'+RowID+'" data-targetstate="'+state.id+'">' + state.name + '</a>';
+            });
+            jQRow.find('.dropdown-menu').html(btns);
+            // Bind function to StateButtons
+            $('.btnState').click(function(e){
+              console.log(0);
+              e.preventDefault();
+              let RowID = $(this).data('rowid')
+              let TargetStateID = $(this).data('targetstate')
+              console.log('ID', RowID, ' --> ', TargetStateID);
+              t.setState('', RowID, TargetStateID)
+            })
+          }
+        }
+      })
+    })    
     // Table-Header - Sort
     $(t.jQSelector+' .datatbl_header').off('click').on('click', function(e){
       e.preventDefault();
@@ -1405,3 +1461,13 @@ $(document).on('show.bs.modal', '.modal', function () {
 $(document).on('hidden.bs.modal', '.modal', function () {
   $('.modal:visible').length && $(document.body).addClass('modal-open');
 });
+/*
+$(document).on("show.bs.dropdown", function(event){
+  //console.log('Popup opened!');
+  //console.log(row);
+  let row = $(event.relatedTarget).parent().parent().parent();
+  let RowID = row.find('td:first').data('rowid');
+  //console.log('RowID =', RowID);
+  let nextstates = 
+});
+*/

@@ -4,8 +4,6 @@
 <div ng-app="IPMS">
   <div ng-controller="IPMScontrol">
 
-    <!--<button class="btn btn-primary btn-xl" ng-click="test()">TEST</button>-->
-
     <!-- CONNECT Part -->
 		<div class="container" style="padding-top: 30px">
 			<form class="bpm-server-connect" action="modules/ConnectDB.php">
@@ -78,6 +76,7 @@
                   <select class="form-control" name="repeatSelect" id="repeatSelect" ng-model="dbNames.model" ng-change="changeSelection()">
                     <option ng-repeat="name in dbNames.names" value="{{name}}">{{name}}</option>
                   </select>
+                  <button ng-click="changeSelection()" class="btn btn-default"><i class="fa fa-refresh"></i> Refresh</button>
                 </div>
               </form>
             </div>
@@ -103,7 +102,7 @@
               <div ng-hide="configFileWasFound">
                 <h6>Manually load config</h6>
     		        <p>Paste the contents of the configuration file here:</p>
-    		        <textarea class="form-control configtxt" ng-model="configtext"></textarea>
+    		        <textarea class="form-control configtxt" ng-model="configtext" placeholder="Post Content of the Config-File here"></textarea>
     		        <br>
     		        <button class="btn btn-default" ng-click="loadconfig(configtext)">
                   <i class="fa fa-arrow-right"></i> Parse and Load configuration file

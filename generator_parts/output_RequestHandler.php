@@ -631,9 +631,9 @@
       // Download File from Server
 
       // Inputs
-      $filename = strtolower($param["name"]);
-      $filepath = strtolower($param["path"]);
-      $tmp_parts = explode(".", strtolower($param["name"]));
+      $filename = $param["name"];
+      $filepath = $param["path"];
+      $tmp_parts = explode(".", $param["name"]);
       $filetype = end($tmp_parts);
 
       // Whitelists
@@ -643,7 +643,7 @@
       if (in_array($filepath, $whitelist_paths) && in_array($filetype, $whitelist_types)) {
         //echo "path and type in whitelist\n";
         // File exists
-        $filepathcomplete = $filepath . $filename;
+        $filepathcomplete = __DIR__."/../".$filepath . $filename;
         //echo "Filepath: ".$filepathcomplete."\n";
         if (file_exists($filepathcomplete)) {
           //echo "File exists\n";
