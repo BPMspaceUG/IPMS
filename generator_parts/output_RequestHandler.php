@@ -79,6 +79,35 @@
       }
       return $res;
     }
+    public static function getJoinedCols($tablename) {
+      $res = array();
+      $cols = Config::getColsByTablename($tablename);
+      // Find primary columns
+      foreach ($cols as $col) {
+        if ($col["foreignKey"]['table'] != '')
+          $res[] = array(
+            'table' => $col["foreignKey"]['table'],
+            'col_id' => $col["foreignKey"]['col_id'],
+            'col_subst' => $col["foreignKey"]['col_subst'],
+            'replace' => $col["COLUMN_NAME"]
+          );
+      }
+      return $res;
+    }
+    public static function checkSQLParts($queryPart) {
+      $disAllow = array(
+        '--', 'SELECT', 'INSERT','UPDATE','DELETE','UNION','RENAME','DROP','CREATE','TRUNCATE','ALTER','COMMIT',
+        'ROLLBACK','MERGE','CALL','EXPLAIN','LOCK','GRANT','REVOKE','SAVEPOINT','TRANSACTION','SET'
+      );
+      // Convert array to pipe-seperated string
+      $disAllow = implode('|', $disAllow);
+      // Check if no other harmfull statements exist
+      if (preg_match('/('.$disAllow.')/', strtoupper($queryPart)) == 0) {
+        // Execute query
+        return true;
+      }
+      return false;
+    }
   }
 
 
@@ -237,26 +266,28 @@
     //================================== READ
     public function read($param) {
       // Parameters and default values
-      $tablename = $param["table"];
-      $ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";      
-      $limitStart = isset($param["limitStart"]) ? $param["limitStart"] : null;
-      $limitSize = isset($param["limitSize"]) ? $param["limitSize"] : null;
-      $limit = isset($param["limit"]) ? $param["limit"] : null;
-      $orderby = isset($param["orderby"]) ? $param["orderby"] : "";
-      $filter = isset($param["filter"]) ? $param["filter"] : "";
-      
-      //--- Not yet secure params
-      $select = isset($param["select"]) ? $param["select"] : "*";
-      $where = isset($param["where"]) ? $param["where"] : "";
-      $joins = isset($param["join"]) ? $param["join"] : array();
+      try {
+        @$tablename = $param["table"];
+        @$ascdesc = isset($param["ascdesc"]) ? $param["ascdesc"] : "";      
+        @$limitStart = isset($param["limitStart"]) ? $param["limitStart"] : null;
+        @$limitSize = isset($param["limitSize"]) ? $param["limitSize"] : null;
+        @$limit = isset($param["limit"]) ? $param["limit"] : null;
+        @$orderby = isset($param["orderby"]) ? $param["orderby"] : "";
+        @$filter = isset($param["filter"]) ? $param["filter"] : "";
+        @$select = isset($param["select"]) ? $param["select"] : "*";
+        @$where = isset($param["where"]) ? $param["where"] : "";
+      } catch (Exception $e) {
+        die("Invalid Parameter-Data!");
+      }
 
-      // For internal use only (values of the prepared stmt)
-      $vals = array();
-
-      // Check Parameter
+      // Check Parameters
+      if (!Config::checkSQLParts($select)) die('Select Param contains blacklisted words!');
+      if (!Config::checkSQLParts($where)) die('Where Param contains blacklisted words!');     
       if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
       if (!Config::doesTableExist($tablename)) die('Table does not exist!');
       
+      // For internal use only (values of the prepared stmt)
+      $vals = array();
 
       //--- ORDER BY
       if (trim($orderby) <> "") {
@@ -270,14 +301,14 @@
         else die("AscDesc has no valid value (value has to be empty, ASC or DESC)!");
         // Check if is a foreign key then add 'a.' at front
         if (Config::hasColumnFK($tablename, $orderby))
-          $orderby = 'a.'.$orderby;
+        $orderby = 'a.'.$orderby;
         // Build query
         $sql_orderby = " ORDER BY ".$orderby." ".$ascdesc;
       } else {
         // No Orderby is set
         $sql_orderby = " "; // ORDER BY replacer_id DESC";
       }
-
+      
       //--- LIMIT (sec)
       $sql_limit = '';
       if (!is_null($limit)) {
@@ -287,13 +318,15 @@
       }
       if (!is_null($limitStart) || !is_null($limitSize)) {
         if (is_null($limitStart) || is_null($limitSize))
-          die('Limit-Start and Limit-Size have to be set.');
+        die('Limit-Start and Limit-Size have to be set.');
         if (!is_int($limitSize)) die("Limit-Size is no integer!");
         if (!is_int($limitStart)) die("Limit-Start is no integer!");
         $sql_limit = " LIMIT ".$limitStart.",".$limitSize;
       }
-
+      
       //--- JOINS
+      // Only get Joins from Server-Side
+      $joins = Config::getJoinedCols($tablename);
       $join_from = $tablename." AS a"; // if there is no join
       $sel = array();
       $sel_raw = array();
@@ -319,6 +352,7 @@
         }
         $sel_str = implode(",", $sel);
       }
+
       // Check for virtual columns
       $cols = Config::getColsByTablename($tablename);
       $virtCols = Config::getVirtualColnames($tablename);
@@ -330,7 +364,6 @@
           $sel_str .= ",".$virtSel.' AS '.$vcol;
         }
       }
-
 
       //--- WHERE (SEARCH / Filter)
       if ($where <> "" && $filter == "") {

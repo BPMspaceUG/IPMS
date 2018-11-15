@@ -22,9 +22,13 @@
   }
   
   // Parameter
-  $paramData = json_decode(file_get_contents('php://input'), true);
-  $command = $paramData["cmd"]; // HAS TO EXIST!
-  $param = isset($paramData["paramJS"]) ? $paramData["paramJS"] : null;
+  try {
+    $paramData = json_decode(file_get_contents('php://input'), true);
+    $command = $paramData["cmd"]; // HAS TO EXIST!
+    $param = isset($paramData["paramJS"]) ? $paramData["paramJS"] : null;
+  } catch (Exception $e) {
+    die('Error: Invalid data sent to API');
+  }
 
   /* TODO
   // Check if has rights

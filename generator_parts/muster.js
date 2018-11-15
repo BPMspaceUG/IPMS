@@ -684,7 +684,7 @@ class Table extends RawTable {
             btns = '<div class="btn-group dropup ml-0 mr-auto">' +
                 '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
                 t.GUIOptions.modalButtonTextSetStates +
-                '</button><div class="dropdown-menu">';
+                '</button><div class="dropdown-menu p-0">';
             // Loop States
             nextStates.forEach(function (s) {
                 let btn_text = s.name;
@@ -1175,7 +1175,7 @@ class Table extends RawTable {
                             data_string += '<td>\
                   <div class="dropdown showNextStates">\
                     <button class="btn dropdown-toggle btnGridState btn-sm label-state ' + cssClass + '" data-toggle="dropdown">' + value + '</button>\
-                    <div class="dropdown-menu">\
+                    <div class="dropdown-menu p-0">\
                       <p class="m-0 p-3 text-muted"><i class="fa fa-spinner fa-pulse"></i> Loading...</p>\
                     </div>\
                   </div>\
@@ -1247,11 +1247,9 @@ class Table extends RawTable {
         $(t.jQSelector + ' .showNextStates').off('show.bs.dropdown').on('show.bs.dropdown', function (e) {
             let jQRow = $(this).parent().parent();
             let RowID = jQRow.find('td:first').data('rowid');
-            //console.log('show Next states popup');
             let PrimaryColumn = t.PrimaryColumn;
             let data = {};
             data[PrimaryColumn] = RowID;
-            //console.log(data)
             t.getNextStates(data, function (re) {
                 if (re.length > 0) {
                     jQRow.find('.dropdown-menu').html('<p class="m-0 p-3 text-muted"><i class="fa fa-times"></i> No transition possible</p>');
@@ -1259,20 +1257,16 @@ class Table extends RawTable {
                     // Any Target States?
                     if (nextstates.length > 0) {
                         jQRow.find('.dropdown-menu').empty();
-                        let actStateID = 0;
                         let btns = '';
                         nextstates.map(state => {
-                            //console.log(state);
                             btns += '<a class="dropdown-item btnState btnStateChange state' + (state.id % 12) + '" data-rowid="' + RowID + '" data-targetstate="' + state.id + '">' + state.name + '</a>';
                         });
                         jQRow.find('.dropdown-menu').html(btns);
                         // Bind function to StateButtons
                         $('.btnState').click(function (e) {
-                            console.log(0);
                             e.preventDefault();
                             let RowID = $(this).data('rowid');
                             let TargetStateID = $(this).data('targetstate');
-                            console.log('ID', RowID, ' --> ', TargetStateID);
                             t.setState('', RowID, TargetStateID);
                         });
                     }
@@ -1293,10 +1287,10 @@ class Table extends RawTable {
         });
         //-------------------------------
         // Autofocus Filter    
-        if (t.Filter.length > 0)
-            $(t.jQSelector + ' .filterText').focus().val('').val(t.Filter);
-        else
-            $(t.jQSelector + ' .filterText').val(t.Filter);
+        //if (t.Filter.length > 0)
+        $(t.jQSelector + ' .filterText').focus().val('').val(t.Filter);
+        //else
+        //  $(t.jQSelector+' .filterText').val(t.Filter)
         // Mark last modified Row
         if (t.lastModifiedRowID) {
             if (t.lastModifiedRowID != 0) {
@@ -1395,13 +1389,3 @@ $(document).on('show.bs.modal', '.modal', function () {
 $(document).on('hidden.bs.modal', '.modal', function () {
     $('.modal:visible').length && $(document.body).addClass('modal-open');
 });
-/*
-$(document).on("show.bs.dropdown", function(event){
-  //console.log('Popup opened!');
-  //console.log(row);
-  let row = $(event.relatedTarget).parent().parent().parent();
-  let RowID = row.find('td:first').data('rowid');
-  //console.log('RowID =', RowID);
-  let nextstates =
-});
-*/ 
