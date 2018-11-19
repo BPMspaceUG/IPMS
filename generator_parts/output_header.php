@@ -24,13 +24,12 @@
   }
 
   //---------------> Token vaild    
-
-  echo "Hello "/*.var_export($token, true)*/."! ";
+  /*
   if (property_exists($token, "exp"))
     echo "Your Token will expire in ".number_format((($token->exp - time()) / 60), 2, ',', '.')."min. To log out, clear the cookies.";
   else
     echo "Your Token will never be expiring.";
-
+  */
 ?>
 <!DOCTYPE html>
 <html>

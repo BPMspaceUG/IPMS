@@ -31,6 +31,7 @@
 
   require_once("output_StateEngine.php");
   require_once("output_RequestHandler.php");
+  require_once("output_AuthHandler.php");
    // Loop each Table with StateMachine checked create a StateMachine Column
 
   // -------------------- FormData --------------------
@@ -39,6 +40,19 @@
   $content_tabpanels = '';  
   $content_jsObjects = '';
   
+  // Add Pseudo Element for Dashboard
+  $content_tabs .= "            ".
+  "<li class=\"nav-item\">
+    <a class=\"nav-link\" href=\"#dashboard\" data-toggle=\"tab\">
+      <i class=\"fa fa-dashboard\"></i>&nbsp;
+      <span class=\"table_alias\">Dashboard</span>
+    </a>
+  </li>\n";
+  // Add Pseudo Element for Dashboard
+  $content_tabpanels .= "            ".
+    "<div role=\"tabpanel\" class=\"tab-pane\" id=\"dashboard\">".
+    "</div>\n";
+
 
   foreach ($data as $table) {
     // Get Data
@@ -151,6 +165,7 @@
   $content_tabpanels = substr($content_tabpanels, 0, -1);
   $output_content = str_replace('###TABS###', $content_tabs, $output_content);
   $output_content = str_replace('###TAB_PANELS###', $content_tabpanels, $output_content);
+  $output_content = str_replace('replaceDBName', $db_name, $output_content);
   // Write the init functions for the JS-Table Objects
   $output_footer = str_replace('###JS_TABLE_OBJECTS###', $content_jsObjects, $output_footer);
 
@@ -162,6 +177,16 @@
   echo $output_all;
 
   // ------------------------------------ Generate Config File
+  // Generate Secret Key
+  $secretKey = 'secretkeybpmspace_'.sha1('test');
+  // Generate a machine token
+  $token_data = array();
+  $token_data['uid'] = 1337;
+  $token_data['firstname'] = 'Machine';
+  $token_data['lastname'] = 'Machine';
+  $token = JWT::encode($token_data, $secretKey);
+  $machine_token = $token;
+
   // ---> ENCODE Data as JSON
   $json = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
   // ----------------------- Config File generator
@@ -179,7 +204,10 @@
   define("DB_NAME", "'.$db_name.'");
 
   // AuthKey
-  define("AUTH_KEY", "secretkeybpmspace_'.sha1('test').'");
+  define("AUTH_KEY", "'.$secretKey.'");
+
+  // Machine-Token for internal API Calls
+  define("MACHINE_TOKEN", "'.$machine_token.'");
 
   // WhiteLists for getFile
   @define("WHITELIST_PATHS", array("ordner/test/", "ordner/"));
