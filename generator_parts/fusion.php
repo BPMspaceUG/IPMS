@@ -32,7 +32,7 @@
   require_once("output_StateEngine.php");
   require_once("output_RequestHandler.php");
   require_once("output_AuthHandler.php");
-   // Loop each Table with StateMachine checked create a StateMachine Column
+  // Loop each Table with StateMachine checked create a StateMachine Column
 
   // -------------------- FormData --------------------
 
@@ -51,6 +51,7 @@
   // Add Pseudo Element for Dashboard
   $content_tabpanels .= "            ".
     "<div role=\"tabpanel\" class=\"tab-pane\" id=\"dashboard\">".
+    "<?php include_once(__DIR__.'\dashboard.html'); ?>".
     "</div>\n";
 
 
@@ -99,15 +100,13 @@
       
       // write the formdata into the column if empty (TRANSITION)
       $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
-      $query = "UPDATE state SET form_data = '$form_data' WHERE ".
-      "statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL;";
+      $query = "UPDATE state SET form_data = '$form_data' WHERE statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL";
       $con->query($query);
       
       // write the formdata into the column if empty (CREATE)
       $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the create Form
       $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
-      $query = "UPDATE state_machines SET form_data = '$form_data' WHERE ".
-               "tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL;";
+      $query = "UPDATE state_machines SET form_data = '$form_data' WHERE tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL";
       $con->query($query);
 
       
@@ -250,8 +249,12 @@
     createFile($project_dir."/src/StateMachine.inc.php", $class_StateEngine);
     createFile($project_dir."/src/DatabaseHandler.inc.php", $output_DBHandler);
     createFile($project_dir."/src/AuthHandler.inc.php", $output_AuthHandler);
+    // Main Directory
     createFile($project_dir."/api.php", $output_API);
     createFile($project_dir."/login.php", $output_LoginPage);
+    // Create a dashboard, which gets included
+    if (!file_exists($project_dir."/dashboard.html"))
+      createFile($project_dir."/dashboard.html", "<section>\n\t<h1>Dashboard</h1>\n</section>");
     createFile($project_dir."/".$db_name.".php", $output_all);
     createFile($project_dir."/".$db_name."-config.inc.php", $output_config);
     createFile($project_dir."/index.php", "<?php\n\tHeader(\"Location: ".$db_name.".php\");\n\texit();\n?>");

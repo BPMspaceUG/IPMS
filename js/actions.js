@@ -350,7 +350,7 @@ var iconlist = ['address-book','address-book-o','address-card','address-card-o',
 'wifi','window-close','window-close-o','window-maximize','window-minimize','window-restore','wrench']
 
 function getRandomicon(){
-  var index = Math.floor( Math.random()*iconlist.length )
+  //var index = Math.floor( Math.random()*iconlist.length )
   return 'fa fa-square'; // default symbol
   //return 'fa fa-'+iconlist[index]
 }

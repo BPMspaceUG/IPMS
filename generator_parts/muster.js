@@ -487,12 +487,10 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
-            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
-            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;
@@ -863,7 +861,7 @@ class Table extends RawTable {
         let M = new Modal(this.GUIOptions.modalHeaderTextCreate, me.Form_Create, SaveBtn, true);
         M.options.btnTextClose = me.GUIOptions.modalButtonTextModifyClose;
         let ModalID = M.getDOMID();
-        this.updateLabels(ModalID); // Update all Labels  
+        this.updateLabels(ModalID); // Update all Labels
         this.writeDataToForm('#' + ModalID, me.defaultValues); // Update Default values
         // Save origin Table in all FKeys
         $('#' + ModalID + ' .inputFK').data('origintable', me.tablename);
@@ -1047,7 +1045,7 @@ class Table extends RawTable {
         //---------------------------- Table Headers
         let ths = '';
         if (t.showControlColumn)
-            ths = '<th scope="col"></th>'; // Pre fill with 1 because of selector
+            ths = '<th class="border-0" scope="col"></th>'; // Pre fill with 1 because of selector
         // Order Headers by col_order
         function compare(a, b) {
             a = parseInt(t.Columns[a].col_order);
@@ -1058,7 +1056,7 @@ class Table extends RawTable {
         // Generate HTML for Headers sorted
         sortedColumnNames.forEach(function (col) {
             if (t.Columns[col].is_in_menu) {
-                ths += '<th scope="col" data-colname="' + col + '" class="datatbl_header' + (col == t.OrderBy ? ' sorted' : '') + '">' +
+                ths += '<th scope="col" data-colname="' + col + '" class="border-0 datatbl_header' + (col == t.OrderBy ? ' sorted' : '') + '">' +
                     t.Columns[col].column_alias + (col == t.OrderBy ? '&nbsp;' + (t.AscDesc == SortOrder.ASC ?
                     '<i class="fa fa-sort-asc">' : (t.AscDesc == SortOrder.DESC ?
                     '<i class="fa fa-sort-desc">' : '')) + '' : '') + '</th>';
@@ -1096,7 +1094,7 @@ class Table extends RawTable {
             header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;Create</button>';
         }
         header += '</div></div>';
-        header += '<div class="tablewrapper"><table class="table table-hover table-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';
+        header += '<div class="tablewrapper border mb-1"><table class="table table-hover m-0 table-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';
         let footer = '</tbody></table></div>' +
             '<div>' +
             '<p class="pull-left"><small>' + t.getHTMLStatusText() + '</small></p>' +
@@ -1379,13 +1377,37 @@ function selectForeignKey(inp) {
 //-------------------------------------------
 // Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {
-    //-- Stack modals correctly  
-    var zIndex = 2040 + (10 * $('.modal:visible').length);
+    //-- Stack modals correctly
+    let zIndex = 2040 + (10 * $('.modal:visible').length);
     $(this).css('z-index', zIndex);
     setTimeout(function () {
         $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
     }, 0);
 });
+// Focus first Input in Modal (Input, Textarea, or Select)
+$(document).on('shown.bs.modal', function () {
+    $('.modal').find('input,textarea,select').filter(':visible:first').trigger('focus');
+    // On keydown
+    $("input[type=number]").keydown(function (e) {
+        // INTEGER
+        // comma 190, period 188, and minus 109, . on keypad
+        // key == 190 || key == 188 || key == 109 || key == 110 ||
+        // Allow: delete, backspace, tab, escape, enter and numeric . (180 = .)
+        if ($.inArray(e.keyCode, [46, 8, 9, 27, 13, 109, 110, 173, 190, 188]) !== -1 ||
+            // Allow: Ctrl+A, Command+A
+            (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
+            // Allow: home, end, left, right, down, up
+            (e.keyCode >= 35 && e.keyCode <= 40)) {
+            // let it happen, don't do anything
+            return;
+        }
+        // Ensure that it is a number and stop the keypress
+        if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+            e.preventDefault();
+        }
+    });
+});
+// Helper method
 $(document).on('hidden.bs.modal', '.modal', function () {
     $('.modal:visible').length && $(document.body).addClass('modal-open');
 });
