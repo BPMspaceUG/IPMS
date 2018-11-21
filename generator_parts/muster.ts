@@ -699,7 +699,7 @@ class Table extends RawTable {
     let EditMID = null;
     let M: Modal = null;
     if (!ExistingModalID) {
-      M = new Modal(this.GUIOptions.modalHeaderTextModify, htmlForm, '', true)
+      M = new Modal(this.GUIOptions.modalHeaderTextModify + '<span class="text-muted ml-3">#'+RowID+'</span>', htmlForm, '', true)
       M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
       EditMID = M.getDOMID();
     } else {
@@ -1032,7 +1032,7 @@ class Table extends RawTable {
         let M: Modal = undefined;
         let ModalID = undefined;
         if (!ExistingModalID) {
-          M = new Modal(this.GUIOptions.modalHeaderTextModify, this.Form_Create, '', true)
+          M = new Modal(this.GUIOptions.modalHeaderTextModify+ '<span class="text-muted ml-3">#'+id+'</span>', this.Form_Create, '', true)
           M.options.btnTextClose = this.GUIOptions.modalButtonTextModifyClose
           ModalID = M.getDOMID();
         } else {
