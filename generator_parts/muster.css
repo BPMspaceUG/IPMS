@@ -19,6 +19,8 @@
 .editor {font-family: 'Courier New', 'Courier', 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace; font-size: .8em;}
 .customfooter {width: 100%;}
 
+.ui-autocomplete { z-index:2147483647; }
+
 /* StateEngine */
 .btnGridState {padding: 3px 5px; font-size: .75em;}
 .label-state {background-color: #333; color: white; border: none; }

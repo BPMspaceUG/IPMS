@@ -135,12 +135,13 @@ class StateMachine {
             DB.request('smGetLinks', { table: me.tablename }, function (r) {
                 smLinks = JSON.parse(r);
                 // Finally, when everything was loaded, show Modal
-                let M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-secondary fitsm">Fit</button>', true);
+                let M = new Modal('StateMachine', '<div class="statediagram" style="width: 100%; height: 300px;"></div>', '<button class="btn btn-secondary fitsm"><i class="fa fa-expand"></i> Fit</button>', true);
                 let container = document.getElementsByClassName('statediagram')[0];
                 let nodes = smNodes;
                 let edges = smLinks;
                 for (let i = 0; i < nodes.length; i++) {
                     if (me.isExitNode(nodes[i].id, smLinks)) {
+                        // Exit Node
                         nodes[i]['color'] = '#c55';
                         nodes[i]['shape'] = 'dot';
                         nodes[i]['size'] = 10;
@@ -149,6 +150,11 @@ class StateMachine {
                         // Add EntryPoint Node
                         nodes.push({ id: 0, color: '#5c5', shape: 'dot', size: 10 });
                         edges.push({ from: 0, to: nodes[i].id });
+                    }
+                    // every node, except 0 node
+                    if (nodes[i].id > 0) {
+                        nodes[i]['label'] = '<i>' + nodes[i].id + '</i>\n' + nodes[i]['label'];
+                        nodes[i]['font'] = { multi: 'html' };
                     }
                 }
                 let data = {
@@ -166,9 +172,9 @@ class StateMachine {
                         dashes: false,
                         smooth: {
                             //'enabled': true,
-                            "type": "cubicBezier",
-                            "forceDirection": "horizontal",
-                            "roundness": 1 // 0.2
+                            //"type": "cubicBezier",
+                            "forceDirection": "horizontal"
+                            //"roundness": 1// 0.2
                         }
                     },
                     nodes: {
@@ -208,22 +214,24 @@ class StateMachine {
                         hierarchical: {
                             enabled: true,
                             direction: 'LR',
-                            nodeSpacing: 150,
-                            levelSeparation: 200,
-                            sortMethod: 'directed'
+                            nodeSpacing: 200,
+                            levelSeparation: 225,
+                            blockShifting: true,
+                            edgeMinimization: true,
+                            parentCentralization: true,
                         }
                     },
                     physics: {
                         enabled: false
                     },
-                    interaction: {
-                        /*zoomView:false,*/
-                        dragNodes: false
-                        /*dragView: false*/
-                    }
+                    interaction: {}
                 };
                 let network = new vis.Network(container, data, options);
                 M.show();
+                let ID = M.getDOMID();
+                $('#' + ID).on('shown.bs.modal', function (e) {
+                    network.fit({ scale: 1, offset: { x: 0, y: 0 }, animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+                });
                 $('.fitsm').click(function (e) {
                     e.preventDefault();
                     network.fit({ scale: 1, offset: { x: 0, y: 0 }, animation: { duration: 1000, easingFunction: 'easeInOutQuad' } });
@@ -663,7 +671,8 @@ class Table extends RawTable {
         let EditMID = null;
         let M = null;
         if (!ExistingModalID) {
-            M = new Modal(this.GUIOptions.modalHeaderTextModify + '<span class="text-muted ml-3">#' + RowID + '</span>', htmlForm, '', true);
+            let TitleText = this.GUIOptions.modalHeaderTextModify + '<span class="text-muted ml-3">#' + RowID + ' <small>in ' + this.tablename + '</small></span>';
+            M = new Modal(TitleText, htmlForm, '', true);
             M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
             EditMID = M.getDOMID();
         }
