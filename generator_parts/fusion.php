@@ -51,7 +51,7 @@
   // Add Pseudo Element for Dashboard
   $content_tabpanels .= "            ".
     "<div role=\"tabpanel\" class=\"tab-pane\" id=\"dashboard\">".
-    "<?php include_once(__DIR__.'\dashboard.html'); ?>".
+    "<?php include_once(__DIR__.'/dashboard.html'); ?>".
     "</div>\n";
 
 
@@ -59,6 +59,7 @@
     // Get Data
     $tablename = $table["table_name"];
     @$se_active = (bool)$table["se_active"];
+    $con = DB::getInstance()->getConnection();
 
     //--- Create HTML Content
     if ($table["is_in_menu"]) {
@@ -82,13 +83,21 @@
       $content_jsObjects .= "      let $tableVarName = new Table('$tablename', '.table_$tablename', 0, function(){ $tableVarName.loadRows(function(){ $tableVarName.renderHTML(); }); });\n";
 
     }
-    //---/
+    //---/Crete HTML Content
+
 
     // TODO: Check if the "table" is no view
 
-    if ($se_active) {
-      $con = DB::getInstance()->getConnection();
 
+    // Create a stored procedure for each Table
+    $con->exec('CREATE DEFINER=`root`@`localhost` PROCEDURE sp_'.$tablename.'(IN role_id INT)
+BEGIN
+  SELECT * FROM '.$tablename.';
+END');
+
+
+    // Create StateMachine
+    if ($se_active) {
       // ------- StateMachine Creation
       $SM = new StateMachine($con);
       $SM->createDatabaseStructure();
@@ -98,6 +107,7 @@
       $colData = $table["columns"];
       $excludeKeys = Config::getPrimaryColsByTablename($tablename, $data);
       
+      /*
       // write the formdata into the column if empty (TRANSITION)
       $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
       $query = "UPDATE state SET form_data = '$form_data' WHERE statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL";
@@ -108,7 +118,13 @@
       $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
       $query = "UPDATE state_machines SET form_data = '$form_data' WHERE tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL";
       $con->query($query);
+      */
 
+      // TODO: Only create a default form
+      $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the FormData
+      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
+      $query = "UPDATE state_machines SET form_data_default = '$form_data' WHERE tablename = '$tablename' AND NULLIF(form_data_default, ' ') IS NULL";
+      $con->query($query);
       
       $queries1 = $SM->getQueryLog();
       // Clean up
@@ -176,8 +192,10 @@
   echo $output_all;
 
   // ------------------------------------ Generate Config File
+
   // Generate Secret Key
-  $secretKey = 'secretkeybpmspace_'.sha1('test');
+  $secretKey = 'secretkey_'.sha1('test' . date("Y-m-d")); // Changes every day only
+
   // Generate a machine token
   $token_data = array();
   $token_data['uid'] = 1337;

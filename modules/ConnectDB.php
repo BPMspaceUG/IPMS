@@ -100,13 +100,24 @@
           $column_name = $row2["COLUMN_NAME"];
           // Additional information
 
+          //------------------------------------------------------
           // Pre fill foreign keys
-          if ($column_name == "state_id_FROM" || $column_name == "state_id_TO") {
+          //------------------------------------------------------
+          // default
+          $fk = array("table" => "", "col_id" => "", "col_subst" => "");
+
+          if ($table == 'state' && $column_name == "statemachine_id") {
+            $fk = array("table" => "state_machines", "col_id" => "id", "col_subst" => "CONCAT(tablename, ' (', id ,')')");
+          }
+          else if ($table == 'state_rules' && $column_name == "state_id_FROM") {
+            $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "CONCAT(t0.name, ' (', t0.state_id, ')')");
+          }
+          else if ($table == 'state_rules' && $column_name == "state_id_TO") {
+            $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "CONCAT(t1.name, ' (', t1.state_id, ')')");
+          }
+          else if ($column_name == "state_id" && $table != 'state'){            
+            // every other state column            
             $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "name");
-          } else if ($column_name == "state_id" && $table != 'state'){
-            $fk = array("table" => "state", "col_id" => "state_id", "col_subst" => "name");
-          } else {
-            $fk = array("table" => "", "col_id" => "", "col_subst" => "");
           }
 
           // Table Has StateMachine?
@@ -144,8 +155,7 @@
         //------------------------------------------------ Auto Foreign Keys
         $fKeys = array();
         $query = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME ".
-          "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA = '$db' AND TABLE_NAME = '$table' ".
-          "AND COLUMN_NAME <> 'state_id' AND COLUMN_NAME <> 'state_id_FROM' AND COLUMN_NAME <> 'state_id_TO';";
+          "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA = '$db' AND TABLE_NAME = '$table'";
         $resX = mysqli_query($con, $query);
 
         //echo "Table: $table\n";
@@ -163,10 +173,16 @@
           foreach ($columns as $colname => $col) {
             // check if entry exists
             if (array_key_exists($colname, $fKeys)) {
-              // Save Foreign Keys in existing Array
-              $columns[$colname]["foreignKey"]["table"] = $fKeys[$colname]["refeTable"];
-              $columns[$colname]["foreignKey"]["col_id"] = $fKeys[$colname]["colID"];
-              $columns[$colname]["foreignKey"]["col_subst"] = $fKeys[$colname]["colID"];
+              // Check if keys are empty
+              if (empty($columns[$colname]["foreignKey"]["table"])
+              && empty($columns[$colname]["foreignKey"]["col_id"])
+              && empty($columns[$colname]["foreignKey"]["col_subst"])
+              ) {
+                // Save Foreign Keys in existing Array
+                $columns[$colname]["foreignKey"]["table"] = $fKeys[$colname]["refeTable"];
+                $columns[$colname]["foreignKey"]["col_id"] = $fKeys[$colname]["colID"];
+                $columns[$colname]["foreignKey"]["col_subst"] = $fKeys[$colname]["colID"];
+              }
             }
           }
         }

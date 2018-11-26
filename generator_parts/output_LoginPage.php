@@ -37,14 +37,22 @@
             $lastname = 'Doe';
             $login_successful = true;
         }
+
+        // For Testing
+        if ($user == 'guest' && $pass == 'guest') {
+            $user_id = 42;
+            $firstname = 'Guest';
+            $lastname = 'Guest';
+            $login_successful = true;
+        }
         
         // Set Token when Login was successful
         if ($login_successful) {
             // Generate Token
             $token_data = array();
             $token_data['uid'] = $user_id;
-            //$token_data['firstname'] = $firstname;
-            //$token_data['lastname'] = $lastname;
+            $token_data['firstname'] = $firstname;
+            $token_data['lastname'] = $lastname;
             // Token vaild for 60min
             $token_data['exp'] = time() + 60 /*sec*/ * 60 /*min*/ * 24 /*hours*/;
             $token = JWT::encode($token_data, AUTH_KEY);

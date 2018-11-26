@@ -224,7 +224,11 @@ class StateMachine {
                     physics: {
                         enabled: false
                     },
-                    interaction: {}
+                    interaction: {
+                    /*zoomView:false,*/
+                    //dragNodes:false
+                    /*dragView: false*/
+                    }
                 };
                 let network = new vis.Network(container, data, options);
                 M.show();
@@ -495,10 +499,12 @@ class Table extends RawTable {
             if (this.PageIndex < Math.floor(pages.length / 2))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = i - this.PageIndex;
+            // Display middle
             else if ((this.PageIndex >= Math.floor(pages.length / 2))
                 && (this.PageIndex < (NrOfPages - Math.floor(pages.length / 2))))
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = -Math.floor(pages.length / 2) + i;
+            // Display end edge
             else if (this.PageIndex >= NrOfPages - Math.floor(pages.length / 2)) {
                 for (var i = 0; i < pages.length; i++)
                     pages[i] = NrOfPages - this.PageIndex + i - pages.length;

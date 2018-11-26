@@ -7,7 +7,7 @@
   <div class="collapse navbar-collapse" id="navbarText">
     <ul class="navbar-nav ml-auto">
       <li class="nav-item active">
-        <a class="nav-link" href="#"><i class="fa fa-user"></i> Account</a>
+        <a class="nav-link" href="#"><i class="fa fa-user"></i> <?php echo $token->firstname; ?></a>
       </li>
       <!--
       <li class="nav-item">

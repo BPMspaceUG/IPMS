@@ -66,6 +66,12 @@
         $this->db->query($query);
         $this->log($query);
       }
+      // Column [form_data_default] does not yet exist
+      if (strpos($columnstr, "form_data_default") === FALSE) {
+        $query = "ALTER TABLE `state_machines` ADD COLUMN `form_data_default` LONGTEXT NULL AFTER `tablename`;";
+        $this->db->query($query);
+        $this->log($query);
+      }
       // Column [form_data] does not yet exist
       if (strpos($columnstr, "transition_script") === FALSE) {
         $query = "ALTER TABLE `state_machines` ADD COLUMN `transition_script` LONGTEXT NULL AFTER `tablename`;";
@@ -197,17 +203,17 @@
 
 
     // [START]   FORM - Elements
-    private function getFormElementStd($label, $content, $fk = '') {
-      return "<div class=\"form-group row\">$fk\n\t".
+    private function getFormElementStd($isVisible, $label, $content, $fk = '') {
+      return "<div class=\"form-group row".($isVisible ? '' : ' collapse')."\">$fk\n\t".
         "<label class=\"col-sm-3 col-form-label\">".$label."</label>\n\t".
         "<div class=\"col-sm-9\">\n\t\t".$content."\n\t".
         "</div>\n</div>\n";
     }
-    private function getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol) {
+    private function getFormElement($isVisible, $key, $alias, $default, $data_type, $FKTable, $substCol) {
       
       // Special case if $key == 'state_id'      
       if ($key == 'state_id') {
-        return $this->getFormElementStd($alias, '<div class="input-group">
+        return $this->getFormElementStd($isVisible, $alias, '<div class="input-group">
           <input type="hidden" name="'.$key.'" value="'.$default.'"/>
           <span class="input-group-text label-state"></span>
         </div>');
@@ -215,7 +221,7 @@
       //----------------------------------
       else if ($FKTable != '') {
         // FOREIGN KEY
-        return $this->getFormElementStd($alias, '<div class="input-group">
+        return $this->getFormElementStd($isVisible, $alias, '<div class="input-group">
           <div class="input-group-prepend">
             <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
             <button class="btn btn-outline-secondary fKey" type="button" onclick="selectForeignKey(this)">Select...</button>
@@ -225,34 +231,34 @@
       }
       else if (strtolower($data_type) == 'int') {
         // Number
-        return $this->getFormElementStd($alias, '<input type="number" class="form-control" name="'.$key.'">');
+        return $this->getFormElementStd($isVisible, $alias, '<input type="number" class="form-control" name="'.$key.'">');
       }
       else if (strtolower($data_type) == 'tinyint') {
         // Boolean
-        return $this->getFormElementStd($alias, '<div class="custom-control custom-checkbox">'.
+        return $this->getFormElementStd($isVisible, $alias, '<div class="custom-control custom-checkbox">'.
           '<input type="checkbox" class="custom-control-input" id="customCheck1" name="'.$key.'"><label class="custom-control-label" for="customCheck1">&nbsp;</label></div>');
       }
       else if (strtolower($data_type) == 'longtext') {
         // TextEditor (Code)
-        return $this->getFormElementStd($alias, '<textarea rows="4" class="form-control editor" name="'.$key.'">'.$default.'</textarea>');
+        return $this->getFormElementStd($isVisible, $alias, '<textarea rows="4" class="form-control editor" name="'.$key.'">'.$default.'</textarea>');
       }
       else if (strtolower($data_type) == 'time') {
         // TIME
-        return $this->getFormElementStd($alias, '<input type="time" class="form-control" name="'.$key.'">');
+        return $this->getFormElementStd($isVisible, $alias, '<input type="time" class="form-control" name="'.$key.'">');
       }
       else if (strtolower($data_type) == 'date') {
         // DATE
-        return $this->getFormElementStd($alias, '<input type="date" class="form-control" name="'.$key.'">');
+        return $this->getFormElementStd($isVisible, $alias, '<input type="date" class="form-control" name="'.$key.'">');
       }
       else if (strtolower($data_type) == 'datetime') {        
         // DATETIME
-        return $this->getFormElementStd($alias, "<div class=\"row\">\n".
+        return $this->getFormElementStd($isVisible, $alias, "<div class=\"row\">\n".
         "  <div class=\"col-7\"><input type=\"date\" class=\"form-control\" name=\"".$key."\"></div>\n". // DATE
         "  <div class=\"col-5\"><input type=\"time\" class=\"form-control\" name=\"".$key."\"></div>\n". // TIME
         "</div>");
       }
       // Standard = TEXT
-      return $this->getFormElementStd($alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
+      return $this->getFormElementStd($isVisible, $alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
     }
     public function getBasicFormDataByColumns($colData, $excludeKeys) {
       $header = "<form>\n";
@@ -270,10 +276,7 @@
         // Check if exclude
         if (!in_array($key, $excludeKeys)) {
           // Check if not visible
-          if (!$visible)
-            $content .= "<!--\n".$this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol)."-->\n";
-          else
-            $content .= $this->getFormElement($key, $alias, $default, $data_type, $FKTable, $substCol);
+          $content .= $this->getFormElement($visible, $key, $alias, $default, $data_type, $FKTable, $substCol);
         }        
       }
       return $header.$content.$footer;
