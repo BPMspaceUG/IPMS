@@ -11,6 +11,16 @@
     // Parameters
     $user = getPOSTParamSecure('usr');
     $pass = getPOSTParamSecure('pwd');
+    $logout = isset($_GET['logout']) ? true : false;
+
+    if ($logout) {
+        // Delete Cookies
+        unset($_COOKIE['token']);
+        setcookie("token", "", time()-3600);
+        // redirect to Login Page
+        header('Location: index.php');
+        exit();
+    }
 
     $login_successful = false;
     // TODO: Select Login from Database
@@ -33,8 +43,8 @@
         // For Testing
         if ($user == 'root' && $pass == 'toor') {
             $user_id = 23;
-            $firstname = 'John';
-            $lastname = 'Doe';
+            $firstname = 'Admin';
+            $lastname = 'Admin';
             $login_successful = true;
         }
 

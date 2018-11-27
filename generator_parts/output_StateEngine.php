@@ -289,8 +289,10 @@
     public function getFormDataByStateID($StateID) {
       if (!($this->ID > 0)) return "";
       $result = '';
-      $stmt = $this->db->prepare("SELECT form_data AS 'fd' FROM state WHERE statemachine_id = ? AND state_id = ?");
-      $stmt->execute(array($this->ID, $StateID));
+      $sql = 'SELECT IF(form_data IS NULL OR form_data = \'\', (SELECT form_data_default FROM state_machines WHERE id = :SMID), form_data) AS fd'.
+        ' FROM state WHERE statemachine_id = :SMID AND state_id = :SID';
+      $stmt = $this->db->prepare($sql);
+      $stmt->execute(array(':SMID' => $this->ID, ':SID' => $StateID));
       while($row = $stmt->fetch()) {
         $result = $row['fd'];
       }
@@ -299,7 +301,8 @@
     public function getCreateFormByTablename() {
       if (!($this->ID > 0)) return "";
       $result = '';
-      $stmt = $this->db->prepare("SELECT form_data AS 'fd' FROM state_machines WHERE id = ?");
+      $sql = 'SELECT IF(form_data IS NULL OR form_data = \'\', form_data_default, form_data) AS fd FROM state_machines WHERE id = ?';
+      $stmt = $this->db->prepare($sql);
       $stmt->execute(array($this->ID));
       while($row = $stmt->fetch()) {
         $result = $row['fd'];

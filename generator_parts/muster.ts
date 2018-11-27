@@ -295,18 +295,6 @@ class RawTable {
     this.tablename = tablename;
     this.actRowCount = 0;
   }
-  private buildJoinPart() {
-    let joins = []
-    let me = this;
-    Object.keys(me.Columns).forEach(function(col) {
-      // Check if there is a substitute for the column
-      if (me.Columns[col].foreignKey.table != "") {
-        me.Columns[col].foreignKey.replace = col
-        joins.push(me.Columns[col].foreignKey)
-      }
-    })
-    return joins
-  }
   public getNextStates(data: any, callback) {
     DB.request('getNextStates', {table: this.tablename, row: data}, function(response) {
       callback(response)
@@ -351,15 +339,13 @@ class RawTable {
   // Call this function only at [init] and then only on [create] and [delete] and at [filter]
   public countRows(callback) {
     let me = this;
-    let joins = this.buildJoinPart();
     let data = {
       table: this.tablename,
       select: 'COUNT(*) AS cnt',
       where: this.Where,
-      filter: this.Filter,
-      join: joins
+      filter: this.Filter
     }
-    DB.request('read', data, function(r){
+    DB.request('count', data, function(r){
       if (r.length > 0) {
         let resp = JSON.parse(r);
         if (resp.length > 0) {
@@ -372,7 +358,6 @@ class RawTable {
   }
   public loadRows(callback) {
     let me = this;
-    let joins = me.buildJoinPart();
     let data = {
       table: this.tablename,
       limitStart: this.PageIndex * this.PageLimit,
@@ -381,8 +366,7 @@ class RawTable {
       where: this.Where, // '', //a.state_id = 1',
       filter: this.Filter,
       orderby: this.OrderBy,
-      ascdesc: this.AscDesc,
-      join: joins
+      ascdesc: this.AscDesc
     }
     // HTTP Request
     DB.request('read', data, function(r){
@@ -395,15 +379,12 @@ class RawTable {
     return this.actRowCount
   }
   public getRowByID(RowID: number, callback) {
-    let me = this;
-    let joins = me.buildJoinPart();
     let data = {
       table: this.tablename,
       limitStart: 0,
       limitSize: 1,
       select: '*',
-      where: this.PrimaryColumn + '=' + RowID,
-      join: joins
+      where: this.PrimaryColumn + '=' + RowID
     }
     // HTTP Request
     DB.request('read', data, function(r){
@@ -438,7 +419,7 @@ class Table extends RawTable {
     modalButtonTextModifySave: 'Save',
     modalButtonTextModifySaveAndClose: 'Save &amp; Close',
     modalButtonTextModifyClose: 'Close',
-    modalButtonTextSetStates: 'Set State',
+    //modalButtonTextSetStates: 'Set State',
     modalButtonTextSelect: 'Select',
     filterPlaceholderText: 'Enter searchword',
     statusBarTextNoEntries: 'No Entries',
@@ -481,6 +462,9 @@ class Table extends RawTable {
           me.SM = null;
         me.Columns = me.TableConfig.columns;
         me.ReadOnly = me.TableConfig.is_read_only;
+        // check if is read only and no select then hide first column
+        if (me.ReadOnly && me.selType == SelectType.NoSelect)
+          me.showControlColumn = false;
         // Loop all cloumns form this table
         Object.keys(me.Columns).forEach(function(col){
           // Get Primary and SortColumn
@@ -728,10 +712,11 @@ class Table extends RawTable {
     // Check States -> generate Footer HTML
     if (nextStates.length > 0) {
       let cnt_states = 0;
+      let cssClass = ' state' + (TheRow.state_id[0] % 12);
       // Header
       btns = '<div class="btn-group dropup ml-0 mr-auto">'+
-      '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
-      t.GUIOptions.modalButtonTextSetStates +
+      '<button type="button" class="btn '+cssClass+' text-white dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
+      TheRow.state_id[1] +
       '</button><div class="dropdown-menu p-0">';    
       // Loop States
       nextStates.forEach(function(s){

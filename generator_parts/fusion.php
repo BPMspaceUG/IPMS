@@ -83,20 +83,19 @@
       $content_jsObjects .= "      let $tableVarName = new Table('$tablename', '.table_$tablename', 0, function(){ $tableVarName.loadRows(function(){ $tableVarName.renderHTML(); }); });\n";
 
     }
-    //---/Crete HTML Content
+    //---/Create HTML Content
 
 
     // TODO: Check if the "table" is no view
 
 
-    // Create a stored procedure for each Table
-    $con->exec('CREATE DEFINER=`root`@`localhost` PROCEDURE sp_'.$tablename.'(IN role_id INT)
+    //--- Create a stored procedure for each Table
+    $con->exec('CREATE PROCEDURE sp_'.$tablename.'(IN token_uid INT)
 BEGIN
   SELECT * FROM '.$tablename.';
 END');
 
-
-    // Create StateMachine
+    //--- Create StateMachine
     if ($se_active) {
       // ------- StateMachine Creation
       $SM = new StateMachine($con);

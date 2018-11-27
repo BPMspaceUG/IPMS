@@ -184,7 +184,7 @@
 
       }
     }
-    //================================== CREATE (sec)
+    //================================== CREATE
     public function create($param) {
       // Inputs
       $tablename = $param["table"];
@@ -263,8 +263,47 @@
       // Return
       return json_encode($script_result);
     }
+    public function count($param) {
+      global $token;
+      $tablename = $param["table"];
+      $token_uid = $token->uid;
+
+      $query = 'CALL sp_'.$tablename.'('.$token_uid.')';
+      $pdo = DB::getInstance()->getConnection();
+      $stmt = $pdo->prepare($query);
+      $stmt->execute(array());
+      return json_encode(array(array('cnt' => $stmt->rowCount())));
+    }
+    //================================== CALL
+    public function call($param) {
+      global $token;
+      $tablename = $param["table"];
+      $token_uid = $token->uid;
+
+      $query = 'CALL sp_'.$tablename.'('.$token_uid.')';
+
+      // Execute & Fetch
+      $result = array();
+      $pdo = DB::getInstance()->getConnection();
+      $stmt = $pdo->prepare($query);
+      if ($stmt->execute(array())) {
+        while($row = $stmt->fetch(PDO::FETCH_NAMED)) {
+          $result[] = $row;
+        }
+      } else {
+        echo $stmt->queryString."<br />";
+        var_dump($stmt->errorInfo());
+      }
+
+      // Return result as JSON
+      return json_encode($result);
+    }
     //================================== READ
     public function read($param) {
+
+      //return $this->call($param);
+
+
       // Parameters and default values
       try {
         @$tablename = $param["table"];
@@ -444,14 +483,22 @@
       // Return result as JSON
       return json_encode($result);
     }
-    //================================== UPDATE (sec)
-    public function update($param) {
+    //================================== UPDATE
+    public function update($param, $allowUpdateFromSM = false) {
        // Parameter
       $tablename = $param["table"];
       $row = $param["row"];
       // Check Parameter
       if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
       if (!Config::doesTableExist($tablename)) die('Table does not exist!');
+
+      // Check if has Table has NO state-machine
+      if (!$allowUpdateFromSM) {
+        $SM = new StateMachine(DB::getInstance()->getConnection(), $tablename);
+        $SMID = $SM->getID();
+        if ($SMID > 0) die("Table with state-machine can not be updated! Use state-machine instead!");
+      }
+
       // Extract relevant Info via Config     
       $pcol = Config::getPrimaryColNameByTablename($tablename);
       $id = (int)$row[$pcol];
@@ -624,7 +671,7 @@
         }
 
         // Update all rows
-        $this->update($param); 
+        $this->update($param, true); 
 
         //---[3]- Execute IN Script
         $in_script = $SE->getINScript($nextStateID); // from target state
