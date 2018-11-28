@@ -382,6 +382,7 @@ class Table extends RawTable {
             modalHeaderTextCreate: 'Create Entry',
             modalHeaderTextModify: 'Modify Entry',
             modalButtonTextCreate: 'Create',
+            modalButtonTextCreateRelation: 'Create Relationship',
             modalButtonTextModifySave: 'Save',
             modalButtonTextModifySaveAndClose: 'Save &amp; Close',
             modalButtonTextModifyClose: 'Close',
@@ -1091,7 +1092,10 @@ class Table extends RawTable {
         }
         // Create Button
         if (!t.ReadOnly) {
-            header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;Create</button>';
+            if (t.TableConfig.is_nm_table)
+                header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;' + t.GUIOptions.modalButtonTextCreateRelation + '</button>';
+            else
+                header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;' + t.GUIOptions.modalButtonTextCreate + '</button>';
         }
         header += '</div></div>';
         header += '<div class="tablewrapper border mb-1"><table class="table table-hover m-0 table-sm datatbl"><thead><tr>' + ths + '</tr></thead><tbody>';

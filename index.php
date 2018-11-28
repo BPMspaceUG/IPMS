@@ -127,10 +127,11 @@
                 <tr>
                   <th width="10px"><span class="text-muted">Order</span></th>
                   <th width="25%">TABLENAME</th>
-                  <th width="20%">ALIAS</th>
+                  <th width="15%">ALIAS</th>
                   <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
                   <th width="5%">STATE-ENGINE</th>
                   <th width="5%">RO (View)</th>
+                  <th width="5%">N:M</th>
                   <th width="30%">ICON</th>
                 </tr>
               </thead>
@@ -164,6 +165,7 @@
                       ng-disabled="tbl.table_name == 'state' || tbl.table_name == 'state_rules'">
                   </td>         
                   <td><input type="checkbox" class="form-control" ng-model="tbl.is_read_only"></td>
+                  <td ng-class="{'success' : tbl.is_nm_table}"><input type="checkbox" class="form-control" ng-model="tbl.is_nm_table"></td>
                   <td>
                     <div class="row">
                       <div class="col-xs-3">
@@ -193,10 +195,10 @@
                   </td>
                   <td><input type="text" ng-model="col.column_alias"></td>
 
-                  <td colspan="4" ng-if="!col.is_virtual">
+                  <td colspan="5" ng-if="!col.is_virtual">
                     <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
                     <!--<input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;-->
-                    <input type="checkbox" ng-model="col.is_ckeditor"> CKEditor
+                    <!--<input type="checkbox" ng-model="col.is_ckeditor"> CKEditor-->
                     
                     &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;<b>FK:</b>
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.table" placeholder="Table">
@@ -204,7 +206,7 @@
                     <input type="text" style="width: 80px" ng-model="col.foreignKey.col_subst" placeholder="ReplacedCloumn">
                   </td>
 
-                  <td colspan="4" ng-if="col.is_virtual">
+                  <td colspan="5" ng-if="col.is_virtual">
                     <span>SELECT ( i.e. CONCAT(a, b) ): </span>
                     <input type="text" ng-model="col.virtual_select" style="width: 300px" placeholder="CONCAT(id, col1, col2)">
                     <button class="btn btn-sm btn-danger" ng-click="del_virtCol(tbl, col)">delete</button>

@@ -603,7 +603,7 @@
         $VirtKeys = Config::getVirtualColnames($tablename);
         $excludeKeys = array_merge($PrimKey, $VirtKeys);
         
-        $r = $SM->getBasicFormDataByColumns($cols, $excludeKeys);
+        $r = $SM->getBasicFormDataByColumns($tablename, Config::getConfig(), $cols, $excludeKeys);
       }
       return $r;
     }

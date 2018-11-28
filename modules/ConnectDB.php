@@ -203,6 +203,7 @@
         "table_alias" => $table_alias,
         "is_in_menu" => true,
         "is_read_only" => false,
+        "is_nm_table" => false,
         "se_active" => $TableHasStateMachine,
         "columns" => $columns
       );

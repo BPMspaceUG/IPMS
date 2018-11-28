@@ -11,29 +11,12 @@
           <i class="fa fa-user"></i> <?php echo $token->firstname; ?>
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-          <a class="dropdown-item" href="#">Action</a>
-          <a class="dropdown-item" href="#">Another action</a>
-          <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="login.php?logout=1"><i class="fa fa-sign-out"></i> Logout</a>
         </div>
       </li>
-      <!--
-      <li class="nav-item active">
-        <a class="nav-link" href="login.php?logout=1"><i class="fa fa-user"></i> <?php echo $token->firstname ." (Click 2 Logout)"; ?></a>
-      </li>
-      -->
-      <!--
-      <li class="nav-item">
-        <a class="nav-link" href="#">Features</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Pricing</a>
-      </li>
-      -->
     </ul>
   </div>
 </nav>
-
 
 <main role="main">
   <div class="container-fluid w-100 m-0 p-0">

@@ -257,13 +257,38 @@
         "  <div class=\"col-5\"><input type=\"time\" class=\"form-control\" name=\"".$key."\"></div>\n". // TIME
         "</div>");
       }
+      else if (strtolower($data_type) == 'table') {
+        // TABLE
+        return $this->getFormElementStd($isVisible, $alias, '<div class="extern_table"></div>');
+      }
       // Standard = TEXT
       return $this->getFormElementStd($isVisible, $alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
     }
-    public function getBasicFormDataByColumns($colData, $excludeKeys) {
+    public function getBasicFormDataByColumns($tablename, $config, $colData, $excludeKeys) {
       $header = "<form>\n";
       $footer = "</form>";
       $content = '';
+
+      $config = json_decode($config, true);
+      
+      // check for N:M Tables
+      // REVERSE FOREIGN KEYS
+      //$nm_tables = array();
+      $reverseFKs = array();
+      // ('table_src' => A, 'table_dest' => B)
+      foreach ($config as $tbl => $tbl_content) {
+        if ($config[$tbl]['is_nm_table']) {
+          // Save linked tables, except state_id
+          $cols = $config[$tbl]['columns'];
+          foreach ($cols as $colname => $col) {
+            $src = $col['foreignKey']['table'];
+            $dest = $tbl;
+            // Add to map
+            $reverseFKs[$src] = $dest;
+          }
+        }
+      }
+
       // Loop every column
       foreach ($colData as $colname => $value) {
         $key = $colname;
@@ -277,8 +302,37 @@
         if (!in_array($key, $excludeKeys)) {
           // Check if not visible
           $content .= $this->getFormElement($visible, $key, $alias, $default, $data_type, $FKTable, $substCol);
-        }        
+        }
       }
+      // Add extra column for fun TODO: remove
+      if (array_key_exists($tablename, $reverseFKs)) {
+        $nm_table = $reverseFKs[$tablename];
+        // Holy shit 
+        $content .= $this->getFormElement(true, 'nuthin', 'Jebemti', $nm_table, 'table', null, null);
+        $content .= '
+<script>
+  // Wait for element to exist.
+  function elLoaded(el, cb) {if ($(el).length) {cb($(el));} else {setTimeout(function(){ elLoaded(el, cb) }, 100);}};
+
+  (function(){
+    //elLoaded(\'input[name=PRIMARY_id]\', function(el) {
+      //let PrimID = $(\'input[name=PRIMARY_id]\').val();
+
+      let x = new Table(\''.$nm_table.'\', \'.extern_table\', 0, function(){
+        //x.Where = \'a.PRIMARY_id = \' + PrimID;
+        x.loadRows(function(){
+          x.renderHTML();
+        })
+      });
+    //});
+  })();
+</script>
+        
+        ';
+      }
+
+
+      // OUTPUT
       return $header.$content.$footer;
     }
     // [END]   FORM - Elements
