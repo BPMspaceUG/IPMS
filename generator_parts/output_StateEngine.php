@@ -223,10 +223,10 @@
         // FOREIGN KEY
         return $this->getFormElementStd($isVisible, $alias, '<div class="input-group">
           <div class="input-group-prepend">
-            <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
             <button class="btn btn-outline-secondary fKey" type="button" onclick="selectForeignKey(this)">Select...</button>
+            <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
           </div>
-          <input class="form-control fkval" placeholder="" teype="text" readonly>
+          <input class="form-control fkval" placeholder="" type="text" readonly>
         </div>');
       }
       else if (strtolower($data_type) == 'int') {
@@ -259,7 +259,7 @@
       }
       else if (strtolower($data_type) == 'table') {
         // TABLE
-        return $this->getFormElementStd($isVisible, $alias, '<div class="extern_table"></div>');
+        return $this->getFormElementStd($isVisible, $alias, '<div class="extern_table'.$key.'"></div>');
       }
       // Standard = TEXT
       return $this->getFormElementStd($isVisible, $alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
@@ -276,6 +276,9 @@
       //$nm_tables = array();
       $reverseFKs = array();
       // ('table_src' => A, 'table_dest' => B)
+
+      //var_dump($config);
+
       foreach ($config as $tbl => $tbl_content) {
         if ($config[$tbl]['is_nm_table']) {
           // Save linked tables, except state_id
@@ -284,10 +287,15 @@
             $src = $col['foreignKey']['table'];
             $dest = $tbl;
             // Add to map
-            $reverseFKs[$src] = $dest;
+            if (strlen($src) > 0 && strlen($dest) > 0) {
+              //echo $src . ' -> ' . $dest.'<br>';
+              $reverseFKs[] = array($src, $dest);
+            }
           }
         }
       }
+
+      //var_dump($reverseFKs);
 
       // Loop every column
       foreach ($colData as $colname => $value) {
@@ -304,33 +312,42 @@
           $content .= $this->getFormElement($visible, $key, $alias, $default, $data_type, $FKTable, $substCol);
         }
       }
-      // Add extra column for fun TODO: remove
-      if (array_key_exists($tablename, $reverseFKs)) {
-        $nm_table = $reverseFKs[$tablename];
-        // Holy shit 
-        $content .= $this->getFormElement(true, 'nuthin', 'Jebemti', $nm_table, 'table', null, null);
-        $content .= '
+
+      foreach ($reverseFKs as $link) {
+        $src = $link[0];
+        $dest = $link[1];
+        //echo $src . ' -> ' . $dest.'<br>';
+
+        // Add extra column for reverse N:M
+        if ($tablename == $src) {
+          $nm_table = $dest;
+          $nm_table_alias = $config[$nm_table]['table_alias'];
+
+          // TODO: optimize, get primary column
+          $array = $config[$tablename]['columns'];
+          $this_primary = array_keys($array)[0];
+
+          $content .= $this->getFormElement(true, $dest, $nm_table_alias, $nm_table, 'table', null, null);
+          $content .= '
 <script>
   // Wait for element to exist.
   function elLoaded(el, cb) {if ($(el).length) {cb($(el));} else {setTimeout(function(){ elLoaded(el, cb) }, 100);}};
 
   (function(){
-    //elLoaded(\'input[name=PRIMARY_id]\', function(el) {
-      //let PrimID = $(\'input[name=PRIMARY_id]\').val();
-
-      let x = new Table(\''.$nm_table.'\', \'.extern_table\', 0, function(){
-        //x.Where = \'a.PRIMARY_id = \' + PrimID;
+    elLoaded(\'input[name='.$this_primary.']\', function(el) {
+      let PrimID = $(\'input[name='.$this_primary.']\').val();
+      let x = new Table(\''.$nm_table.'\', \'.extern_table'.$dest.'\', 0, function(){
+        x.Columns[\''.$this_primary.'\'].is_in_menu = false;
         x.loadRows(function(){
           x.renderHTML();
         })
-      });
-    //});
+      }, \'a.'.$this_primary.' = \'+PrimID, {'.$this_primary.': [PrimID, \'Already selected\']});
+    });
   })();
-</script>
-        
-        ';
-      }
+</script>';
 
+        }
+      }
 
       // OUTPUT
       return $header.$content.$footer;

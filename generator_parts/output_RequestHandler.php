@@ -155,6 +155,7 @@
         // Send only data from a specific Table
         // Send info: structure (from config) the createForm and Count of all entries
         $tablename = $param["table"];
+        $where = $param["where"] != '' ? $param["where"] : '1=1';
         // Check Parameter
         if (!Config::isValidTablename($tablename)) die('Invalid Tablename!');
         if (!Config::doesTableExist($tablename)) die('Table does not exist!');
@@ -167,7 +168,7 @@
         $result['config'] = $config[$tablename];
 
         // ---- Count
-        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM $tablename");
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM $tablename AS a WHERE $where");
         if ($stmt->execute()) {
           $row = $stmt->fetch(PDO::FETCH_NAMED);
           $result['count'] = $row['cnt'];

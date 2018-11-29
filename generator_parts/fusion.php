@@ -119,11 +119,13 @@ END');
       $con->query($query);
       */
 
-      // TODO: Only create a default form
+      // Create a default form for statemachine
       $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the FormData
-      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
-      $query = "UPDATE state_machines SET form_data_default = '$form_data' WHERE tablename = '$tablename' AND NULLIF(form_data_default, ' ') IS NULL";
-      $con->query($query);
+      $form_data = $SM->getBasicFormDataByColumns($tablename, json_encode($data), $colData, $excludeKeys);    
+      $query = "UPDATE state_machines SET form_data_default = ? WHERE tablename = ? AND NULLIF(form_data_default, '') IS NULL";
+      $stmt = $con->prepare($query);
+      $stmt->execute(array($form_data, $tablename));
+
       
       $queries1 = $SM->getQueryLog();
       // Clean up

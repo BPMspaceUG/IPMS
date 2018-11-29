@@ -131,7 +131,7 @@
                   <th width="5%"><a href="" ng-click="tbl_toggle_sel_all()">IN MENU</a></th>
                   <th width="5%">STATE-ENGINE</th>
                   <th width="5%">RO (View)</th>
-                  <th width="5%">N:M</th>
+                  <th width="5%">N:M or N:1</th>
                   <th width="30%">ICON</th>
                 </tr>
               </thead>
@@ -223,22 +223,24 @@
             <label class="col-sm-2"><span class="label label-success">4</span> Generate</label>
             <div>
               <!-- Create Button -->
-              <button name="createScript" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()">
+              <button name="createScript" ng-disabled="GUI_generating" class="btn btn-lg btn-danger" id="createScript" ng-click="create_fkt()">
                 <i class="fa fa-rocket"></i> Generate!</button>
               <!-- Open Project -->
               <a name="test" class="btn btn-default" ng-click="openProject()" target="_blank">
                 <i class="fa fa-folder-open"></i> Open Project</a>
               <!-- Open Test Dir Button -->
-              <a name="test" class="btn btn-default" href="../IPMS_test/" target="_blank">
+              <a name="test" class="btn btn-default mr-3" href="../IPMS_test/" target="_blank">
                 <i class="fa fa-folder-open"></i> Open Test-Directory</a>
+              
+              <div class="d-inline text-center h1 mt-5 text-muted" ng-if="GUI_generating">
+                <i class="fa fa-cog fa-spin fa-fw"></i> Generating Project...
+              </div>
             </div>
           </div>
 
           <!-- File String -->
           <div class="row">
             <div class="col-md-12" id="code">
-                <button class="btn btn-default bpm-copy" name="copy" data-clipboard-target="#bpm-code" >Copy
-                  All</button>
                 <div readonly style="width: 100%; min-height: 100px; resize: none; padding:
                   50px 0 0; margin:0 0 50px; overflow:auto;" class="bpm-textarea" id="bpm-code">
                   Currently Empty

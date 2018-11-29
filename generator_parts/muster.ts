@@ -449,7 +449,7 @@ class Table extends RawTable {
     this.Select = '*';
     this.OrderBy = '';
 
-    DB.request('init', {table: tablename}, function(resp) {
+    DB.request('init', {table: tablename, where: whereFilter}, function(resp) {
       if (resp.length > 0) {
         resp = JSON.parse(resp);
         // Save Form Data
@@ -1031,7 +1031,8 @@ class Table extends RawTable {
         let M: Modal = undefined;
         let ModalID = undefined;
         if (!ExistingModalID) {
-          M = new Modal(this.GUIOptions.modalHeaderTextModify+ '<span class="text-muted ml-3">#'+id+'</span>', this.Form_Create, '', true)
+          let TitleText = this.GUIOptions.modalHeaderTextModify + '<span class="text-muted ml-3">#'+id+' <small>in '+this.tablename +'</small></span>'
+          M = new Modal(TitleText, this.Form_Create, '', true)
           M.options.btnTextClose = this.GUIOptions.modalButtonTextModifyClose
           ModalID = M.getDOMID();
         } else {
@@ -1124,37 +1125,41 @@ class Table extends RawTable {
   
 
     // ---- Header
-    let header: string = '<div class="element"><div class="row">';
+    let header: string = '<div class="card border-dark element"><div class="card-header p-1 bg-dark"><div class="row">';
 
     // Filter
     if (t.showFilter) {
-      header += '<div class="input-group col-12 col-sm-6 col-lg-3 mb-3">'
-      header += '  <input type="text" class="form-control filterText" placeholder="'+this.GUIOptions.filterPlaceholderText+'">'
+      header += '<div class="col-4">'
+      header += '<div class="input-group">'
+      header += '  <input type="text" class="form-control  border-0 form-control-sm filterText" placeholder="'+this.GUIOptions.filterPlaceholderText+'">'
       header += '  <div class="input-group-append">'
-      header += '    <button class="btn btn-secondary btnFilter" type="button"><i class="fa fa-search"></i></button>'
+      header += '    <button class="btn btn-secondary btn-sm btnFilter" type="button"><i class="fa fa-search"></i></button>'
       header += '  </div>'
+      header += '</div>'
       header += '</div>'
     }
 
-    header += '<div class="col-12 col-sm-6 col-lg-9 mb-3">'
+    header += '<div class="col-8">'
     // Workflow Button
     if (t.SM && t.showWorkflowButton) {
-      header += '<button class="btn btn-secondary btnShowWorkflow mr-1"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
+      header += '<button class="btn btn-secondary btn-sm btnShowWorkflow mr-1"><i class="fa fa-random"></i>&nbsp;Workflow</button>';
     }
     // Create Button
     if (!t.ReadOnly) {
-      if (t.TableConfig.is_nm_table)
-        header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;'+t.GUIOptions.modalButtonTextCreateRelation+'</button>';
-      else 
-        header += '<button class="btn btn-success btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;'+t.GUIOptions.modalButtonTextCreate+'</button>';
+      /*if (t.TableConfig.is_nm_table)
+        header += '<button class="btn btn-success btn-sm btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;'+t.GUIOptions.modalButtonTextCreateRelation+'</button>';
+      else */
+        header += '<button class="btn btn-success btn-sm btnCreateEntry"><i class="fa fa-plus"></i>&nbsp;'+t.GUIOptions.modalButtonTextCreate+'</button>';
     }
-    header += '</div></div>';
-    header += '<div class="tablewrapper border mb-1"><table class="table table-hover m-0 table-sm datatbl"><thead><tr>'+ths+'</tr></thead><tbody>';
+    header += '</div></div></div>';
+
+    //------ Table Header
+    header += '<div class="card-body p-0"><div class="tablewrapper border-0"><table class="table table-hover m-0 table-sm datatbl"><thead><tr>'+ths+'</tr></thead><tbody>';
   
     let footer: string = '</tbody></table></div>'+
-      '<div>'+
-        '<p class="pull-left"><small>'+t.getHTMLStatusText()+'</small></p>'+
-        '<nav class="pull-right"><ul class="pagination">'+pgntn+'</ul></nav>'+
+      '<div class="card-footer text-muted p-0 px-2">'+
+        '<p class="pull-left m-0 mb-1"><small>'+t.getHTMLStatusText()+'</small></p>'+
+        '<nav class="pull-right"><ul class="pagination pagination-sm m-0 my-1">'+pgntn+'</ul></nav>'+
         '<div class="clearfix"></div>'+
       '</div>'+
       '</div>'

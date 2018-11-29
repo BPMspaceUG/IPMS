@@ -14,6 +14,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
   $scope.configtext = ''
   $scope.configFileWasNotFound = false
   $scope.configFileWasFound = false
+  $scope.GUI_generating = false;
 
   
   $scope.refreshConfig = function(data) {
@@ -196,6 +197,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
   send script-create order to fusion, also print out Script on bottom page
   */
   $scope.create_fkt = function(){
+    $scope.GUI_generating = true;
     var data = {
       host: $scope.sqlServer,
       port: $scope.sqlPort,
@@ -210,6 +212,7 @@ IPMS.controller('IPMScontrol', function ($scope, $http) {
       data: data
     })
     .success(function(data, status, headers, config) {
+      $scope.GUI_generating = false;
       //console.log('\nScript generated success.'); 
       $('#bpm-code').empty();
       $('#bpm-code').html('<pre></pre>');
