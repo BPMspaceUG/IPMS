@@ -196,7 +196,7 @@
                   <td><input type="text" ng-model="col.column_alias"></td>
 
                   <td colspan="5" ng-if="!col.is_virtual">
-                    <input type="checkbox" ng-model="col.is_in_menu"> Visible&nbsp;&nbsp;&nbsp;
+                    <input type="checkbox" class="mr-2" ng-model="col.is_in_menu"> Visible
                     <!--<input type="checkbox" ng-model="col.is_read_only"> RO&nbsp;&nbsp;&nbsp;-->
                     <!--<input type="checkbox" ng-model="col.is_ckeditor"> CKEditor-->
                     

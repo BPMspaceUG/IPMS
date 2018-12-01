@@ -530,7 +530,8 @@ class Table extends RawTable {
     }
     return pages
   }
-  private formatCell(cellContent: any) {
+  private formatCell(cellContent: any, isHTML: boolean = false) {
+    if (isHTML) return cellContent;
     // string -> escaped string
     function escapeHtml(string) {
       let entityMap = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'};
@@ -1175,7 +1176,7 @@ class Table extends RawTable {
       
       // If a Control Column is set then Add one before each row
       if (t.showControlColumn) {
-        data_string = '<td scope="row" class="controllcoulm modRow" data-rowid="'+row[t.PrimaryColumn]+'">'
+        data_string = '<td scope="row" class="controllcoulm modRow align-middle" data-rowid="'+row[t.PrimaryColumn]+'">'
         // Entries are selectable?
         if (t.selType == SelectType.Single || t.selType == SelectType.Multi) {
           data_string += '<i class="fa fa-square-o"></i>';
@@ -1224,16 +1225,19 @@ class Table extends RawTable {
                 value = ''
             }
             else if (t.Columns[col].DATA_TYPE == 'tinyint') {
-              value = parseInt(value) !== 0 ? '<i class="fa fa-check text-center"></i>&nbsp;' : ''
+              value = parseInt(value) !== 0 ? '<i class="fa fa-check text-center"></i>&nbsp;' : '';
             }
-            else 
-              value = t.formatCell(value)
+            else {
+              let isHTML = t.Columns[col].is_virtual;
+              value = t.formatCell(value, isHTML);
+              console.log(value, isHTML);
+            }
 
             // Check for statemachine
             if (col == 'state_id' && t.tablename != 'state') {
               // Modulo 12 --> see in css file (12 colors)
               let cssClass = 'state' + (row['state_id'][0] % 12);
-              data_string += '<td>\
+              data_string += '<td class="align-middle">\
                   <div class="dropdown showNextStates">\
                     <button class="btn dropdown-toggle btnGridState btn-sm label-state '+cssClass+'" data-toggle="dropdown">'+value+'</button>\
                     <div class="dropdown-menu p-0">\
@@ -1243,7 +1247,7 @@ class Table extends RawTable {
               </td>';
             }
             else
-              data_string += '<td>'+value+'</td>'
+              data_string += '<td class="align-middle">'+value+'</td>'
           } else {
             // Add empty cell (null)
             data_string += '<td>&nbsp;</td>'
@@ -1255,8 +1259,13 @@ class Table extends RawTable {
         // Edit via first column
         tds += '<tr class="datarow row-'+row[t.PrimaryColumn]+'">'+data_string+'</tr>';
       } else {
-        // Edit via click on full Row
-        tds += '<tr class="datarow row-'+row[t.PrimaryColumn]+' editFullRow modRow" data-rowid="'+row[t.PrimaryColumn]+'">'+data_string+'</tr>';
+        if (t.ReadOnly) {
+          // Edit via click
+          tds += '<tr class="datarow row-'+row[t.PrimaryColumn]+'" data-rowid="'+row[t.PrimaryColumn]+'">'+data_string+'</tr>';
+        } else {
+          // Edit via click on full Row
+          tds += '<tr class="datarow row-'+row[t.PrimaryColumn]+' editFullRow modRow" data-rowid="'+row[t.PrimaryColumn]+'">'+data_string+'</tr>';
+        }
       }
     })
 
