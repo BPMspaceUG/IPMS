@@ -412,6 +412,7 @@
           $virtSelects[] = $virtSel;
           $sel_str .= ",".$virtSel.' AS '.$vcol;
         }
+        $sel_str = str_replace(', ,', '', $sel_str); // bugfix
       }
 
       //--- WHERE (SEARCH / Filter)
