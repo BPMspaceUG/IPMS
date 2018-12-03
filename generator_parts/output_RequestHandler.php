@@ -412,7 +412,6 @@
           $virtSelects[] = $virtSel;
           $sel_str .= ",".$virtSel.' AS '.$vcol;
         }
-        $sel_str = str_replace(', ,', '', $sel_str); // bugfix
       }
 
       //--- WHERE (SEARCH / Filter)
@@ -464,6 +463,8 @@
           $sql_select .= ", ".$sel_str;
       }
       else $sql_select = $select.', '.$sel_str;
+      // bugfix
+      $sql_select = str_replace(', ,', '', $sql_select);
 
       // TODO: sel_str can only contain columnnames and , and COUNT(*)
 
