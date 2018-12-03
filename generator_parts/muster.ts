@@ -143,7 +143,7 @@ class StateMachine {
   }
   public openSEPopup() {
     let smLinks, smNodes
-    let me = this
+    let me = this;
   
     DB.request('getStates', {table: me.tablename}, function(r) {
       smNodes = JSON.parse(r)

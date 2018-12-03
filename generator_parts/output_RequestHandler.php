@@ -17,11 +17,8 @@
       return $config_tables_json;
     }
     public static function getColsByTablename($tablename, $data = null) {
-      //$tablename = strtolower($tablename);
-
       if (is_null($data))
         $data = json_decode(Config::getConfig(), true);
-
       $cols = $data[$tablename]["columns"];      
       return $cols;
     }
@@ -72,9 +69,21 @@
     public static function getVirtualColnames($tablename) {
       $res = array();
       $cols = Config::getColsByTablename($tablename);
-      // Find primary columns
+      // Collect only virtual Columns
       foreach ($cols as $col) {
         if ($col["is_virtual"])
+          $res[] = $col["COLUMN_NAME"];
+      }
+      return $res;
+    }
+    public static function getRealColnames($tablename) {
+      $res = array();
+      $cols = Config::getColsByTablename($tablename);
+      // Collect only real columns
+      foreach ($cols as $col) {
+        if ($col["is_virtual"])
+          continue;
+        else
           $res[] = $col["COLUMN_NAME"];
       }
       return $res;
@@ -499,7 +508,6 @@
         $SMID = $SM->getID();
         if ($SMID > 0) die("Table with state-machine can not be updated! Use state-machine instead!");
       }
-
       // Extract relevant Info via Config     
       $pcol = Config::getPrimaryColNameByTablename($tablename);
       $id = (int)$row[$pcol];
@@ -507,14 +515,14 @@
       // Split Row into Key:Value Array
       $keys = array();
       $vals = array();
-      $x = RequestHandler::splitQuery($row);
-      $cols = Config::getColsByTablename($tablename);
-      foreach ($x as $el) {
+      $rowElements = RequestHandler::splitQuery($row);
+      $cols = Config::getRealColnames($tablename); // only get real colnames
+      foreach ($rowElements as $el) {
         // Filter Primary Key
         if ($el["key"] == $pcol)
           continue;
         // Only add existing Columns of param to query
-        if (array_key_exists($el["key"], $cols)) {
+        if (in_array($el["key"], $cols)) {
           // escape keys and values
           $keys[] = $el["key"] . '=?';
           $vals[] = $el["value"];
@@ -534,12 +542,16 @@
       } else {
         echo $stmt->queryString."<br />";
         var_dump($stmt->errorInfo());
-      }            
+      }
       // Output
       return $success ? "1" : "0";
     }
     //================================== DELETE (sec)
     public function delete($param) {
+
+      // NOT SUPPORTED FOR NOW
+      die('The Delete-Command is currently not supported!');
+
       // Parameter
       $tablename = $param["table"];
       $row = $param["row"];
@@ -559,8 +571,6 @@
       // Output
       return $success ? "1" : "0";
     }
-
-
 
     //----------------------------------
 
