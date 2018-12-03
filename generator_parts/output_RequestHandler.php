@@ -464,7 +464,7 @@
       }
       else $sql_select = $select.', '.$sel_str;
       // bugfix
-      $sql_select = str_replace(', ,', '', $sql_select);
+      $sql_select = str_replace(', ,', ',', $sql_select);
 
       // TODO: sel_str can only contain columnnames and , and COUNT(*)
 
