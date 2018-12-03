@@ -26,7 +26,6 @@
   define('DB_PASS', $db_pass);
   require_once("output_DatabaseHandler.php");
 
-
   /* ------------------------------------- Statemachine ------------------------------------- */
 
   require_once("output_StateEngine.php");
@@ -102,31 +101,16 @@ END');
       $SM->createDatabaseStructure();
       $SM_ID = $SM->createBasicStateMachine($tablename);
 
-      // Add Basic Form Data for each state
-      $colData = $table["columns"];
-      $excludeKeys = Config::getPrimaryColsByTablename($tablename, $data);
-      
-      /*
-      // write the formdata into the column if empty (TRANSITION)
-      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
-      $query = "UPDATE state SET form_data = '$form_data' WHERE statemachine_id = '$SM_ID' AND NULLIF(form_data, ' ') IS NULL";
-      $con->query($query);
-      
-      // write the formdata into the column if empty (CREATE)
-      $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the create Form
-      $form_data = $SM->getBasicFormDataByColumns($colData, $excludeKeys);
-      $query = "UPDATE state_machines SET form_data = '$form_data' WHERE tablename = '$tablename' AND NULLIF(form_data, ' ') IS NULL";
-      $con->query($query);
-      */
-
       // Create a default form for statemachine
+      $colData = $table["columns"];
+      $excludeKeys = Config::getPrimaryColsByTablename($tablename, $data);      
       $excludeKeys[] = 'state_id'; // Also exclude StateMachine in the FormData
       $form_data = $SM->getBasicFormDataByColumns($tablename, json_encode($data), $colData, $excludeKeys);    
       $query = "UPDATE state_machines SET form_data_default = ? WHERE tablename = ? AND NULLIF(form_data_default, '') IS NULL";
       $stmt = $con->prepare($query);
       $stmt->execute(array($form_data, $tablename));
 
-      
+      $queries1 = '';
       $queries1 = $SM->getQueryLog();
       // Clean up
       unset($SM);

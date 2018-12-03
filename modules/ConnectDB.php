@@ -151,7 +151,33 @@
           $columns[$colname] = $merged;
 
           $column_counter++;
-        }        
+        }
+
+        // ------- ADD a custom virtual column for Table state_rules (SM)
+        if ($table == 'state_rules') {
+          // Add a virtual column
+          $columns['virtualColx'] = array(
+            'COLUMN_NAME' => 'virtualColx',
+            'DATA_TYPE' => "longtext",
+            'COLUMN_TYPE' => "longtext",
+            'COLUMN_KEY' => "",
+            'EXTRA' => "",
+            'column_alias' => "SM",
+            'is_in_menu' => true,
+            'read_only' => false,
+            'is_ckeditor' => false,
+            'foreignKey' => array(
+              'table' => "",
+              'col_id' => "",
+              'col_subst' => ""
+            ),
+            'col_order' => 5,
+            'is_virtual' => true,
+            'virtual_select' => "CONCAT(t0.statemachine_id)"
+          );
+        }
+
+
         //------------------------------------------------ Auto Foreign Keys
         $fKeys = array();
         $query = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME ".
