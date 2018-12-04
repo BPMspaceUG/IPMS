@@ -153,7 +153,8 @@
 
     private function createNewState($statename, $isEP) {
       $result = -1;
-      $stmt = $this->db->prepare("INSERT INTO state (name, form_data, statemachine_id, entrypoint) VALUES (?,?,?,?)");
+      $query = "INSERT INTO state (name, form_data, statemachine_id, entrypoint) VALUES (?,?,?,?)";
+      $stmt = $this->db->prepare($query);
       $stmt->execute(array($statename, '', $this->ID, $isEP));  
       $result = $this->db->lastInsertId();
       $this->log($query);
@@ -161,7 +162,8 @@
     }
     private function createTransition($from, $to) {
       $result = -1;
-      $stmt = $this->db->prepare("INSERT INTO state_rules (state_id_FROM, state_id_TO) VALUES (?,?)");
+      $query = "INSERT INTO state_rules (state_id_FROM, state_id_TO) VALUES (?,?)";
+      $stmt = $this->db->prepare($query);
       $stmt->execute(array($from, $to));  
       $result = $this->db->lastInsertId();
       $this->log($query);
@@ -264,38 +266,34 @@
       // Standard = TEXT
       return $this->getFormElementStd($isVisible, $alias, '<input type="text" class="form-control" name="'.$key.'" value="'.$default.'">');
     }
-    public function getBasicFormDataByColumns($tablename, $config, $colData, $excludeKeys) {
+    public function getBasicFormDataByColumns($tablename, $config, $colData, $excludeKeys, $withoutReverseFKs = false) {
       $header = "<form>\n";
       $footer = "</form>";
       $content = '';
-
       $config = json_decode($config, true);
       
-      // check for N:M Tables
-      // REVERSE FOREIGN KEYS
-      //$nm_tables = array();
-      $reverseFKs = array();
-      // ('table_src' => A, 'table_dest' => B)
-
-      //var_dump($config);
-
-      foreach ($config as $tbl => $tbl_content) {
-        if ($config[$tbl]['is_nm_table']) {
-          // Save linked tables, except state_id
-          $cols = $config[$tbl]['columns'];
-          foreach ($cols as $colname => $col) {
-            $src = $col['foreignKey']['table'];
-            $dest = $tbl;
-            // Add to map
-            if (strlen($src) > 0 && strlen($dest) > 0) {
-              //echo $src . ' -> ' . $dest.'<br>';
-              $reverseFKs[] = array($src, $dest);
+      if (!$withoutReverseFKs) {
+        // check for N:M Tables
+        // REVERSE FOREIGN KEYS
+        $reverseFKs = array();
+        foreach ($config as $tbl => $tbl_content) {
+          if ($config[$tbl]['is_nm_table']) {
+            // Save linked tables, except state_id
+            $cols = $config[$tbl]['columns'];
+            foreach ($cols as $colname => $col) {
+              $src = $col['foreignKey']['table'];
+              $dest = $tbl;
+              // Add to map
+              if (strlen($src) > 0 && strlen($dest) > 0) {
+                //echo $src . ' -> ' . $dest.'<br>';
+                // Check if already exists in array -> No Double Foreign Keys
+                if (!in_array(array($src, $dest), $reverseFKs))
+                  $reverseFKs[] = array($src, $dest);
+              }
             }
           }
         }
       }
-
-      //var_dump($reverseFKs);
 
       // Loop every column
       foreach ($colData as $colname => $value) {
@@ -313,39 +311,40 @@
         }
       }
 
-      foreach ($reverseFKs as $link) {
-        $src = $link[0];
-        $dest = $link[1];
-        //echo $src . ' -> ' . $dest.'<br>';
+      if (!$withoutReverseFKs) {
+        foreach ($reverseFKs as $link) {
+          $src = $link[0];
+          $dest = $link[1];
+          //echo $src . ' -> ' . $dest.'<br>';
 
-        // Add extra column for reverse N:M
-        if ($tablename == $src) {
-          $nm_table = $dest;
-          $nm_table_alias = $config[$nm_table]['table_alias'];
+          // Add extra column for reverse N:M
+          if ($tablename == $src) {
+            $nm_table = $dest;
+            $nm_table_alias = $config[$nm_table]['table_alias'];
 
-          // TODO: optimize, get primary column
-          $array = $config[$tablename]['columns'];
-          $this_primary = array_keys($array)[0];
+            // TODO: optimize, get primary column
+            $array = $config[$tablename]['columns'];
+            $this_primary = array_keys($array)[0];
 
-          $content .= $this->getFormElement(true, $dest, $nm_table_alias, $nm_table, 'table', null, null);
-          $content .= '
-<script>
-  // Wait for element to exist.
-  function elLoaded(el, cb) {if ($(el).length) {cb($(el));} else {setTimeout(function(){ elLoaded(el, cb) }, 100);}};
+            $content .= $this->getFormElement(true, $dest, $nm_table_alias, $nm_table, 'table', null, null);
+            $content .= '
+  <script>
+    // Wait for element to exist.
+    function elLoaded(el, cb) {if ($(el).length) {cb($(el));} else {setTimeout(function(){ elLoaded(el, cb) }, 100);}};
 
-  (function(){
-    elLoaded(\'input[name='.$this_primary.']\', function(el) {
-      let PrimID = $(\'input[name='.$this_primary.']\').val();
-      let x = new Table(\''.$nm_table.'\', \'.extern_table'.$dest.'\', 0, function(){
-        x.Columns[\''.$this_primary.'\'].is_in_menu = false;
-        x.loadRows(function(){
-          x.renderHTML();
-        })
-      }, \'a.'.$this_primary.' = \'+PrimID, {'.$this_primary.': [PrimID, \'Already selected\']});
-    });
-  })();
-</script>';
-
+    (function(){
+      elLoaded(\'input[name='.$this_primary.']\', function(el) {
+        let PrimID = $(\'input[name='.$this_primary.']\').val();
+        let x = new Table(\''.$nm_table.'\', \'.extern_table'.$dest.'\', 0, function(){
+          x.Columns[\''.$this_primary.'\'].is_in_menu = false;
+          x.loadRows(function(){
+            x.renderHTML();
+          })
+        }, \'a.'.$this_primary.' = \'+PrimID, {'.$this_primary.': [PrimID, \'Already selected\']});
+      });
+    })();
+  </script>';
+          }
         }
       }
 
