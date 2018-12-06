@@ -201,9 +201,6 @@
       return $ID;
     }
 
-
-
-
     // [START]   FORM - Elements
     private function getFormElementStd($isVisible, $label, $content, $fk = '') {
       return "<div class=\"form-group row".($isVisible ? '' : ' collapse')."\">$fk\n\t".
@@ -223,13 +220,27 @@
       //----------------------------------
       else if ($FKTable != '') {
         // FOREIGN KEY
-        return $this->getFormElementStd($isVisible, $alias, '<div class="input-group">
-          <div class="input-group-prepend">
-            <button class="btn btn-outline-secondary fKey" type="button" onclick="selectForeignKey(this)">Select...</button>
-            <input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
-          </div>
-          <input class="form-control fkval" placeholder="" type="text" readonly>
-        </div>');
+        return $this->getFormElementStd($isVisible, $alias,
+'<div class="tbl_fk_'.$FKTable.'_'.$key.'"></div>
+<input type="hidden" name="'.$key.'" value="'.$default.'" class="inputFK"/>
+<script>
+  // Wait for element to exist.
+  function elLoaded(el, cb) {if ($(el).length) {cb($(el));} else {setTimeout(function(){ elLoaded(el, cb) }, 100);}};
+
+  (function(){
+    let x = new Table("'.$FKTable.'", ".tbl_fk_'.$FKTable.'_'.$key.'", 1, function(){
+      x.loadRows(function(){
+        const selRow = $("input[name='.$key.']").val();
+        x.setSelectedRows([selRow]);
+        x.renderHTML();
+      });
+    });
+    x.SelectionHasChanged.on(function(){
+      const selRow = x.getSelectedRows()[0];
+      $("input[name='.$key.']").val(selRow);
+    })
+  })();
+</script>');
       }
       else if (strtolower($data_type) == 'int') {
         // Number
@@ -283,12 +294,13 @@
             foreach ($cols as $colname => $col) {
               $src = $col['foreignKey']['table'];
               $dest = $tbl;
+              $destCol = $colname;
               // Add to map
-              if (strlen($src) > 0 && strlen($dest) > 0) {
+              if (strlen($src) > 0 && strlen($dest) > 0 && strlen($destCol) > 0) {
                 //echo $src . ' -> ' . $dest.'<br>';
                 // Check if already exists in array -> No Double Foreign Keys
-                if (!in_array(array($src, $dest), $reverseFKs))
-                  $reverseFKs[] = array($src, $dest);
+                if (!in_array(array($src, $dest, $destCol), $reverseFKs))
+                  $reverseFKs[] = array($src, $dest, $destCol);
               }
             }
           }
@@ -315,6 +327,7 @@
         foreach ($reverseFKs as $link) {
           $src = $link[0];
           $dest = $link[1];
+          $destCol = $link[2];
           //echo $src . ' -> ' . $dest.'<br>';
 
           // Add extra column for reverse N:M
@@ -325,6 +338,7 @@
             // TODO: optimize, get primary column
             $array = $config[$tablename]['columns'];
             $this_primary = array_keys($array)[0];
+            $foreignPrimaryColname = $destCol; // TODO: Change
 
             $content .= $this->getFormElement(true, $dest, $nm_table_alias, $nm_table, 'table', null, null);
             $content .= '
@@ -336,11 +350,11 @@
       elLoaded(\'input[name='.$this_primary.']\', function(el) {
         let PrimID = $(\'input[name='.$this_primary.']\').val();
         let x = new Table(\''.$nm_table.'\', \'.extern_table'.$dest.'\', 0, function(){
-          x.Columns[\''.$this_primary.'\'].is_in_menu = false;
+          x.Columns[\''.$foreignPrimaryColname.'\'].is_in_menu = false;
           x.loadRows(function(){
             x.renderHTML();
           })
-        }, \'a.'.$this_primary.' = \'+PrimID, {'.$this_primary.': [PrimID, \'Already selected\']});
+        }, \'a.'.$foreignPrimaryColname.' = \'+PrimID, {'.$foreignPrimaryColname.': [PrimID, \'Already selected\']});
       });
     })();
   </script>';

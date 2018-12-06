@@ -886,7 +886,9 @@ class Table extends RawTable {
                 msgs.forEach(msg => {
                     // Show Message
                     if (msg.show_message) {
-                        let resM = new Modal('Feedback <small>' + (counter == 0 ? 'Transition-Script' : 'IN-Script') + '</small>', msg.message);
+                        const textTransScriptCreate = 'Transition-Script [Create]';
+                        const textINScript = 'IN-Script <button class=""';
+                        let resM = new Modal('Feedback <small>' + (counter == 0 ? textTransScriptCreate : textINScript) + '</small>', msg.message);
                         resM.options.btnTextClose = me.GUIOptions.modalButtonTextModifyClose;
                         resM.show();
                     }
@@ -1171,7 +1173,6 @@ class Table extends RawTable {
                         else {
                             let isHTML = t.Columns[col].is_virtual;
                             value = t.formatCell(value, isHTML);
-                            console.log(value, isHTML);
                         }
                         // Check for statemachine
                         if (col == 'state_id' && t.tablename != 'state') {
@@ -1328,65 +1329,70 @@ class Table extends RawTable {
         return this.onEntriesModified.expose();
     }
 }
-function openTableInModal(tablename, previousSelRows = [], callback = function (e) { }) {
-    let timestr = (new Date()).getTime(); // current Time-String
-    let newFKTableClass = 'foreignTable_abcdef' + timestr;
-    let t = new Table(tablename, '.' + newFKTableClass, SelectType.Single, function () {
-        t.loadRows(function () {
-            t.setSelectedRows(previousSelRows);
-            // create a new Modal layout in DOM
-            let SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> ' +
-                t.GUIOptions.modalButtonTextSelect + '</button>';
-            let M = new Modal('Select Foreign Key', '<div class="' + newFKTableClass + '"></div>', SelectBtn, true);
-            M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose;
-            t.renderHTML();
-            // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed  
-            // Bind Buttonclick (Select)
-            $('#' + M.getDOMID() + ' .btnSelectFK').click(function (e) {
-                e.preventDefault();
-                callback(t);
-                // Hide Modal
-                $('#' + M.getDOMID()).modal('hide');
-            });
-            // Finally, show Modal
-            M.show();
-        });
-    }, '');
+/*
+function openTableInModal(tablename: string, previousSelRows: Array<number> = [], callback = function(e){}) {
+  let timestr = (new Date()).getTime(); // current Time-String
+  let newFKTableClass = 'foreignTable_abcdef'+timestr;
+  let t = new Table(tablename, '.'+newFKTableClass, SelectType.Single, function(){
+    t.loadRows(function(){
+      t.setSelectedRows(previousSelRows);
+      // create a new Modal layout in DOM
+      let SelectBtn = '<button class="btn btn-warning btnSelectFK" type="button"><i class="fa fa-check"></i> '+
+        t.GUIOptions.modalButtonTextSelect +'</button>';
+      let M = new Modal('Select Foreign Key', '<div class="'+newFKTableClass+'"></div>', SelectBtn, true)
+      M.options.btnTextClose = t.GUIOptions.modalButtonTextModifyClose
+      t.renderHTML();
+      // For identification for Search and Filter // TODO: Maybe clean from array after modal is closed
+      // Bind Buttonclick (Select)
+      $('#'+M.getDOMID()+' .btnSelectFK').click(function(e){
+        e.preventDefault();
+        callback(t);
+        // Hide Modal
+        $('#'+M.getDOMID()).modal('hide');
+      })
+      // Finally, show Modal
+      M.show();
+    });
+  }, '');
 }
+*/
 // TODO: Make this into the Class!!!!
 // This function is called from FormData
-function selectForeignKey(inp) {
-    inp = $(inp).parent().find('input');
-    // Extract relevant Variables
-    let originTable = inp.data('origintable');
-    let originColumn = inp.attr('name');
-    let tmp = new Table(originTable, '', 0, function () {
-        let foreignTable = tmp.Columns[originColumn].foreignKey.table;
-        //var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id // useless
-        let foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst;
-        let prevSelRow = [inp.val()];
-        // Open a Table Instance
-        openTableInModal(foreignTable, prevSelRow, function (forKeyTable) {
-            let selRows = forKeyTable.getSelectedRows();
-            let singleSelRow = selRows[0];
-            inp.val(singleSelRow); // Set ID-Value in hidden field
-            // Set Substituted Column
-            if (foreignSubstCol.indexOf('(') >= 0) {
-                // TODO: Load the name correctly from SQL Server
-                inp.parent().parent().find('.fkval').val("ID: " + singleSelRow);
-            }
-            else {
-                // Retrive selected Row
-                let selRow = null;
-                forKeyTable.Rows.forEach(row => {
-                    if (row[forKeyTable.PrimaryColumn] == singleSelRow)
-                        selRow = row;
-                });
-                inp.parent().parent().find('.fkval').val(selRow[foreignSubstCol]);
-            }
+/*
+function selectForeignKey(inp){
+  inp = $(inp).parent().find('input');
+  // Extract relevant Variables
+  let originTable = inp.data('origintable');
+  let originColumn = inp.attr('name');
+  let tmp = new Table(originTable, '', 0, function(){
+    let foreignTable = tmp.Columns[originColumn].foreignKey.table
+    //var foreignPrimaryCol = tmp.Columns[originColumn].foreignKey.col_id // useless
+    let foreignSubstCol = tmp.Columns[originColumn].foreignKey.col_subst
+    let prevSelRow = [inp.val()];
+  
+    // Open a Table Instance
+    openTableInModal(foreignTable, prevSelRow, function(forKeyTable){
+      let selRows = forKeyTable.getSelectedRows();
+      let singleSelRow = selRows[0];
+      inp.val(singleSelRow); // Set ID-Value in hidden field
+      // Set Substituted Column
+      if (foreignSubstCol.indexOf('(') >= 0) {
+        // TODO: Load the name correctly from SQL Server
+        inp.parent().parent().find('.fkval').val("ID: "+singleSelRow)
+      }
+      else {
+        // Retrive selected Row
+        let selRow = null
+        forKeyTable.Rows.forEach(row => {
+          if (row[forKeyTable.PrimaryColumn] == singleSelRow)
+            selRow = row;
         });
-    });
+        inp.parent().parent().find('.fkval').val(selRow[foreignSubstCol]);
+      }
+    })
+  });
 }
+*/
 //-------------------------------------------
 // Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
 $(document).on('show.bs.modal', '.modal', function () {

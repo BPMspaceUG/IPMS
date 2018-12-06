@@ -932,7 +932,9 @@ class Table extends RawTable {
         msgs.forEach(msg => {
           // Show Message
           if (msg.show_message) {
-            let resM = new Modal('Feedback <small>'+ (counter == 0 ? 'Transition-Script' : 'IN-Script') +'</small>', msg.message)
+            const textTransScriptCreate = 'Transition-Script [Create]';
+            const textINScript = 'IN-Script <button class=""';
+            let resM = new Modal('Feedback <small>'+ (counter == 0 ? textTransScriptCreate : textINScript) +'</small>', msg.message)
             resM.options.btnTextClose = me.GUIOptions.modalButtonTextModifyClose
             resM.show()
           }
@@ -1230,7 +1232,6 @@ class Table extends RawTable {
             else {
               let isHTML = t.Columns[col].is_virtual;
               value = t.formatCell(value, isHTML);
-              console.log(value, isHTML);
             }
 
             // Check for statemachine
@@ -1396,7 +1397,7 @@ class Table extends RawTable {
 
 
 
-
+/*
 function openTableInModal(tablename: string, previousSelRows: Array<number> = [], callback = function(e){}) {
   let timestr = (new Date()).getTime(); // current Time-String
   let newFKTableClass = 'foreignTable_abcdef'+timestr;
@@ -1422,8 +1423,10 @@ function openTableInModal(tablename: string, previousSelRows: Array<number> = []
     });
   }, '');  
 }
+*/
 // TODO: Make this into the Class!!!!
 // This function is called from FormData
+/*
 function selectForeignKey(inp){
   inp = $(inp).parent().find('input');
   // Extract relevant Variables
@@ -1457,6 +1460,7 @@ function selectForeignKey(inp){
     })
   });
 }
+*/
 
 //-------------------------------------------
 // Bootstrap-Helper-Method: Overlay of many Modal windows (newest on top)
