@@ -1,3 +1,8 @@
+THE PROJECT MOVED TO
+https://github.com/BPMspaceUG/APMS
+
+
+
 # IPMS
 Intelligent Process Management System
 
